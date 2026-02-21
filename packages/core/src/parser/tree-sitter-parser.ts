@@ -1,4 +1,5 @@
-import { Parser as TSParser, type Node as TSNode } from 'web-tree-sitter';
+import TSParser from 'web-tree-sitter';
+type TSNode = TSParser.SyntaxNode;
 import { ok, err, type Result } from 'neverthrow';
 import type { Parser, ParsedFile } from '../types/provider.js';
 import { ParseError } from '../types/provider.js';
@@ -135,7 +136,9 @@ export class TreeSitterParser implements Parser {
         declarations,
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = error instanceof Error
+        ? (error.message || error.constructor.name)
+        : String(error);
       return err(new ParseError(`Error parsing ${filePath}: ${message}`));
     }
   }

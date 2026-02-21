@@ -101,8 +101,8 @@ importers:
         specifier: ^0.1.13
         version: 0.1.13
       web-tree-sitter:
-        specifier: ^0.26.5
-        version: 0.26.5
+        specifier: ^0.24.7
+        version: 0.24.7
       yaml:
         specifier: ^2.7.0
         version: 2.8.2
@@ -1355,7 +1355,7 @@ packages:
       std-env: 3.10.0
       test-exclude: 7.0.1
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@22.19.11)(tsx@4.21.0)
+      vitest: 3.2.4(@types/node@22.19.11)(yaml@2.8.2)
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -1384,7 +1384,7 @@ packages:
       '@vitest/spy': 3.2.4
       estree-walker: 3.0.3
       magic-string: 0.30.21
-      vite: 7.3.1(@types/node@22.19.11)(tsx@4.21.0)
+      vite: 7.3.1(@types/node@22.19.11)(yaml@2.8.2)
     dev: true
 
   /@vitest/pretty-format@3.2.4:
@@ -3916,8 +3916,8 @@ packages:
       - yaml
     dev: true
 
-  /web-tree-sitter@0.26.5:
-    resolution: {integrity: sha512-u9sl+q21VSKX2T8dhpQw8bMGGqNfwaIyuoYE3kdOQGVDrOqrmcS9GmaQoCS602iaFnuokn3WCHW374c7GAnuaQ==}
+  /web-tree-sitter@0.24.7:
+    resolution: {integrity: sha512-CdC/TqVFbXqR+C51v38hv6wOPatKEUGxa39scAeFSm98wIhZxAYonhRQPSMmfZ2w7JDI0zQDdzdmgtNk06/krQ==}
     dev: false
 
   /which@2.0.2:

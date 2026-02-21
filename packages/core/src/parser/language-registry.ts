@@ -1,6 +1,8 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { Language } from 'web-tree-sitter';
+import TSParser from 'web-tree-sitter';
+
+type Language = TSParser.Language;
 
 /**
  * All languages supported by the tree-sitter parser module.
@@ -235,7 +237,7 @@ export class LanguageRegistry {
     const wasmsDir = path.dirname(require.resolve('tree-sitter-wasms/package.json'));
     const wasmPath = path.join(wasmsDir, 'out', wasmFile);
 
-    const loaded = await Language.load(wasmPath);
+    const loaded = await TSParser.Language.load(wasmPath);
     this.languageCache.set(language, loaded);
     return loaded;
   }

@@ -101,11 +101,13 @@ export function registerIndexCommand(program: Command): void {
         const allChunks: Chunk[] = [];
         const allParsedFiles: ParsedFile[] = [];
         let parseErrors = 0;
+        const parseErrorDetails: Array<{ file: string; reason: string }> = [];
 
         for (const file of filesToProcess) {
           const parseResult = await parser.parse(file.filePath, file.content);
           if (parseResult.isErr()) {
             parseErrors++;
+            parseErrorDetails.push({ file: file.filePath, reason: parseResult.error.message });
             continue;
           }
 
@@ -115,6 +117,7 @@ export function registerIndexCommand(program: Command): void {
           const chunkResult = await chunker.chunk(parsed);
           if (chunkResult.isErr()) {
             parseErrors++;
+            parseErrorDetails.push({ file: file.filePath, reason: chunkResult.error.message });
             continue;
           }
 
@@ -124,7 +127,19 @@ export function registerIndexCommand(program: Command): void {
         spinner.text = `Parsed ${filesToProcess.length - parseErrors} files, created ${allChunks.length} chunks`;
 
         if (allChunks.length === 0) {
-          spinner.succeed('No chunks produced. Nothing to index.');
+          spinner.warn('No chunks produced. Nothing to index.');
+          if (parseErrors > 0) {
+            // eslint-disable-next-line no-console
+            console.log(chalk.yellow(`  ${parseErrors} file(s) failed to parse:`));
+            for (const detail of parseErrorDetails.slice(0, 5)) {
+              // eslint-disable-next-line no-console
+              console.log(`    ${chalk.gray('→')} ${detail.file}: ${chalk.yellow(detail.reason)}`);
+            }
+            if (parseErrorDetails.length > 5) {
+              // eslint-disable-next-line no-console
+              console.log(`    ${chalk.gray(`… and ${parseErrorDetails.length - 5} more`)}`);
+            }
+          }
           return;
         }
 
@@ -231,6 +246,14 @@ export function registerIndexCommand(program: Command): void {
         if (parseErrors > 0) {
           // eslint-disable-next-line no-console
           console.log(`  Parse errors:    ${chalk.yellow(String(parseErrors))}`);
+          for (const detail of parseErrorDetails.slice(0, 10)) {
+            // eslint-disable-next-line no-console
+            console.log(`    ${chalk.gray('→')} ${detail.file}: ${chalk.yellow(detail.reason)}`);
+          }
+          if (parseErrorDetails.length > 10) {
+            // eslint-disable-next-line no-console
+            console.log(`    ${chalk.gray(`… and ${parseErrorDetails.length - 10} more`)}`);
+          }
         }
         // eslint-disable-next-line no-console
         console.log(`  Time elapsed:    ${chalk.cyan(elapsed + 's')}`);
