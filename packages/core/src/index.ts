@@ -53,3 +53,19 @@ export { DependencyGraph, extractImports, GraphBuilder, GraphError } from './gra
 
 export type { OllamaConfig } from './enrichment/index.js';
 export { OllamaClient, OllamaError, NLEnricher, EnrichmentError } from './enrichment/index.js';
+
+export type {
+  IndexedFileState,
+  ScannedFile,
+  IndexerConfig,
+  ChangeSet,
+  IndexerResult,
+} from './indexer/index.js';
+export {
+  IndexState,
+  computeFileHash,
+  FileScanner,
+  ScanError,
+  IncrementalIndexer,
+  IndexerError,
+} from './indexer/index.js';

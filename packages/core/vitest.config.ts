@@ -11,6 +11,7 @@ export default defineConfig({
         'src/chunker/**/*.ts',
         'src/graph/**/*.ts',
         'src/enrichment/**/*.ts',
+        'src/indexer/**/*.ts',
         'src/index.ts',
       ],
       exclude: [
