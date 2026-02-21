@@ -77,3 +77,21 @@ export {
   BM25Index,
   HybridSearch,
 } from './embedding/index.js';
+
+export type {
+  AnalyzedQuery,
+  QueryIntent,
+  QueryEntity,
+  ReadonlyGraph,
+  RelationshipType,
+  RelatedChunk,
+  GraphExcerpt,
+  ExpandedContext,
+  TokenBudgetConfig,
+  AssembledContext,
+} from './retrieval/index.js';
+export {
+  QueryAnalyzer,
+  ContextExpander,
+  TokenBudgetOptimizer,
+} from './retrieval/index.js';

@@ -13,6 +13,7 @@ export default defineConfig({
         'src/enrichment/**/*.ts',
         'src/indexer/**/*.ts',
         'src/embedding/**/*.ts',
+        'src/retrieval/**/*.ts',
         'src/index.ts',
       ],
       exclude: [
