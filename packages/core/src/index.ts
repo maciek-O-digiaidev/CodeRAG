@@ -47,3 +47,6 @@ export { TreeSitterParser, LanguageRegistry } from './parser/index.js';
 
 export type { ASTChunkerConfig } from './chunker/index.js';
 export { ASTChunker } from './chunker/index.js';
+
+export type { GraphNode, GraphEdge, ImportInfo } from './graph/index.js';
+export { DependencyGraph, extractImports, GraphBuilder, GraphError } from './graph/index.js';
