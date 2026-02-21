@@ -7,6 +7,7 @@ export { CodeRAGServer, MCP_SERVER_VERSION } from './server.js';
 export { handleSearch, searchInputSchema, type SearchInput, type SearchToolResult } from './tools/search.js';
 export { handleContext, contextInputSchema, type ContextInput } from './tools/context.js';
 export { handleStatus, type StatusResult } from './tools/status.js';
+export { handleExplain, explainInputSchema, type ExplainInput } from './tools/explain.js';
 
 async function main(): Promise<void> {
   const rootDir = process.argv[2] ?? process.cwd();

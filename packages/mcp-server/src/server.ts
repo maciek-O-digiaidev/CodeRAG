@@ -24,6 +24,7 @@ import { join, resolve } from 'node:path';
 import { handleSearch } from './tools/search.js';
 import { handleContext } from './tools/context.js';
 import { handleStatus } from './tools/status.js';
+import { handleExplain } from './tools/explain.js';
 
 export const MCP_SERVER_VERSION = '0.1.0';
 
@@ -197,6 +198,30 @@ export class CodeRAGServer {
           },
         },
         {
+          name: 'coderag_explain',
+          description:
+            'Get a detailed natural language explanation of a code module, function, or class. Returns NL summaries, code content, and related symbols. At least one of file_path or name must be provided.',
+          inputSchema: {
+            type: 'object' as const,
+            properties: {
+              file_path: {
+                type: 'string',
+                description: 'File path to explain',
+              },
+              name: {
+                type: 'string',
+                description: 'Function, class, or method name to search for and explain',
+              },
+              detail_level: {
+                type: 'string',
+                enum: ['brief', 'detailed'],
+                description: 'Level of detail: "brief" for summaries only, "detailed" for full code + dependencies (default: "detailed")',
+              },
+            },
+            required: [],
+          },
+        },
+        {
           name: 'coderag_status',
           description:
             'Get the current status of the CodeRAG index, including total chunks, model info, configured languages, and health status.',
@@ -219,6 +244,12 @@ export class CodeRAGServer {
           return handleSearch(safeArgs, this.hybridSearch, this.reranker);
         case 'coderag_context':
           return handleContext(
+            safeArgs,
+            this.hybridSearch,
+            this.contextExpander,
+          );
+        case 'coderag_explain':
+          return handleExplain(
             safeArgs,
             this.hybridSearch,
             this.contextExpander,
