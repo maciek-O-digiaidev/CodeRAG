@@ -51,6 +51,20 @@ const rerankerConfigSchema = z.object({
   topN: z.number().int().positive().max(50),
 });
 
+export const repoConfigSchema = z.object({
+  path: z.string().min(1, 'Repo path must not be empty'),
+  name: z.string().min(1, 'Repo name must not be empty').optional(),
+  languages: z.array(z.string()).optional(),
+  exclude: z.array(z.string()).optional(),
+});
+
+export type RepoConfigSchema = z.infer<typeof repoConfigSchema>;
+
+const backlogConfigSchema = z.object({
+  provider: z.string(),
+  config: z.record(z.string(), z.unknown()).optional().default({}),
+});
+
 const codeRAGConfigSchema = z.object({
   version: z.string().min(1, 'Version must not be empty'),
   project: projectConfigSchema,
@@ -60,6 +74,8 @@ const codeRAGConfigSchema = z.object({
   search: searchConfigSchema,
   storage: storageConfigSchema,
   reranker: rerankerConfigSchema.optional(),
+  repos: z.array(repoConfigSchema).optional(),
+  backlog: backlogConfigSchema.optional(),
 });
 
 // --- Defaults ---
@@ -143,6 +159,12 @@ function applyDefaults(partial: Record<string, unknown>): Record<string, unknown
             ...(partial['reranker'] as Record<string, unknown> | undefined),
           },
         }
+      : {}),
+    ...(partial['repos'] !== undefined
+      ? { repos: partial['repos'] }
+      : {}),
+    ...(partial['backlog'] !== undefined
+      ? { backlog: partial['backlog'] }
       : {}),
   };
 }

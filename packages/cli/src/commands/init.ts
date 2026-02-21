@@ -88,8 +88,8 @@ export async function detectLanguages(rootDir: string): Promise<string[]> {
 /**
  * Build the default config object for .coderag.yaml.
  */
-function buildDefaultConfig(languages: string[]): Record<string, unknown> {
-  return {
+function buildDefaultConfig(languages: string[], multi?: boolean): Record<string, unknown> {
+  const config: Record<string, unknown> = {
     version: '1',
     project: {
       name: 'unnamed',
@@ -117,6 +117,12 @@ function buildDefaultConfig(languages: string[]): Record<string, unknown> {
       path: '.coderag',
     },
   };
+
+  if (multi) {
+    config['repos'] = [];
+  }
+
+  return config;
 }
 
 /**
@@ -143,7 +149,8 @@ export function registerInitCommand(program: Command): void {
     .description('Initialize a new CodeRAG project in the current directory')
     .option('--languages <langs>', 'Comma-separated list of languages (overrides auto-detection)')
     .option('--force', 'Overwrite existing configuration file')
-    .action(async (options: { languages?: string; force?: boolean }) => {
+    .option('--multi', 'Generate multi-repo configuration with repos array')
+    .action(async (options: { languages?: string; force?: boolean; multi?: boolean }) => {
       try {
         const rootDir = process.cwd();
 
@@ -180,8 +187,21 @@ export function registerInitCommand(program: Command): void {
         }
 
         // Step 2: Write .coderag.yaml
-        const config = buildDefaultConfig(languages);
-        const yamlContent = stringify(config);
+        const config = buildDefaultConfig(languages, options.multi);
+        let yamlContent = stringify(config);
+        if (options.multi) {
+          yamlContent += [
+            '# repos:',
+            '#   - path: /absolute/path/to/repo-a',
+            '#     name: repo-a',
+            '#     languages:',
+            '#       - typescript',
+            '#     exclude:',
+            '#       - dist',
+            '#   - path: /absolute/path/to/repo-b',
+            '',
+          ].join('\n');
+        }
         await writeFile(configPath, yamlContent, 'utf-8');
         // eslint-disable-next-line no-console
         console.log(chalk.green('Created'), configPath);

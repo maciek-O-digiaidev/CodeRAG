@@ -8,6 +8,8 @@ export type {
   StorageConfig,
   ProjectConfig,
   ReRankerConfig,
+  RepoConfig,
+  BacklogConfig,
 } from './config.js';
 export type {
   EmbeddingProvider,

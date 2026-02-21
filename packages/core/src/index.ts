@@ -10,6 +10,7 @@ export type {
   SearchConfig,
   StorageConfig,
   ProjectConfig,
+  RepoConfig,
   EmbeddingProvider,
   VectorStore,
   LLMProvider,
@@ -31,7 +32,8 @@ export {
   ChunkError,
 } from './types/index.js';
 
-export { loadConfig, ConfigError } from './config/config-parser.js';
+export { loadConfig, ConfigError, repoConfigSchema } from './config/config-parser.js';
+export type { RepoConfigSchema } from './config/config-parser.js';
 
 export type {
   FileChange,
@@ -99,4 +101,12 @@ export {
   ReRankerError,
 } from './retrieval/index.js';
 
-export type { ReRankerConfig, ReRanker } from './types/index.js';
+export type { ReRankerConfig, ReRanker, BacklogConfig } from './types/index.js';
+
+export type {
+  BacklogItemType,
+  BacklogItem,
+  BacklogQuery,
+  BacklogProvider,
+} from './backlog/index.js';
+export { BacklogError } from './backlog/index.js';

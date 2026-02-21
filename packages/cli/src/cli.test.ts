@@ -9,7 +9,7 @@ import { detectLanguages } from './commands/init.js';
 import { formatSearchResult } from './commands/search.js';
 import { formatStatus, formatStatusJSON, type StatusInfo } from './commands/status.js';
 import type { SearchResult } from '@coderag/core';
-import { mkdtemp, writeFile, mkdir, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -53,12 +53,13 @@ describe('CLI program setup', () => {
     expect(program.commands).toHaveLength(5);
   });
 
-  it('init command should have --languages and --force options', () => {
+  it('init command should have --languages, --force, and --multi options', () => {
     const initCmd = program.commands.find((c) => c.name() === 'init');
     expect(initCmd).toBeDefined();
     const opts = initCmd!.options.map((o) => o.long);
     expect(opts).toContain('--languages');
     expect(opts).toContain('--force');
+    expect(opts).toContain('--multi');
   });
 
   it('index command should have --full option', () => {
@@ -211,6 +212,48 @@ describe('detectLanguages', () => {
   it('should handle non-existent directory gracefully', async () => {
     const langs = await detectLanguages(join(tempDir, 'nonexistent'));
     expect(langs).toEqual([]);
+  });
+});
+
+// --- Multi-repo Init Tests ---
+
+describe('init --multi', () => {
+  let tempDir: string;
+  let originalCwd: string;
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'coderag-multi-'));
+    originalCwd = process.cwd();
+    process.chdir(tempDir);
+  });
+
+  afterEach(async () => {
+    process.chdir(originalCwd);
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('--multi flag generates config with repos array and comment', async () => {
+    const program = new Command();
+    program.exitOverride();
+    registerInitCommand(program);
+
+    // Suppress console output during test
+    const origLog = console.log;
+    const origErr = console.error;
+    console.log = () => {};
+    console.error = () => {};
+    try {
+      await program.parseAsync(['node', 'coderag', 'init', '--multi']);
+    } finally {
+      console.log = origLog;
+      console.error = origErr;
+    }
+
+    const content = await readFile(join(tempDir, '.coderag.yaml'), 'utf-8');
+    expect(content).toContain('repos:');
+    expect(content).toContain('# repos:');
+    expect(content).toContain('#   - path: /absolute/path/to/repo-a');
+    expect(content).toContain('#     name: repo-a');
   });
 });
 

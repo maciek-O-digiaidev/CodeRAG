@@ -35,6 +35,18 @@ export interface ReRankerConfig {
   topN: number;
 }
 
+export interface RepoConfig {
+  path: string;
+  name?: string;
+  languages?: string[];
+  exclude?: string[];
+}
+
+export interface BacklogConfig {
+  provider: string;
+  config?: Record<string, unknown>;
+}
+
 export interface CodeRAGConfig {
   version: string;
   project: ProjectConfig;
@@ -44,4 +56,6 @@ export interface CodeRAGConfig {
   search: SearchConfig;
   storage: StorageConfig;
   reranker?: ReRankerConfig;
+  repos?: RepoConfig[];
+  backlog?: BacklogConfig;
 }

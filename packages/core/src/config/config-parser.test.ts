@@ -360,6 +360,149 @@ storage:
     }
   });
 
+  // --- Multi-repo config tests ---
+
+  it('should load a valid multi-repo config with repos array', async () => {
+    const configContent = `
+version: "1"
+project:
+  name: multi-repo
+  languages: auto
+repos:
+  - path: /home/dev/repo-a
+    name: repo-a
+    languages:
+      - typescript
+    exclude:
+      - dist
+  - path: /home/dev/repo-b
+    name: repo-b
+`;
+    writeFileSync(join(tempDir, '.coderag.yaml'), configContent);
+
+    const result = await loadConfig(tempDir);
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.repos).toBeDefined();
+      expect(result.value.repos).toHaveLength(2);
+      expect(result.value.repos![0]!.path).toBe('/home/dev/repo-a');
+      expect(result.value.repos![0]!.name).toBe('repo-a');
+      expect(result.value.repos![0]!.languages).toEqual(['typescript']);
+      expect(result.value.repos![0]!.exclude).toEqual(['dist']);
+      expect(result.value.repos![1]!.path).toBe('/home/dev/repo-b');
+      expect(result.value.repos![1]!.name).toBe('repo-b');
+    }
+  });
+
+  it('should load config without repos field (single repo, backwards compatible)', async () => {
+    const configContent = `
+version: "1"
+project:
+  name: single-repo
+  languages: auto
+`;
+    writeFileSync(join(tempDir, '.coderag.yaml'), configContent);
+
+    const result = await loadConfig(tempDir);
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.repos).toBeUndefined();
+      expect(result.value.project.name).toBe('single-repo');
+    }
+  });
+
+  it('should return validation error for repo entry missing path', async () => {
+    const configContent = `
+version: "1"
+project:
+  name: bad-repo
+repos:
+  - name: no-path-repo
+`;
+    writeFileSync(join(tempDir, '.coderag.yaml'), configContent);
+
+    const result = await loadConfig(tempDir);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(ConfigError);
+      expect(result.error.message).toContain('Config validation failed');
+    }
+  });
+
+  it('should accept repo entries with per-repo language and exclude overrides', async () => {
+    const configContent = `
+version: "1"
+project:
+  name: overrides
+repos:
+  - path: /repos/frontend
+    languages:
+      - typescript
+      - javascript
+    exclude:
+      - node_modules
+      - .next
+  - path: /repos/backend
+    languages:
+      - python
+    exclude:
+      - __pycache__
+      - .venv
+`;
+    writeFileSync(join(tempDir, '.coderag.yaml'), configContent);
+
+    const result = await loadConfig(tempDir);
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.repos).toHaveLength(2);
+      expect(result.value.repos![0]!.languages).toEqual(['typescript', 'javascript']);
+      expect(result.value.repos![0]!.exclude).toEqual(['node_modules', '.next']);
+      expect(result.value.repos![1]!.languages).toEqual(['python']);
+      expect(result.value.repos![1]!.exclude).toEqual(['__pycache__', '.venv']);
+    }
+  });
+
+  it('should return validation error for repo with empty path', async () => {
+    const configContent = `
+version: "1"
+project:
+  name: empty-path
+repos:
+  - path: ""
+`;
+    writeFileSync(join(tempDir, '.coderag.yaml'), configContent);
+
+    const result = await loadConfig(tempDir);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(ConfigError);
+      expect(result.error.message).toContain('Config validation failed');
+      expect(result.error.message).toContain('path');
+    }
+  });
+
+  it('should accept empty repos array', async () => {
+    const configContent = `
+version: "1"
+project:
+  name: empty-repos
+repos: []
+`;
+    writeFileSync(join(tempDir, '.coderag.yaml'), configContent);
+
+    const result = await loadConfig(tempDir);
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.repos).toEqual([]);
+    }
+  });
+
   it('should accept boundary values for weights (0 and 1)', async () => {
     const configContent = `
 version: "1"
