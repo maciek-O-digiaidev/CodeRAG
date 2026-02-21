@@ -32,3 +32,12 @@ export {
 } from './types/index.js';
 
 export { loadConfig, ConfigError } from './config/config-parser.js';
+
+export type {
+  FileChange,
+  FileChangeStatus,
+  FileMetadata,
+  GitClient,
+  IgnoreFilter,
+} from './git/index.js';
+export { GitError, SimpleGitClient, createIgnoreFilter } from './git/index.js';

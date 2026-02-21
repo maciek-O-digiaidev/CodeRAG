@@ -6,6 +6,7 @@ export default defineConfig({
       provider: 'v8',
       include: [
         'src/config/**/*.ts',
+        'src/git/**/*.ts',
         'src/index.ts',
       ],
       exclude: [

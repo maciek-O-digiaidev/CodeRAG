@@ -17,7 +17,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "ignore": "^7.0.5",
     "neverthrow": "^8.1.1",
+    "simple-git": "^3.32.0",
     "yaml": "^2.7.0"
   },
   "devDependencies": {
