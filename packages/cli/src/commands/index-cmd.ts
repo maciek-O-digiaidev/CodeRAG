@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { writeFile, readFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import {
   loadConfig,
   createIgnoreFilter,
@@ -43,13 +43,19 @@ export function registerIndexCommand(program: Command): void {
         const config = configResult.value;
         const storagePath = resolve(rootDir, config.storage.path);
 
+        // Prevent path traversal outside project root
+        if (!storagePath.startsWith(resolve(rootDir) + sep) && storagePath !== resolve(rootDir)) {
+          spinner.fail('Storage path escapes project root');
+          process.exit(1);
+        }
+
         // Step 2: Load or create index state
         let indexState = new IndexState();
         const indexStatePath = join(storagePath, 'index-state.json');
         if (!options.full) {
           try {
             const stateData = await readFile(indexStatePath, 'utf-8');
-            indexState = IndexState.fromJSON(JSON.parse(stateData) as Record<string, never>);
+            indexState = IndexState.fromJSON(JSON.parse(stateData) as Parameters<typeof IndexState.fromJSON>[0]);
           } catch {
             // No saved state, start fresh
           }

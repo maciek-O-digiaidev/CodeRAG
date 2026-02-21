@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { resolve } from 'node:path';
+import { resolve, sep } from 'node:path';
 import {
   loadConfig,
   LanceDBStore,
@@ -93,6 +93,13 @@ export function registerStatusCommand(program: Command): void {
 
         const config = configResult.value;
         const storagePath = resolve(rootDir, config.storage.path);
+
+        // Prevent path traversal outside project root
+        if (!storagePath.startsWith(resolve(rootDir) + sep) && storagePath !== resolve(rootDir)) {
+          // eslint-disable-next-line no-console
+          console.error(chalk.red('Storage path escapes project root'));
+          process.exit(1);
+        }
 
         // Connect to LanceDB to get chunk count
         let totalChunks = 0;

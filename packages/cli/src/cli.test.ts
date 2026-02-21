@@ -53,11 +53,12 @@ describe('CLI program setup', () => {
     expect(program.commands).toHaveLength(5);
   });
 
-  it('init command should have --languages option', () => {
+  it('init command should have --languages and --force options', () => {
     const initCmd = program.commands.find((c) => c.name() === 'init');
     expect(initCmd).toBeDefined();
     const opts = initCmd!.options.map((o) => o.long);
     expect(opts).toContain('--languages');
+    expect(opts).toContain('--force');
   });
 
   it('index command should have --full option', () => {

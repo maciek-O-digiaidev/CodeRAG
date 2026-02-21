@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { readFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import {
   loadConfig,
   OllamaEmbeddingProvider,
@@ -64,6 +64,13 @@ export function registerSearchCommand(program: Command): void {
         }
         const config = configResult.value;
         const storagePath = resolve(rootDir, config.storage.path);
+
+        // Prevent path traversal outside project root
+        if (!storagePath.startsWith(resolve(rootDir) + sep) && storagePath !== resolve(rootDir)) {
+          // eslint-disable-next-line no-console
+          console.error(chalk.red('Storage path escapes project root'));
+          process.exit(1);
+        }
 
         // Create services
         const embeddingProvider = new OllamaEmbeddingProvider({

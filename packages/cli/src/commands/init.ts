@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { readdir } from 'node:fs/promises';
-import { writeFile, mkdir } from 'node:fs/promises';
+import { readdir, writeFile, mkdir, access } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 import { stringify } from 'yaml';
 
@@ -124,16 +123,17 @@ function buildDefaultConfig(languages: string[]): Record<string, unknown> {
  * Check if Ollama is reachable at the default endpoint.
  */
 async function checkOllama(): Promise<{ ok: boolean; message: string }> {
+  const host = process.env['OLLAMA_HOST'] ?? 'http://localhost:11434';
   try {
-    const response = await globalThis.fetch('http://localhost:11434/api/tags', {
+    const response = await globalThis.fetch(`${host}/api/tags`, {
       signal: AbortSignal.timeout(3000),
     });
     if (response.ok) {
-      return { ok: true, message: 'Ollama is running' };
+      return { ok: true, message: `Ollama is running at ${host}` };
     }
     return { ok: false, message: `Ollama returned status ${response.status}` };
   } catch {
-    return { ok: false, message: 'Ollama is not reachable at localhost:11434' };
+    return { ok: false, message: `Ollama is not reachable at ${host}` };
   }
 }
 
@@ -142,9 +142,23 @@ export function registerInitCommand(program: Command): void {
     .command('init')
     .description('Initialize a new CodeRAG project in the current directory')
     .option('--languages <langs>', 'Comma-separated list of languages (overrides auto-detection)')
-    .action(async (options: { languages?: string }) => {
+    .option('--force', 'Overwrite existing configuration file')
+    .action(async (options: { languages?: string; force?: boolean }) => {
       try {
         const rootDir = process.cwd();
+
+        // Step 0: Check if config already exists
+        const configPath = join(rootDir, '.coderag.yaml');
+        if (!options.force) {
+          try {
+            await access(configPath);
+            // eslint-disable-next-line no-console
+            console.error(chalk.red('.coderag.yaml already exists.'), 'Use --force to overwrite.');
+            process.exit(1);
+          } catch {
+            // File doesn't exist, proceed
+          }
+        }
 
         // Step 1: Detect or parse languages
         let languages: string[];
@@ -168,7 +182,6 @@ export function registerInitCommand(program: Command): void {
         // Step 2: Write .coderag.yaml
         const config = buildDefaultConfig(languages);
         const yamlContent = stringify(config);
-        const configPath = join(rootDir, '.coderag.yaml');
         await writeFile(configPath, yamlContent, 'utf-8');
         // eslint-disable-next-line no-console
         console.log(chalk.green('Created'), configPath);
