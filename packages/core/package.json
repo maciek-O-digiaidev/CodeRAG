@@ -2,6 +2,25 @@
   "name": "@coderag/core",
   "version": "0.1.0",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coderag/coderag.git",
+    "directory": "packages/core"
+  },
+  "keywords": [
+    "coderag",
+    "code-search",
+    "embeddings",
+    "hybrid-search",
+    "ast",
+    "rag",
+    "mcp"
+  ],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

@@ -1,0 +1,1066 @@
+{
+  "name": "coderag-self-benchmark",
+  "description": "Curated benchmark dataset targeting the CodeRAG codebase itself for evaluating search quality.",
+  "targetRepo": "https://github.com/coderag/coderag",
+  "queries": [
+    {
+      "id": "easy-001",
+      "query": "Find the HybridSearch class",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/embedding/hybrid-search.ts",
+          "chunkType": "class",
+          "name": "HybridSearch",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "embedding", "search"]
+    },
+    {
+      "id": "easy-002",
+      "query": "Where is loadConfig defined",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/config/config-parser.ts",
+          "chunkType": "function",
+          "name": "loadConfig",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["function", "config"]
+    },
+    {
+      "id": "easy-003",
+      "query": "Show the BM25Index class",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/embedding/bm25-index.ts",
+          "chunkType": "class",
+          "name": "BM25Index",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "bm25", "search"]
+    },
+    {
+      "id": "easy-004",
+      "query": "Find the LanceDBStore class",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/embedding/lancedb-store.ts",
+          "chunkType": "class",
+          "name": "LanceDBStore",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "vector-store", "lancedb"]
+    },
+    {
+      "id": "easy-005",
+      "query": "Where is OllamaEmbeddingProvider",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/embedding/ollama-embedding-provider.ts",
+          "chunkType": "class",
+          "name": "OllamaEmbeddingProvider",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "embedding", "ollama"]
+    },
+    {
+      "id": "easy-006",
+      "query": "Find the QueryAnalyzer class",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/retrieval/query-analyzer.ts",
+          "chunkType": "class",
+          "name": "QueryAnalyzer",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "retrieval", "query"]
+    },
+    {
+      "id": "easy-007",
+      "query": "Show the DependencyGraph class",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/graph/dependency-graph.ts",
+          "chunkType": "class",
+          "name": "DependencyGraph",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "graph"]
+    },
+    {
+      "id": "easy-008",
+      "query": "Find the TreeSitterParser class",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/parser/tree-sitter-parser.ts",
+          "chunkType": "class",
+          "name": "TreeSitterParser",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "parser", "tree-sitter"]
+    },
+    {
+      "id": "easy-009",
+      "query": "Where is the ASTChunker class",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/chunker/ast-chunker.ts",
+          "chunkType": "class",
+          "name": "ASTChunker",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "chunker", "ast"]
+    },
+    {
+      "id": "easy-010",
+      "query": "Find the extractImports function",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/graph/import-resolver.ts",
+          "chunkType": "function",
+          "name": "extractImports",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["function", "graph", "imports"]
+    },
+    {
+      "id": "easy-011",
+      "query": "Show the IncrementalIndexer class",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/indexer/incremental-indexer.ts",
+          "chunkType": "class",
+          "name": "IncrementalIndexer",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "indexer"]
+    },
+    {
+      "id": "easy-012",
+      "query": "Find the FileScanner class",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/indexer/file-scanner.ts",
+          "chunkType": "class",
+          "name": "FileScanner",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "indexer", "scanner"]
+    },
+    {
+      "id": "easy-013",
+      "query": "Where is the NLEnricher class defined",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/enrichment/nl-enricher.ts",
+          "chunkType": "class",
+          "name": "NLEnricher",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "enrichment", "nl"]
+    },
+    {
+      "id": "easy-014",
+      "query": "Find the OllamaClient class",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/enrichment/ollama-client.ts",
+          "chunkType": "class",
+          "name": "OllamaClient",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "enrichment", "ollama"]
+    },
+    {
+      "id": "easy-015",
+      "query": "Show the IndexState class",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/indexer/index-state.ts",
+          "chunkType": "class",
+          "name": "IndexState",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "indexer", "state"]
+    },
+    {
+      "id": "easy-016",
+      "query": "Find the ContextExpander class",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/retrieval/context-expander.ts",
+          "chunkType": "class",
+          "name": "ContextExpander",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "retrieval", "context"]
+    },
+    {
+      "id": "easy-017",
+      "query": "Where is the TokenBudgetOptimizer",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/retrieval/token-budget.ts",
+          "chunkType": "class",
+          "name": "TokenBudgetOptimizer",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "retrieval", "token-budget"]
+    },
+    {
+      "id": "easy-018",
+      "query": "Find the computeFileHash function",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/indexer/index-state.ts",
+          "chunkType": "function",
+          "name": "computeFileHash",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["function", "indexer", "hash"]
+    },
+    {
+      "id": "easy-019",
+      "query": "Show the createIgnoreFilter function",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/git/ignore-filter.ts",
+          "chunkType": "function",
+          "name": "createIgnoreFilter",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["function", "git", "ignore"]
+    },
+    {
+      "id": "easy-020",
+      "query": "Find the CrossEncoderReRanker class",
+      "difficulty": "easy",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/retrieval/cross-encoder-reranker.ts",
+          "chunkType": "class",
+          "name": "CrossEncoderReRanker",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["class", "retrieval", "reranker"]
+    },
+    {
+      "id": "medium-001",
+      "query": "How does embedding generation work in CodeRAG",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/embedding/ollama-embedding-provider.ts",
+          "chunkType": "class",
+          "name": "OllamaEmbeddingProvider",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/embedding/hybrid-search.ts",
+          "chunkType": "class",
+          "name": "HybridSearch",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["embedding", "ollama", "concept"]
+    },
+    {
+      "id": "medium-002",
+      "query": "What handles file change detection",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/indexer/incremental-indexer.ts",
+          "chunkType": "class",
+          "name": "IncrementalIndexer",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/indexer/index-state.ts",
+          "chunkType": "class",
+          "name": "IndexState",
+          "relevance": "secondary"
+        },
+        {
+          "filePath": "packages/core/src/indexer/index-state.ts",
+          "chunkType": "function",
+          "name": "computeFileHash",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["indexer", "change-detection", "concept"]
+    },
+    {
+      "id": "medium-003",
+      "query": "How are search results ranked and scored",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/embedding/hybrid-search.ts",
+          "chunkType": "class",
+          "name": "HybridSearch",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/retrieval/cross-encoder-reranker.ts",
+          "chunkType": "class",
+          "name": "CrossEncoderReRanker",
+          "relevance": "secondary"
+        },
+        {
+          "filePath": "packages/core/src/embedding/bm25-index.ts",
+          "chunkType": "class",
+          "name": "BM25Index",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["search", "ranking", "scoring", "concept"]
+    },
+    {
+      "id": "medium-004",
+      "query": "How does the MCP server handle search requests",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/mcp-server/src/tools/search.ts",
+          "chunkType": "function",
+          "name": "handleSearch",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/mcp-server/src/server.ts",
+          "chunkType": "class",
+          "name": "CodeRAGServer",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["mcp", "search", "server"]
+    },
+    {
+      "id": "medium-005",
+      "query": "How does CodeRAG parse source code files",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/parser/tree-sitter-parser.ts",
+          "chunkType": "class",
+          "name": "TreeSitterParser",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/parser/language-registry.ts",
+          "chunkType": "class",
+          "name": "LanguageRegistry",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["parser", "tree-sitter", "concept"]
+    },
+    {
+      "id": "medium-006",
+      "query": "How does configuration loading and validation work",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/config/config-parser.ts",
+          "chunkType": "function",
+          "name": "loadConfig",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["config", "validation", "yaml"]
+    },
+    {
+      "id": "medium-007",
+      "query": "How does text chunking split source code into pieces",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/chunker/ast-chunker.ts",
+          "chunkType": "class",
+          "name": "ASTChunker",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["chunker", "ast", "concept"]
+    },
+    {
+      "id": "medium-008",
+      "query": "How does natural language enrichment add summaries to chunks",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/enrichment/nl-enricher.ts",
+          "chunkType": "class",
+          "name": "NLEnricher",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/enrichment/ollama-client.ts",
+          "chunkType": "class",
+          "name": "OllamaClient",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["enrichment", "nl", "concept"]
+    },
+    {
+      "id": "medium-009",
+      "query": "How does the token budget optimizer allocate context space",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/retrieval/token-budget.ts",
+          "chunkType": "class",
+          "name": "TokenBudgetOptimizer",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["token-budget", "context", "concept"]
+    },
+    {
+      "id": "medium-010",
+      "query": "How does BM25 keyword search index documents",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/embedding/bm25-index.ts",
+          "chunkType": "class",
+          "name": "BM25Index",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["bm25", "search", "indexing"]
+    },
+    {
+      "id": "medium-011",
+      "query": "How does the dependency graph track module relationships",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/graph/dependency-graph.ts",
+          "chunkType": "class",
+          "name": "DependencyGraph",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/graph/graph-builder.ts",
+          "chunkType": "class",
+          "name": "GraphBuilder",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["graph", "dependencies", "concept"]
+    },
+    {
+      "id": "medium-012",
+      "query": "What programming languages does the parser support",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/parser/language-registry.ts",
+          "chunkType": "class",
+          "name": "LanguageRegistry",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["parser", "languages", "concept"]
+    },
+    {
+      "id": "medium-013",
+      "query": "How does the CLI init command detect languages",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/cli/src/commands/init.ts",
+          "chunkType": "function",
+          "name": "detectLanguages",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["cli", "init", "languages"]
+    },
+    {
+      "id": "medium-014",
+      "query": "How does the context expander find related code",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/retrieval/context-expander.ts",
+          "chunkType": "class",
+          "name": "ContextExpander",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["context", "retrieval", "concept"]
+    },
+    {
+      "id": "medium-015",
+      "query": "How does the SimpleGitClient interact with git",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/git/simple-git-client.ts",
+          "chunkType": "class",
+          "name": "SimpleGitClient",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["git", "client", "concept"]
+    },
+    {
+      "id": "medium-016",
+      "query": "How does the LanceDB vector store persist embeddings",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/embedding/lancedb-store.ts",
+          "chunkType": "class",
+          "name": "LanceDBStore",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["lancedb", "vector-store", "concept"]
+    },
+    {
+      "id": "medium-017",
+      "query": "How does the query analyzer determine intent from a search query",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/retrieval/query-analyzer.ts",
+          "chunkType": "class",
+          "name": "QueryAnalyzer",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["query", "intent", "retrieval"]
+    },
+    {
+      "id": "medium-018",
+      "query": "How does the MCP server provide context to AI coding agents",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/mcp-server/src/tools/context.ts",
+          "chunkType": "function",
+          "name": "handleContext",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/mcp-server/src/server.ts",
+          "chunkType": "class",
+          "name": "CodeRAGServer",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["mcp", "context", "server"]
+    },
+    {
+      "id": "medium-019",
+      "query": "How does the ignore filter exclude files from scanning",
+      "difficulty": "medium",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/git/ignore-filter.ts",
+          "chunkType": "function",
+          "name": "createIgnoreFilter",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["git", "ignore", "filter"]
+    },
+    {
+      "id": "medium-020",
+      "query": "What is the SearchResult type and its fields",
+      "difficulty": "medium",
+      "category": "function_lookup",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/types/search.ts",
+          "chunkType": "interface",
+          "name": "SearchResult",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["type", "search", "interface"]
+    },
+    {
+      "id": "hard-001",
+      "query": "How does the indexing pipeline flow from scanning files to storing embeddings",
+      "difficulty": "hard",
+      "category": "cross_file",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/indexer/file-scanner.ts",
+          "chunkType": "class",
+          "name": "FileScanner",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/indexer/incremental-indexer.ts",
+          "chunkType": "class",
+          "name": "IncrementalIndexer",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/embedding/lancedb-store.ts",
+          "chunkType": "class",
+          "name": "LanceDBStore",
+          "relevance": "secondary"
+        },
+        {
+          "filePath": "packages/core/src/embedding/ollama-embedding-provider.ts",
+          "chunkType": "class",
+          "name": "OllamaEmbeddingProvider",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["pipeline", "indexing", "cross-file"]
+    },
+    {
+      "id": "hard-002",
+      "query": "What is the relationship between chunking and enrichment in the processing pipeline",
+      "difficulty": "hard",
+      "category": "cross_file",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/chunker/ast-chunker.ts",
+          "chunkType": "class",
+          "name": "ASTChunker",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/enrichment/nl-enricher.ts",
+          "chunkType": "class",
+          "name": "NLEnricher",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/enrichment/ollama-client.ts",
+          "chunkType": "class",
+          "name": "OllamaClient",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["pipeline", "chunking", "enrichment", "cross-file"]
+    },
+    {
+      "id": "hard-003",
+      "query": "How do vector search and BM25 keyword search combine in the hybrid search strategy",
+      "difficulty": "hard",
+      "category": "cross_file",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/embedding/hybrid-search.ts",
+          "chunkType": "class",
+          "name": "HybridSearch",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/embedding/bm25-index.ts",
+          "chunkType": "class",
+          "name": "BM25Index",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/embedding/lancedb-store.ts",
+          "chunkType": "class",
+          "name": "LanceDBStore",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["hybrid", "vector", "bm25", "cross-file"]
+    },
+    {
+      "id": "hard-004",
+      "query": "Trace the full search pipeline from query to assembled context response",
+      "difficulty": "hard",
+      "category": "cross_file",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/retrieval/query-analyzer.ts",
+          "chunkType": "class",
+          "name": "QueryAnalyzer",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/embedding/hybrid-search.ts",
+          "chunkType": "class",
+          "name": "HybridSearch",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/retrieval/context-expander.ts",
+          "chunkType": "class",
+          "name": "ContextExpander",
+          "relevance": "secondary"
+        },
+        {
+          "filePath": "packages/core/src/retrieval/token-budget.ts",
+          "chunkType": "class",
+          "name": "TokenBudgetOptimizer",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["pipeline", "search", "context", "cross-file"]
+    },
+    {
+      "id": "hard-005",
+      "query": "How does the graph builder analyze import relationships across files",
+      "difficulty": "hard",
+      "category": "cross_file",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/graph/graph-builder.ts",
+          "chunkType": "class",
+          "name": "GraphBuilder",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/graph/import-resolver.ts",
+          "chunkType": "function",
+          "name": "extractImports",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/graph/dependency-graph.ts",
+          "chunkType": "class",
+          "name": "DependencyGraph",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["graph", "imports", "cross-file"]
+    },
+    {
+      "id": "hard-006",
+      "query": "How does incremental indexing detect and process only changed files",
+      "difficulty": "hard",
+      "category": "cross_file",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/indexer/incremental-indexer.ts",
+          "chunkType": "class",
+          "name": "IncrementalIndexer",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/indexer/index-state.ts",
+          "chunkType": "class",
+          "name": "IndexState",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/indexer/index-state.ts",
+          "chunkType": "function",
+          "name": "computeFileHash",
+          "relevance": "secondary"
+        },
+        {
+          "filePath": "packages/core/src/indexer/file-scanner.ts",
+          "chunkType": "class",
+          "name": "FileScanner",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["incremental", "indexing", "change-detection", "cross-file"]
+    },
+    {
+      "id": "hard-007",
+      "query": "How does the MCP server initialize all its dependencies and wire together core components",
+      "difficulty": "hard",
+      "category": "cross_file",
+      "expectedChunks": [
+        {
+          "filePath": "packages/mcp-server/src/server.ts",
+          "chunkType": "class",
+          "name": "CodeRAGServer",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/config/config-parser.ts",
+          "chunkType": "function",
+          "name": "loadConfig",
+          "relevance": "secondary"
+        },
+        {
+          "filePath": "packages/core/src/embedding/hybrid-search.ts",
+          "chunkType": "class",
+          "name": "HybridSearch",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["mcp", "initialization", "wiring", "cross-file"]
+    },
+    {
+      "id": "hard-008",
+      "query": "How does the re-ranking pipeline improve search result quality after initial retrieval",
+      "difficulty": "hard",
+      "category": "cross_file",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/retrieval/cross-encoder-reranker.ts",
+          "chunkType": "class",
+          "name": "CrossEncoderReRanker",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/embedding/hybrid-search.ts",
+          "chunkType": "class",
+          "name": "HybridSearch",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["reranking", "retrieval", "quality", "cross-file"]
+    },
+    {
+      "id": "hard-009",
+      "query": "How does the CLI index command orchestrate the full indexing workflow",
+      "difficulty": "hard",
+      "category": "cross_file",
+      "expectedChunks": [
+        {
+          "filePath": "packages/cli/src/commands/index-cmd.ts",
+          "chunkType": "function",
+          "name": "registerIndexCommand",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/indexer/incremental-indexer.ts",
+          "chunkType": "class",
+          "name": "IncrementalIndexer",
+          "relevance": "secondary"
+        },
+        {
+          "filePath": "packages/core/src/indexer/file-scanner.ts",
+          "chunkType": "class",
+          "name": "FileScanner",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["cli", "index", "orchestration", "cross-file"]
+    },
+    {
+      "id": "hard-010",
+      "query": "What error handling patterns does CodeRAG use for recoverable failures across the codebase",
+      "difficulty": "hard",
+      "category": "error_investigation",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/embedding/hybrid-search.ts",
+          "chunkType": "class",
+          "name": "HybridSearch",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/config/config-parser.ts",
+          "chunkType": "function",
+          "name": "loadConfig",
+          "relevance": "secondary"
+        },
+        {
+          "filePath": "packages/core/src/indexer/incremental-indexer.ts",
+          "chunkType": "class",
+          "name": "IncrementalIndexer",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["error-handling", "neverthrow", "result", "cross-file"]
+    },
+    {
+      "id": "hard-011",
+      "query": "How does the context tool gather related code and format it for the LLM",
+      "difficulty": "hard",
+      "category": "cross_file",
+      "expectedChunks": [
+        {
+          "filePath": "packages/mcp-server/src/tools/context.ts",
+          "chunkType": "function",
+          "name": "handleContext",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/retrieval/context-expander.ts",
+          "chunkType": "class",
+          "name": "ContextExpander",
+          "relevance": "secondary"
+        },
+        {
+          "filePath": "packages/core/src/retrieval/token-budget.ts",
+          "chunkType": "class",
+          "name": "TokenBudgetOptimizer",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["context", "mcp", "formatting", "cross-file"]
+    },
+    {
+      "id": "hard-012",
+      "query": "How does the file scanning workflow respect gitignore rules and default exclusions",
+      "difficulty": "hard",
+      "category": "cross_file",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/indexer/file-scanner.ts",
+          "chunkType": "class",
+          "name": "FileScanner",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/git/ignore-filter.ts",
+          "chunkType": "function",
+          "name": "createIgnoreFilter",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["scanning", "gitignore", "exclusion", "cross-file"]
+    },
+    {
+      "id": "hard-013",
+      "query": "How does the tree-sitter parser load language grammars and parse different file types",
+      "difficulty": "hard",
+      "category": "cross_file",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/parser/tree-sitter-parser.ts",
+          "chunkType": "class",
+          "name": "TreeSitterParser",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/parser/language-registry.ts",
+          "chunkType": "class",
+          "name": "LanguageRegistry",
+          "relevance": "primary"
+        }
+      ],
+      "tags": ["parser", "tree-sitter", "languages", "cross-file"]
+    },
+    {
+      "id": "hard-014",
+      "query": "How does the MCP server expose status and health information about the index",
+      "difficulty": "hard",
+      "category": "cross_file",
+      "expectedChunks": [
+        {
+          "filePath": "packages/mcp-server/src/tools/status.ts",
+          "chunkType": "function",
+          "name": "handleStatus",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/cli/src/commands/status.ts",
+          "chunkType": "function",
+          "name": "registerStatusCommand",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["status", "health", "mcp", "cross-file"]
+    },
+    {
+      "id": "hard-015",
+      "query": "How does Reciprocal Rank Fusion merge vector and keyword search results",
+      "difficulty": "hard",
+      "category": "concept_search",
+      "expectedChunks": [
+        {
+          "filePath": "packages/core/src/embedding/hybrid-search.ts",
+          "chunkType": "class",
+          "name": "HybridSearch",
+          "relevance": "primary"
+        },
+        {
+          "filePath": "packages/core/src/embedding/bm25-index.ts",
+          "chunkType": "class",
+          "name": "BM25Index",
+          "relevance": "secondary"
+        },
+        {
+          "filePath": "packages/core/src/embedding/lancedb-store.ts",
+          "chunkType": "class",
+          "name": "LanceDBStore",
+          "relevance": "secondary"
+        }
+      ],
+      "tags": ["rrf", "fusion", "hybrid", "ranking"]
+    }
+  ]
+}
