@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__mcp-registry__search_mcp_registry",
+      "Bash(npx:*)",
+      "Bash(printf:*)",
+      "WebFetch(domain:support.claude.com)",
+      "WebFetch(domain:github.com)",
+      "mcp__ado-momc__core_list_projects",
+      "mcp__ado-momc__repo_list_repos_by_project",
+      "mcp__ado-momc__core_list_project_teams",
+      "mcp__ado-momc__wit_my_work_items",
+      "Bash(python3:*)",
+      "mcp__ado-momc__wit_create_work_item",
+      "mcp__ado-momc__wit_add_child_work_items",
+      "mcp__ado-momc__wit_update_work_items_batch",
+      "mcp__ado-momc__work_create_iterations",
+      "mcp__ado-momc__work_assign_iterations",
+      "mcp__ado-momc__wit_get_work_item",
+      "Skill(scrum-master)",
+      "Skill(scrum-master:*)"
+    ]
+  }
+}
