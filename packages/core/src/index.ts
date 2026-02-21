@@ -69,3 +69,11 @@ export {
   IncrementalIndexer,
   IndexerError,
 } from './indexer/index.js';
+
+export type { OllamaEmbeddingConfig } from './embedding/index.js';
+export {
+  OllamaEmbeddingProvider,
+  LanceDBStore,
+  BM25Index,
+  HybridSearch,
+} from './embedding/index.js';

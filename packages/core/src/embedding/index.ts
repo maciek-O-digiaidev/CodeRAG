@@ -1,0 +1,5 @@
+export { OllamaEmbeddingProvider } from './ollama-embedding-provider.js';
+export type { OllamaEmbeddingConfig } from './ollama-embedding-provider.js';
+export { LanceDBStore } from './lancedb-store.js';
+export { BM25Index } from './bm25-index.js';
+export { HybridSearch } from './hybrid-search.js';

@@ -67,6 +67,9 @@ export interface VectorStore {
     embedding: number[],
     topK: number,
   ): Promise<Result<{ id: string; score: number }[], StoreError>>;
+  delete(ids: string[]): Promise<Result<void, StoreError>>;
+  count(): Promise<Result<number, StoreError>>;
+  close(): void;
 }
 
 export interface LLMProvider {

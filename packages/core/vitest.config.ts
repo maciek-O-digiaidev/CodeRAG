@@ -12,6 +12,7 @@ export default defineConfig({
         'src/graph/**/*.ts',
         'src/enrichment/**/*.ts',
         'src/indexer/**/*.ts',
+        'src/embedding/**/*.ts',
         'src/index.ts',
       ],
       exclude: [
