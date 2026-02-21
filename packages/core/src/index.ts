@@ -89,6 +89,7 @@ export type {
   ExpandedContext,
   TokenBudgetConfig,
   AssembledContext,
+  CrossEncoderConfig,
 } from './retrieval/index.js';
 export {
   QueryAnalyzer,
@@ -98,4 +99,4 @@ export {
   ReRankerError,
 } from './retrieval/index.js';
 
-export type { ReRankerConfig } from './types/index.js';
+export type { ReRankerConfig, ReRanker } from './types/index.js';

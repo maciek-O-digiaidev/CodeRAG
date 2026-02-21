@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CrossEncoderReRanker, ReRankerError } from './cross-encoder-reranker.js';
+import { CrossEncoderReRanker } from './cross-encoder-reranker.js';
+import { ReRankerError } from '../types/provider.js';
 import type { SearchResult } from '../types/search.js';
 
 // --- Helpers ---
@@ -185,10 +186,49 @@ describe('CrossEncoderReRanker', () => {
 
     expect(result.isOk()).toBe(true);
     const reranked = result._unsafeUnwrap();
-    // chunk-1 (clamped to 100), chunk-3 (50), chunk-2 (clamped to 0)
+    // chunk-1 (150 clamped to 100), chunk-3 (50), chunk-2 (-5 clamped to 0)
     expect(reranked[0]!.chunkId).toBe('chunk-1');
     expect(reranked[1]!.chunkId).toBe('chunk-3');
     expect(reranked[2]!.chunkId).toBe('chunk-2');
+  });
+
+  it('should gracefully handle transient fetch error on later results', async () => {
+    const rerankerWith5 = new CrossEncoderReRanker({
+      model: 'qwen2.5-coder:7b',
+      topN: 3,
+    });
+
+    const results = [
+      makeSearchResult({ chunkId: 'chunk-1', content: 'function a() {}' }),
+      makeSearchResult({ chunkId: 'chunk-2', content: 'function b() {}' }),
+      makeSearchResult({ chunkId: 'chunk-3', content: 'function c() {}' }),
+    ];
+
+    let callCount = 0;
+    const mockFetch = vi.fn().mockImplementation(() => {
+      callCount++;
+      if (callCount === 2) {
+        return Promise.reject(new TypeError('Connection reset'));
+      }
+      const score = callCount === 1 ? '90' : '30';
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ response: score }),
+      });
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await rerankerWith5.rerank('find function', results);
+
+    // Should succeed (not return err) since first call worked
+    expect(result.isOk()).toBe(true);
+    const reranked = result._unsafeUnwrap();
+    expect(reranked).toHaveLength(3);
+    // chunk-1 (90), chunk-2 (default 50 from transient error), chunk-3 (30)
+    expect(reranked[0]!.chunkId).toBe('chunk-1');
+    expect(reranked[1]!.chunkId).toBe('chunk-2');
+    expect(reranked[2]!.chunkId).toBe('chunk-3');
   });
 
   it('should handle Ollama HTTP error for individual result (assigns default score 50)', async () => {
@@ -258,9 +298,10 @@ describe('CrossEncoderReRanker', () => {
     const body = JSON.parse(callArgs[1].body as string) as { prompt: string; model: string; stream: boolean };
 
     expect(body.prompt).toContain('Rate relevance 0-100');
-    expect(body.prompt).toContain('Query: greeting function');
-    expect(body.prompt).toContain('Code (function greet):');
+    expect(body.prompt).toContain('<query>greeting function</query>');
+    expect(body.prompt).toContain('<code type="function" name="greet">');
     expect(body.prompt).toContain('function greet() { return "hi"; }');
+    expect(body.prompt).toContain('</code>');
     expect(body.prompt).toContain('Score:');
     expect(body.stream).toBe(false);
   });

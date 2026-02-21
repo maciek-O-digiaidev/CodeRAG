@@ -75,3 +75,17 @@ export interface VectorStore {
 export interface LLMProvider {
   generate(prompt: string): Promise<Result<string, LLMError>>;
 }
+
+export class ReRankerError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ReRankerError';
+  }
+}
+
+export interface ReRanker {
+  rerank(
+    query: string,
+    results: import('./search.js').SearchResult[],
+  ): Promise<Result<import('./search.js').SearchResult[], ReRankerError>>;
+}

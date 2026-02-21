@@ -10,7 +10,7 @@ import type {
   CodeRAGConfig,
   SearchResult,
   ExpandedContext,
-  CrossEncoderReRanker,
+  ReRanker,
 } from '@coderag/core';
 import { EmbedError, StoreError, ReRankerError } from '@coderag/core';
 
@@ -279,7 +279,7 @@ describe('handleSearch', () => {
 
     const mockReranker = {
       rerank: vi.fn().mockResolvedValue(ok([results[1], results[0]])),
-    } as unknown as CrossEncoderReRanker;
+    } as unknown as ReRanker;
 
     const response = await handleSearch(
       { query: 'hello' },
@@ -298,7 +298,7 @@ describe('handleSearch', () => {
 
     const mockReranker = {
       rerank: vi.fn().mockResolvedValue(err(new ReRankerError('Ollama unreachable'))),
-    } as unknown as CrossEncoderReRanker;
+    } as unknown as ReRanker;
 
     const response = await handleSearch(
       { query: 'hello' },

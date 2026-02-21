@@ -16,4 +16,5 @@ export type {
 } from './token-budget.js';
 export { TokenBudgetOptimizer } from './token-budget.js';
 
+export type { CrossEncoderConfig } from './cross-encoder-reranker.js';
 export { CrossEncoderReRanker, ReRankerError } from './cross-encoder-reranker.js';

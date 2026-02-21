@@ -13,11 +13,12 @@ export type {
   EmbeddingProvider,
   VectorStore,
   LLMProvider,
+  ReRanker,
   Parser,
   Chunker,
   ParsedFile,
 } from './provider.js';
-export { EmbedError, StoreError, LLMError, ParseError, ChunkError } from './provider.js';
+export { EmbedError, StoreError, LLMError, ParseError, ChunkError, ReRankerError } from './provider.js';
 export type {
   SearchQuery,
   SearchFilters,

@@ -13,6 +13,7 @@ import {
   DependencyGraph,
   ContextExpander,
   CrossEncoderReRanker,
+  type ReRanker,
   type CodeRAGConfig,
   type SearchResult,
   type GraphNode,
@@ -37,7 +38,7 @@ export class CodeRAGServer {
   private store: LanceDBStore | null = null;
   private hybridSearch: HybridSearch | null = null;
   private contextExpander: ContextExpander | null = null;
-  private reranker: CrossEncoderReRanker | null = null;
+  private reranker: ReRanker | null = null;
 
   constructor(options: CodeRAGServerOptions) {
     this.rootDir = options.rootDir;

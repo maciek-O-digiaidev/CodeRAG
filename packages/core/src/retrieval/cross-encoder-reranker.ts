@@ -1,12 +1,9 @@
 import { ok, err, type Result } from 'neverthrow';
 import type { SearchResult } from '../types/search.js';
+import { ReRankerError, type ReRanker } from '../types/provider.js';
 
-export class ReRankerError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ReRankerError';
-  }
-}
+export type { ReRanker };
+export { ReRankerError };
 
 export interface CrossEncoderConfig {
   model: string;
@@ -21,25 +18,40 @@ interface OllamaGenerateResponse {
 
 const DEFAULT_BASE_URL = 'http://localhost:11434';
 const DEFAULT_TIMEOUT = 30_000;
+/** Neutral midpoint score assigned when scoring fails for a single result. */
 const DEFAULT_SCORE = 50;
+const MAX_QUERY_LENGTH = 500;
+const MAX_CONTENT_LENGTH = 2000;
 
 function buildScoringPrompt(query: string, result: SearchResult): string {
   const chunkType = result.metadata?.chunkType ?? 'unknown';
   const name = result.metadata?.name ?? 'unnamed';
-  const content = result.content;
-  return `Rate relevance 0-100 of this code to the query. Reply with ONLY the number.\nQuery: ${query}\nCode (${chunkType} ${name}):\n${content}\nScore:`;
+  const truncatedQuery = query.length > MAX_QUERY_LENGTH
+    ? query.slice(0, MAX_QUERY_LENGTH) + '...'
+    : query;
+  const truncatedContent = result.content.length > MAX_CONTENT_LENGTH
+    ? result.content.slice(0, MAX_CONTENT_LENGTH) + '...'
+    : result.content;
+  return [
+    'Rate relevance 0-100 of this code to the query. Reply with ONLY the number.',
+    `<query>${truncatedQuery}</query>`,
+    `<code type="${chunkType}" name="${name}">`,
+    truncatedContent,
+    '</code>',
+    'Score:',
+  ].join('\n');
 }
 
 function parseScore(response: string): number {
-  const match = response.match(/(\d+)/);
+  const match = response.match(/-?\d+/);
   if (!match) {
     return DEFAULT_SCORE;
   }
-  const score = parseInt(match[1]!, 10);
+  const score = parseInt(match[0]!, 10);
   return Math.max(0, Math.min(100, score));
 }
 
-export class CrossEncoderReRanker {
+export class CrossEncoderReRanker implements ReRanker {
   private readonly config: Required<CrossEncoderConfig>;
 
   constructor(config: CrossEncoderConfig) {
@@ -92,16 +104,16 @@ export class CrossEncoderReRanker {
         const score = parseScore(data.response);
         scored.push({ result, score });
       } catch (error) {
-        // If fetch itself throws (network error), the entire batch fails
-        // because Ollama is unreachable.
-        // But we need to distinguish between a network error on the first call
-        // (Ollama unreachable) vs a transient error on a later call.
-        // Per spec: if fetch throws, return err(ReRankerError).
-        const message =
-          error instanceof Error ? error.message : 'Unknown error';
-        return err(
-          new ReRankerError(`Ollama request failed: ${message}`),
-        );
+        // If no results have been scored yet, Ollama is likely unreachable
+        if (scored.length === 0) {
+          const message =
+            error instanceof Error ? error.message : 'Unknown error';
+          return err(
+            new ReRankerError(`Ollama request failed: ${message}`),
+          );
+        }
+        // Transient error on a later call — assign default score and continue
+        scored.push({ result, score: DEFAULT_SCORE });
       }
     }
 
