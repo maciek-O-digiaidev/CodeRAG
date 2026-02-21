@@ -1,0 +1,153 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - '*.md'
+      - '.claude/**'
+      - 'docs/**'
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - '*.md'
+      - '.claude/**'
+      - 'docs/**'
+
+variables:
+  pnpmVersion: '9'
+  nodeVersion: '22'
+
+stages:
+  - stage: Install
+    displayName: 'Install Dependencies'
+    jobs:
+      - job: InstallDeps
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: UseNode@1
+            displayName: 'Use Node.js $(nodeVersion)'
+            inputs:
+              version: '$(nodeVersion)'
+
+          - script: |
+              corepack enable
+              corepack prepare pnpm@$(pnpmVersion) --activate
+            displayName: 'Setup pnpm via corepack'
+
+          - script: |
+              pnpm config set store-dir $(Pipeline.Workspace)/.pnpm-store
+            displayName: 'Configure pnpm store location'
+
+          - task: Cache@2
+            displayName: 'Cache pnpm store'
+            inputs:
+              key: 'pnpm | "$(Agent.OS)" | pnpm-lock.yaml'
+              path: '$(Pipeline.Workspace)/.pnpm-store'
+              restoreKeys: |
+                pnpm | "$(Agent.OS)"
+
+          - script: pnpm install --frozen-lockfile
+            displayName: 'Install dependencies'
+
+          - script: tar czf $(Pipeline.Workspace)/node_modules.tar.gz node_modules packages/*/node_modules
+            displayName: 'Archive node_modules'
+
+          - publish: $(Pipeline.Workspace)/node_modules.tar.gz
+            artifact: node_modules
+            displayName: 'Publish node_modules artifact'
+
+  - stage: Build
+    displayName: 'Build'
+    dependsOn: Install
+    jobs:
+      - job: BuildProject
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: UseNode@1
+            displayName: 'Use Node.js $(nodeVersion)'
+            inputs:
+              version: '$(nodeVersion)'
+
+          - script: |
+              corepack enable
+              corepack prepare pnpm@$(pnpmVersion) --activate
+            displayName: 'Setup pnpm via corepack'
+
+          - download: current
+            artifact: node_modules
+            displayName: 'Download node_modules artifact'
+
+          - script: tar xzf $(Pipeline.Workspace)/node_modules/node_modules.tar.gz
+            displayName: 'Restore node_modules'
+
+          - script: pnpm build
+            displayName: 'Build'
+
+  - stage: Lint
+    displayName: 'Lint'
+    dependsOn: Install
+    jobs:
+      - job: LintProject
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: UseNode@1
+            displayName: 'Use Node.js $(nodeVersion)'
+            inputs:
+              version: '$(nodeVersion)'
+
+          - script: |
+              corepack enable
+              corepack prepare pnpm@$(pnpmVersion) --activate
+            displayName: 'Setup pnpm via corepack'
+
+          - download: current
+            artifact: node_modules
+            displayName: 'Download node_modules artifact'
+
+          - script: tar xzf $(Pipeline.Workspace)/node_modules/node_modules.tar.gz
+            displayName: 'Restore node_modules'
+
+          - script: pnpm lint
+            displayName: 'Lint'
+
+  - stage: Test
+    displayName: 'Test with Coverage'
+    dependsOn: Install
+    jobs:
+      - job: TestProject
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: UseNode@1
+            displayName: 'Use Node.js $(nodeVersion)'
+            inputs:
+              version: '$(nodeVersion)'
+
+          - script: |
+              corepack enable
+              corepack prepare pnpm@$(pnpmVersion) --activate
+            displayName: 'Setup pnpm via corepack'
+
+          - download: current
+            artifact: node_modules
+            displayName: 'Download node_modules artifact'
+
+          - script: tar xzf $(Pipeline.Workspace)/node_modules/node_modules.tar.gz
+            displayName: 'Restore node_modules'
+
+          - script: pnpm test --coverage
+            displayName: 'Test with coverage'
+
+          - task: PublishCodeCoverageResults@2
+            displayName: 'Publish coverage results'
+            inputs:
+              summaryFileLocation: '$(System.DefaultWorkingDirectory)/coverage/cobertura-coverage.xml'
+            condition: succeededOrFailed()
