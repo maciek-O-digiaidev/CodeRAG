@@ -67,6 +67,12 @@ importers:
       simple-git:
         specifier: ^3.32.0
         version: 3.32.0
+      tree-sitter-wasms:
+        specifier: ^0.1.13
+        version: 0.1.13
+      web-tree-sitter:
+        specifier: ^0.26.5
+        version: 0.26.5
       yaml:
         specifier: ^2.7.0
         version: 2.8.2
@@ -2565,6 +2571,10 @@ packages:
     engines: {node: '>=0.6'}
     dev: false
 
+  /tree-sitter-wasms@0.1.13:
+    resolution: {integrity: sha512-wT+cR6DwaIz80/vho3AvSF0N4txuNx/5bcRKoXouOfClpxh/qqrF4URNLQXbbt8MaAxeksZcZd1j8gcGjc+QxQ==}
+    dev: false
+
   /ts-api-utils@2.4.0(typescript@5.9.3):
     resolution: {integrity: sha512-3TaVTaAv2gTiMB35i3FiGJaRfwb3Pyn/j3m/bfAvGe8FB7CF6u+LMYqYlDh7reQf7UNvoTvdfAqHGmPGOSsPmA==}
     engines: {node: '>=18.12'}
@@ -2776,6 +2786,10 @@ packages:
       - tsx
       - yaml
     dev: true
+
+  /web-tree-sitter@0.26.5:
+    resolution: {integrity: sha512-u9sl+q21VSKX2T8dhpQw8bMGGqNfwaIyuoYE3kdOQGVDrOqrmcS9GmaQoCS602iaFnuokn3WCHW374c7GAnuaQ==}
+    dev: false
 
   /which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}

@@ -7,11 +7,13 @@ export default defineConfig({
       include: [
         'src/config/**/*.ts',
         'src/git/**/*.ts',
+        'src/parser/**/*.ts',
         'src/index.ts',
       ],
       exclude: [
         'src/**/*.test.ts',
         'src/types/**/*.ts',
+        'src/parser/tree-sitter-parser.ts',
       ],
       thresholds: {
         lines: 80,

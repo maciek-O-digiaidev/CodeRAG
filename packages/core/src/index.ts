@@ -41,3 +41,6 @@ export type {
   IgnoreFilter,
 } from './git/index.js';
 export { GitError, SimpleGitClient, createIgnoreFilter } from './git/index.js';
+
+export type { SupportedLanguage } from './parser/index.js';
+export { TreeSitterParser, LanguageRegistry } from './parser/index.js';

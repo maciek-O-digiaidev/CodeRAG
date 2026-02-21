@@ -20,6 +20,8 @@
     "ignore": "^7.0.5",
     "neverthrow": "^8.1.1",
     "simple-git": "^3.32.0",
+    "tree-sitter-wasms": "^0.1.13",
+    "web-tree-sitter": "^0.26.5",
     "yaml": "^2.7.0",
     "zod": "^4.3.6"
   },
