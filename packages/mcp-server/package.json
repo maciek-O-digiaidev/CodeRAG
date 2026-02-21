@@ -6,14 +6,18 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@coderag/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.5.0",
-    "@coderag/core": "workspace:*"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",
-    "typescript": "^5.7.3"
+    "neverthrow": "^8.1.1",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
   }
 }
