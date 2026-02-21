@@ -6,19 +6,10 @@ export function registerServeCommand(program: Command): void {
   program
     .command('serve')
     .description('Start the CodeRAG MCP server')
-    .option('--port <port>', 'Port for SSE transport (reserved for future use)')
+    .option('--port <port>', 'Port for SSE transport')
     .action(async (options: { port?: string }) => {
       try {
-        if (options.port) {
-          // eslint-disable-next-line no-console
-          console.error(chalk.yellow('SSE transport is coming soon. Using stdio transport for now.'));
-        }
-
         const rootDir = process.cwd();
-
-        // eslint-disable-next-line no-console
-        console.error(chalk.blue('[coderag]'), 'Starting MCP server (stdio transport)...');
-
         const server = new CodeRAGServer({ rootDir });
         await server.initialize();
 
@@ -26,16 +17,31 @@ export function registerServeCommand(program: Command): void {
         const shutdown = (): void => {
           // eslint-disable-next-line no-console
           console.error(chalk.blue('[coderag]'), 'Shutting down...');
-          process.exit(0);
+          server.close().finally(() => process.exit(0));
         };
 
         process.on('SIGINT', shutdown);
         process.on('SIGTERM', shutdown);
 
-        await server.connectStdio();
-
-        // eslint-disable-next-line no-console
-        console.error(chalk.green('[coderag]'), 'MCP server running on stdio');
+        if (options.port) {
+          const port = parseInt(options.port, 10);
+          if (isNaN(port) || port < 1 || port > 65535) {
+            // eslint-disable-next-line no-console
+            console.error(chalk.red('[coderag] Invalid port number'));
+            process.exit(1);
+          }
+          // eslint-disable-next-line no-console
+          console.error(chalk.blue('[coderag]'), `Starting MCP server (SSE transport on port ${port})...`);
+          await server.connectSSE(port);
+          // eslint-disable-next-line no-console
+          console.error(chalk.green('[coderag]'), `MCP server running on http://localhost:${port}/sse`);
+        } else {
+          // eslint-disable-next-line no-console
+          console.error(chalk.blue('[coderag]'), 'Starting MCP server (stdio transport)...');
+          await server.connectStdio();
+          // eslint-disable-next-line no-console
+          console.error(chalk.green('[coderag]'), 'MCP server running on stdio');
+        }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         // eslint-disable-next-line no-console

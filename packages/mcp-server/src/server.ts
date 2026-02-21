@@ -1,5 +1,6 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -21,6 +22,8 @@ import {
 } from '@coderag/core';
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { createServer, type Server as HttpServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { URL } from 'node:url';
 import { handleSearch } from './tools/search.js';
 import { handleContext } from './tools/context.js';
 import { handleStatus } from './tools/status.js';
@@ -40,6 +43,8 @@ export class CodeRAGServer {
   private hybridSearch: HybridSearch | null = null;
   private contextExpander: ContextExpander | null = null;
   private reranker: ReRanker | null = null;
+  private httpServer: HttpServer | null = null;
+  private transports: Map<string, SSEServerTransport> = new Map();
 
   constructor(options: CodeRAGServerOptions) {
     this.rootDir = options.rootDir;
@@ -272,6 +277,95 @@ export class CodeRAGServer {
   async connectStdio(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
+  }
+
+  /**
+   * Start the MCP server with SSE transport on the given port.
+   *
+   * - GET  /sse       — establishes the SSE stream
+   * - POST /messages  — receives JSON-RPC messages from the client
+   *
+   * Returns a promise that resolves once the HTTP server is listening.
+   */
+  async connectSSE(port: number): Promise<void> {
+    const setCorsHeaders = (res: ServerResponse): void => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    };
+
+    this.httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
+      setCorsHeaders(res);
+
+      // Handle CORS preflight
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204).end();
+        return;
+      }
+
+      const parsedUrl = new URL(req.url ?? '/', `http://localhost:${port}`);
+      const pathname = parsedUrl.pathname;
+
+      if (req.method === 'GET' && pathname === '/sse') {
+        const transport = new SSEServerTransport('/messages', res);
+        this.transports.set(transport.sessionId, transport);
+
+        res.on('close', () => {
+          this.transports.delete(transport.sessionId);
+        });
+
+        await this.server.connect(transport);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/messages') {
+        const sessionId = parsedUrl.searchParams.get('sessionId');
+        if (!sessionId) {
+          res.writeHead(400).end('Missing sessionId');
+          return;
+        }
+
+        const transport = this.transports.get(sessionId);
+        if (!transport) {
+          res.writeHead(400).end('No transport found for sessionId');
+          return;
+        }
+
+        await transport.handlePostMessage(req, res);
+        return;
+      }
+
+      // Unknown route
+      res.writeHead(404).end('Not Found');
+    });
+
+    return new Promise<void>((resolvePromise, reject) => {
+      this.httpServer!.on('error', reject);
+      this.httpServer!.listen(port, () => {
+        resolvePromise();
+      });
+    });
+  }
+
+  /**
+   * Gracefully shut down the HTTP server (if running) and close all SSE transports.
+   */
+  async close(): Promise<void> {
+    // Close all active transports
+    for (const [sessionId, transport] of this.transports) {
+      await transport.close();
+      this.transports.delete(sessionId);
+    }
+
+    if (this.httpServer) {
+      await new Promise<void>((resolvePromise, reject) => {
+        this.httpServer!.close((err) => {
+          if (err) reject(err);
+          else resolvePromise();
+        });
+      });
+      this.httpServer = null;
+    }
   }
 
   /** Expose for testing. */

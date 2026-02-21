@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ok, err } from 'neverthrow';
 import { handleSearch, searchInputSchema } from './tools/search.js';
 import { handleContext, contextInputSchema } from './tools/context.js';
@@ -751,5 +751,215 @@ describe('CodeRAGServer', () => {
     const server = new CodeRAGServer({ rootDir: '/tmp/test' });
     expect(server).toBeDefined();
     expect(server.getServer()).toBeDefined();
+  });
+});
+
+// --- SSE Transport Tests ---
+
+import * as http from 'node:http';
+import { CodeRAGServer } from './server.js';
+
+function httpRequest(
+  url: string,
+  options: http.RequestOptions = {},
+): Promise<{ statusCode: number; headers: http.IncomingHttpHeaders; body: string }> {
+  return new Promise((resolve, reject) => {
+    const req = http.request(url, options, (res) => {
+      let body = '';
+      res.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+      res.on('end', () => {
+        resolve({ statusCode: res.statusCode ?? 0, headers: res.headers, body });
+      });
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+describe('SSE transport', () => {
+  let server: CodeRAGServer;
+  let port: number;
+
+  beforeEach(async () => {
+    // Use a dynamic port to avoid conflicts (0 would let the OS assign,
+    // but we need to know the port; use a high range instead)
+    port = 40000 + Math.floor(Math.random() * 10000);
+    server = new CodeRAGServer({ rootDir: '/tmp/test-sse' });
+    await server.connectSSE(port);
+  });
+
+  afterEach(async () => {
+    await server.close();
+  });
+
+  it('should start server on the specified port', async () => {
+    // SSE keeps connection open, so we read headers and destroy immediately
+    const result = await new Promise<{ statusCode: number }>((resolve, reject) => {
+      const req = http.get(`http://localhost:${port}/sse`, (res) => {
+        resolve({ statusCode: res.statusCode ?? 0 });
+        res.destroy();
+      });
+      req.on('error', (err) => {
+        if ((err as NodeJS.ErrnoException).code !== 'ECONNRESET') {
+          reject(err);
+        }
+      });
+    });
+    expect(result.statusCode).toBe(200);
+  });
+
+  it('GET /sse should return SSE headers', async () => {
+    // We need to use a raw request that we can abort, since SSE keeps the connection open
+    const result = await new Promise<{ statusCode: number; headers: http.IncomingHttpHeaders }>((resolve, reject) => {
+      const req = http.get(`http://localhost:${port}/sse`, (res) => {
+        resolve({ statusCode: res.statusCode ?? 0, headers: res.headers });
+        // Destroy the connection immediately since we only need headers
+        res.destroy();
+      });
+      req.on('error', (err) => {
+        // Ignore ECONNRESET from our destroy
+        if ((err as NodeJS.ErrnoException).code !== 'ECONNRESET') {
+          reject(err);
+        }
+      });
+    });
+
+    expect(result.statusCode).toBe(200);
+    expect(result.headers['content-type']).toBe('text/event-stream');
+    expect(result.headers['cache-control']).toContain('no-cache');
+  });
+
+  it('GET /sse should send endpoint event with session ID', async () => {
+    const data = await new Promise<string>((resolve, reject) => {
+      const req = http.get(`http://localhost:${port}/sse`, (res) => {
+        let body = '';
+        res.on('data', (chunk: Buffer) => {
+          body += chunk.toString();
+          // Once we have the endpoint event, resolve
+          if (body.includes('event: endpoint')) {
+            resolve(body);
+            res.destroy();
+          }
+        });
+      });
+      req.on('error', (err) => {
+        if ((err as NodeJS.ErrnoException).code !== 'ECONNRESET') {
+          reject(err);
+        }
+      });
+      // Timeout safety
+      setTimeout(() => { reject(new Error('Timeout waiting for SSE endpoint event')); }, 3000);
+    });
+
+    expect(data).toContain('event: endpoint');
+    expect(data).toContain('/messages?sessionId=');
+  });
+
+  it('POST /messages should return 400 when sessionId is missing', async () => {
+    const res = await httpRequest(`http://localhost:${port}/messages`, { method: 'POST' });
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toContain('Missing sessionId');
+  });
+
+  it('POST /messages should return 400 for unknown sessionId', async () => {
+    const res = await httpRequest(
+      `http://localhost:${port}/messages?sessionId=nonexistent`,
+      { method: 'POST' },
+    );
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toContain('No transport found');
+  });
+
+  it('should return 404 for unknown routes', async () => {
+    const res = await httpRequest(`http://localhost:${port}/unknown`);
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toBe('Not Found');
+  });
+
+  it('should handle CORS preflight requests', async () => {
+    const res = await httpRequest(`http://localhost:${port}/sse`, { method: 'OPTIONS' });
+    expect(res.statusCode).toBe(204);
+    expect(res.headers['access-control-allow-origin']).toBe('*');
+    expect(res.headers['access-control-allow-methods']).toContain('POST');
+  });
+
+  it('close() should shut down the server', async () => {
+    await server.close();
+
+    // Attempting to connect should now fail
+    await expect(
+      httpRequest(`http://localhost:${port}/sse`),
+    ).rejects.toThrow();
+
+    // Create a new server for the afterEach cleanup to close without error
+    server = new CodeRAGServer({ rootDir: '/tmp/test-sse' });
+    port = 40000 + Math.floor(Math.random() * 10000);
+    await server.connectSSE(port);
+  });
+
+  it('POST /messages should forward to transport for a valid session', async () => {
+    // First, establish an SSE connection and extract the sessionId
+    const sessionId = await new Promise<string>((resolve, reject) => {
+      const req = http.get(`http://localhost:${port}/sse`, (res) => {
+        let body = '';
+        res.on('data', (chunk: Buffer) => {
+          body += chunk.toString();
+          if (body.includes('event: endpoint')) {
+            // Extract sessionId from the endpoint event data
+            const match = body.match(/sessionId=([a-f0-9-]+)/);
+            if (match) {
+              resolve(match[1]!);
+            }
+            // Keep the SSE connection alive; don't destroy it
+          }
+        });
+      });
+      req.on('error', (err) => {
+        if ((err as NodeJS.ErrnoException).code !== 'ECONNRESET') {
+          reject(err);
+        }
+      });
+      setTimeout(() => { reject(new Error('Timeout')); }, 3000);
+    });
+
+    expect(sessionId).toBeDefined();
+
+    // Now POST a valid JSON-RPC message to the /messages endpoint
+    const postResult = await new Promise<{ statusCode: number; body: string }>((resolve, reject) => {
+      const postData = JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'initialize',
+        params: {
+          protocolVersion: '2024-11-05',
+          capabilities: {},
+          clientInfo: { name: 'test-client', version: '1.0.0' },
+        },
+        id: 1,
+      });
+
+      const req = http.request(
+        `http://localhost:${port}/messages?sessionId=${sessionId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData),
+          },
+        },
+        (res) => {
+          let body = '';
+          res.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+          res.on('end', () => {
+            resolve({ statusCode: res.statusCode ?? 0, body });
+          });
+        },
+      );
+      req.on('error', reject);
+      req.write(postData);
+      req.end();
+    });
+
+    // 202 Accepted is the expected response from SSEServerTransport.handlePostMessage
+    expect(postResult.statusCode).toBe(202);
   });
 });
