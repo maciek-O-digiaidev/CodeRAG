@@ -10,6 +10,7 @@ export default defineConfig({
         'src/parser/**/*.ts',
         'src/chunker/**/*.ts',
         'src/graph/**/*.ts',
+        'src/enrichment/**/*.ts',
         'src/index.ts',
       ],
       exclude: [
