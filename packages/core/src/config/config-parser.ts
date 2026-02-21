@@ -1,7 +1,8 @@
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Result, ok, err } from 'neverthrow';
 import { parse } from 'yaml';
+import { z } from 'zod';
 import type { CodeRAGConfig } from '../types/config.js';
 
 export class ConfigError extends Error {
@@ -10,6 +11,51 @@ export class ConfigError extends Error {
     this.name = 'ConfigError';
   }
 }
+
+// --- Zod Schemas ---
+
+const embeddingConfigSchema = z.object({
+  provider: z.string().min(1, 'Embedding provider must not be empty'),
+  model: z.string().min(1, 'Embedding model must not be empty'),
+  dimensions: z.number().int('Dimensions must be an integer').positive('Dimensions must be positive'),
+});
+
+const llmConfigSchema = z.object({
+  provider: z.string().min(1, 'LLM provider must not be empty'),
+  model: z.string().min(1, 'LLM model must not be empty'),
+});
+
+const ingestionConfigSchema = z.object({
+  maxTokensPerChunk: z.number().int('maxTokensPerChunk must be an integer').positive('maxTokensPerChunk must be positive'),
+  exclude: z.array(z.string()),
+});
+
+const searchConfigSchema = z.object({
+  topK: z.number().int('topK must be an integer').positive('topK must be positive'),
+  vectorWeight: z.number().min(0, 'vectorWeight must be between 0 and 1').max(1, 'vectorWeight must be between 0 and 1'),
+  bm25Weight: z.number().min(0, 'bm25Weight must be between 0 and 1').max(1, 'bm25Weight must be between 0 and 1'),
+});
+
+const storageConfigSchema = z.object({
+  path: z.string().min(1, 'Storage path must not be empty'),
+});
+
+const projectConfigSchema = z.object({
+  name: z.string().min(1, 'Project name must not be empty'),
+  languages: z.union([z.literal('auto'), z.array(z.string())]),
+});
+
+const codeRAGConfigSchema = z.object({
+  version: z.string().min(1, 'Version must not be empty'),
+  project: projectConfigSchema,
+  ingestion: ingestionConfigSchema,
+  embedding: embeddingConfigSchema,
+  llm: llmConfigSchema,
+  search: searchConfigSchema,
+  storage: storageConfigSchema,
+});
+
+// --- Defaults ---
 
 const DEFAULT_CONFIG: CodeRAGConfig = {
   version: '1',
@@ -40,7 +86,18 @@ const DEFAULT_CONFIG: CodeRAGConfig = {
   },
 };
 
-function applyDefaults(partial: Record<string, unknown>): CodeRAGConfig {
+// --- Helpers ---
+
+function formatZodErrors(error: z.ZodError): string {
+  return error.issues
+    .map((issue) => {
+      const path = issue.path.length > 0 ? issue.path.join('.') : 'root';
+      return `${path}: ${issue.message}`;
+    })
+    .join('; ');
+}
+
+function applyDefaults(partial: Record<string, unknown>): Record<string, unknown> {
   return {
     version: (partial['version'] as string | undefined) ?? DEFAULT_CONFIG.version,
     project: {
@@ -67,15 +124,17 @@ function applyDefaults(partial: Record<string, unknown>): CodeRAGConfig {
       ...DEFAULT_CONFIG.storage,
       ...(partial['storage'] as Record<string, unknown> | undefined),
     },
-  } as CodeRAGConfig;
+  };
 }
 
-export function loadConfig(rootDir: string): Result<CodeRAGConfig, ConfigError> {
+// --- Main ---
+
+export async function loadConfig(rootDir: string): Promise<Result<CodeRAGConfig, ConfigError>> {
   const configPath = join(rootDir, '.coderag.yaml');
 
   let content: string;
   try {
-    content = readFileSync(configPath, 'utf-8');
+    content = await readFile(configPath, 'utf-8');
   } catch {
     return err(new ConfigError(`Config file not found: ${configPath}`));
   }
@@ -92,6 +151,12 @@ export function loadConfig(rootDir: string): Result<CodeRAGConfig, ConfigError> 
     return err(new ConfigError('Config file is empty or not a valid YAML object'));
   }
 
-  const config = applyDefaults(parsed as Record<string, unknown>);
-  return ok(config);
+  const withDefaults = applyDefaults(parsed as Record<string, unknown>);
+
+  const validationResult = codeRAGConfigSchema.safeParse(withDefaults);
+  if (!validationResult.success) {
+    return err(new ConfigError(`Config validation failed: ${formatZodErrors(validationResult.error)}`));
+  }
+
+  return ok(validationResult.data as CodeRAGConfig);
 }

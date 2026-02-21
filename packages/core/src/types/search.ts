@@ -1,4 +1,4 @@
-import type { Chunk, ChunkMetadata } from './chunk.js';
+import type { Chunk, ChunkMetadata, ChunkType } from './chunk.js';
 
 export interface SearchQuery {
   text: string;
@@ -9,7 +9,7 @@ export interface SearchQuery {
 export interface SearchFilters {
   languages?: string[];
   filePaths?: string[];
-  chunkTypes?: string[];
+  chunkTypes?: ChunkType[];
 }
 
 export interface SearchOptions {

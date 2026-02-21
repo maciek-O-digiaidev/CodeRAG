@@ -26,7 +26,7 @@ export interface StorageConfig {
 
 export interface ProjectConfig {
   name: string;
-  languages: string;
+  languages: string[] | 'auto';
 }
 
 export interface CodeRAGConfig {

@@ -20,7 +20,8 @@
     "ignore": "^7.0.5",
     "neverthrow": "^8.1.1",
     "simple-git": "^3.32.0",
-    "yaml": "^2.7.0"
+    "yaml": "^2.7.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",
