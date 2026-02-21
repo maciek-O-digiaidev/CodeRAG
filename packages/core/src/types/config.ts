@@ -29,6 +29,12 @@ export interface ProjectConfig {
   languages: string[] | 'auto';
 }
 
+export interface ReRankerConfig {
+  enabled: boolean;
+  model: string;
+  topN: number;
+}
+
 export interface CodeRAGConfig {
   version: string;
   project: ProjectConfig;
@@ -37,4 +43,5 @@ export interface CodeRAGConfig {
   llm: LLMConfig;
   search: SearchConfig;
   storage: StorageConfig;
+  reranker?: ReRankerConfig;
 }

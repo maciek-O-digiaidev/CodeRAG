@@ -12,6 +12,7 @@ import {
   HybridSearch,
   DependencyGraph,
   ContextExpander,
+  CrossEncoderReRanker,
   type CodeRAGConfig,
   type SearchResult,
   type GraphNode,
@@ -36,6 +37,7 @@ export class CodeRAGServer {
   private store: LanceDBStore | null = null;
   private hybridSearch: HybridSearch | null = null;
   private contextExpander: ContextExpander | null = null;
+  private reranker: CrossEncoderReRanker | null = null;
 
   constructor(options: CodeRAGServerOptions) {
     this.rootDir = options.rootDir;
@@ -96,6 +98,14 @@ export class CodeRAGServer {
         embeddingProvider,
         this.config.search,
       );
+
+      // Create re-ranker if enabled
+      if (this.config.reranker?.enabled) {
+        this.reranker = new CrossEncoderReRanker({
+          model: this.config.reranker.model,
+          topN: this.config.reranker.topN,
+        });
+      }
 
       // Load dependency graph if available
       let graph = new DependencyGraph();
@@ -205,7 +215,7 @@ export class CodeRAGServer {
 
       switch (name) {
         case 'coderag_search':
-          return handleSearch(safeArgs, this.hybridSearch);
+          return handleSearch(safeArgs, this.hybridSearch, this.reranker);
         case 'coderag_context':
           return handleContext(
             safeArgs,

@@ -45,6 +45,12 @@ const projectConfigSchema = z.object({
   languages: z.union([z.literal('auto'), z.array(z.string())]),
 });
 
+const rerankerConfigSchema = z.object({
+  enabled: z.boolean(),
+  model: z.string().min(1),
+  topN: z.number().int().positive().max(50),
+});
+
 const codeRAGConfigSchema = z.object({
   version: z.string().min(1, 'Version must not be empty'),
   project: projectConfigSchema,
@@ -53,6 +59,7 @@ const codeRAGConfigSchema = z.object({
   llm: llmConfigSchema,
   search: searchConfigSchema,
   storage: storageConfigSchema,
+  reranker: rerankerConfigSchema.optional(),
 });
 
 // --- Defaults ---
@@ -83,6 +90,11 @@ const DEFAULT_CONFIG: CodeRAGConfig = {
   },
   storage: {
     path: '.coderag',
+  },
+  reranker: {
+    enabled: false,
+    model: 'qwen2.5-coder:7b',
+    topN: 20,
   },
 };
 
@@ -124,6 +136,14 @@ function applyDefaults(partial: Record<string, unknown>): Record<string, unknown
       ...DEFAULT_CONFIG.storage,
       ...(partial['storage'] as Record<string, unknown> | undefined),
     },
+    ...(partial['reranker'] !== undefined
+      ? {
+          reranker: {
+            ...DEFAULT_CONFIG.reranker,
+            ...(partial['reranker'] as Record<string, unknown> | undefined),
+          },
+        }
+      : {}),
   };
 }
 

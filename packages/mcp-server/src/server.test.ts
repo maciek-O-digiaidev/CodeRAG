@@ -10,8 +10,9 @@ import type {
   CodeRAGConfig,
   SearchResult,
   ExpandedContext,
+  CrossEncoderReRanker,
 } from '@coderag/core';
-import { EmbedError, StoreError } from '@coderag/core';
+import { EmbedError, StoreError, ReRankerError } from '@coderag/core';
 
 // --- Helpers ---
 
@@ -81,7 +82,7 @@ describe('handleSearch', () => {
     const results = [makeSearchResult()];
     vi.mocked(mockHybridSearch.search).mockResolvedValue(ok(results));
 
-    const response = await handleSearch({ query: 'hello function' }, mockHybridSearch);
+    const response = await handleSearch({ query: 'hello function' }, mockHybridSearch, null);
     const parsed = parseResponse(response) as { results: unknown[] };
 
     expect(parsed.results).toHaveLength(1);
@@ -96,21 +97,21 @@ describe('handleSearch', () => {
   });
 
   it('should return validation error for missing query', async () => {
-    const response = await handleSearch({}, mockHybridSearch);
+    const response = await handleSearch({}, mockHybridSearch, null);
     const parsed = parseResponse(response) as { error: string };
 
     expect(parsed.error).toBe('Invalid input');
   });
 
   it('should return validation error for empty query', async () => {
-    const response = await handleSearch({ query: '' }, mockHybridSearch);
+    const response = await handleSearch({ query: '' }, mockHybridSearch, null);
     const parsed = parseResponse(response) as { error: string };
 
     expect(parsed.error).toBe('Invalid input');
   });
 
   it('should return empty results when search index is not initialized', async () => {
-    const response = await handleSearch({ query: 'hello' }, null);
+    const response = await handleSearch({ query: 'hello' }, null, null);
     const parsed = parseResponse(response) as { results: unknown[]; message: string };
 
     expect(parsed.results).toEqual([]);
@@ -122,7 +123,7 @@ describe('handleSearch', () => {
       err(new EmbedError('Connection refused')),
     );
 
-    const response = await handleSearch({ query: 'hello' }, mockHybridSearch);
+    const response = await handleSearch({ query: 'hello' }, mockHybridSearch, null);
     const parsed = parseResponse(response) as { error: string; message: string };
 
     expect(parsed.error).toBe('Search failed');
@@ -157,6 +158,7 @@ describe('handleSearch', () => {
     const response = await handleSearch(
       { query: 'hello', language: 'typescript' },
       mockHybridSearch,
+      null,
     );
     const parsed = parseResponse(response) as { results: unknown[] };
 
@@ -191,6 +193,7 @@ describe('handleSearch', () => {
     const response = await handleSearch(
       { query: 'hello', file_path: 'utils' },
       mockHybridSearch,
+      null,
     );
     const parsed = parseResponse(response) as { results: unknown[] };
 
@@ -216,6 +219,7 @@ describe('handleSearch', () => {
     const response = await handleSearch(
       { query: 'hello', chunk_type: 'function' },
       mockHybridSearch,
+      null,
     );
     const parsed = parseResponse(response) as { results: unknown[] };
 
@@ -225,7 +229,7 @@ describe('handleSearch', () => {
   it('should use default top_k of 10', async () => {
     vi.mocked(mockHybridSearch.search).mockResolvedValue(ok([]));
 
-    await handleSearch({ query: 'hello' }, mockHybridSearch);
+    await handleSearch({ query: 'hello' }, mockHybridSearch, null);
 
     expect(mockHybridSearch.search).toHaveBeenCalledWith('hello', { topK: 10 });
   });
@@ -233,7 +237,7 @@ describe('handleSearch', () => {
   it('should use custom top_k', async () => {
     vi.mocked(mockHybridSearch.search).mockResolvedValue(ok([]));
 
-    await handleSearch({ query: 'hello', top_k: 5 }, mockHybridSearch);
+    await handleSearch({ query: 'hello', top_k: 5 }, mockHybridSearch, null);
 
     expect(mockHybridSearch.search).toHaveBeenCalledWith('hello', { topK: 5 });
   });
@@ -241,7 +245,7 @@ describe('handleSearch', () => {
   it('should handle thrown exceptions', async () => {
     vi.mocked(mockHybridSearch.search).mockRejectedValue(new Error('Unexpected'));
 
-    const response = await handleSearch({ query: 'hello' }, mockHybridSearch);
+    const response = await handleSearch({ query: 'hello' }, mockHybridSearch, null);
     const parsed = parseResponse(response) as { error: string; message: string };
 
     expect(parsed.error).toBe('Search failed');
@@ -249,7 +253,7 @@ describe('handleSearch', () => {
   });
 
   it('should reject top_k above 100', async () => {
-    const response = await handleSearch({ query: 'hello', top_k: 200 }, mockHybridSearch);
+    const response = await handleSearch({ query: 'hello', top_k: 200 }, mockHybridSearch, null);
     const parsed = parseResponse(response) as { error: string };
 
     expect(parsed.error).toBe('Invalid input');
@@ -259,10 +263,52 @@ describe('handleSearch', () => {
     const response = await handleSearch(
       { query: 'hello', file_path: '../../etc/passwd' },
       mockHybridSearch,
+      null,
     );
     const parsed = parseResponse(response) as { error: string };
 
     expect(parsed.error).toBe('Invalid input');
+  });
+
+  it('should apply reranker when provided', async () => {
+    const results = [
+      makeSearchResult({ chunkId: 'chunk-1' }),
+      makeSearchResult({ chunkId: 'chunk-2' }),
+    ];
+    vi.mocked(mockHybridSearch.search).mockResolvedValue(ok(results));
+
+    const mockReranker = {
+      rerank: vi.fn().mockResolvedValue(ok([results[1], results[0]])),
+    } as unknown as CrossEncoderReRanker;
+
+    const response = await handleSearch(
+      { query: 'hello' },
+      mockHybridSearch,
+      mockReranker,
+    );
+    const parsed = parseResponse(response) as { results: Array<{ name: string }> };
+
+    expect(mockReranker.rerank).toHaveBeenCalledWith('hello', results);
+    expect(parsed.results).toHaveLength(2);
+  });
+
+  it('should fall back to original results when reranker fails', async () => {
+    const results = [makeSearchResult()];
+    vi.mocked(mockHybridSearch.search).mockResolvedValue(ok(results));
+
+    const mockReranker = {
+      rerank: vi.fn().mockResolvedValue(err(new ReRankerError('Ollama unreachable'))),
+    } as unknown as CrossEncoderReRanker;
+
+    const response = await handleSearch(
+      { query: 'hello' },
+      mockHybridSearch,
+      mockReranker,
+    );
+    const parsed = parseResponse(response) as { results: unknown[] };
+
+    // Should still return results (fallback)
+    expect(parsed.results).toHaveLength(1);
   });
 });
 

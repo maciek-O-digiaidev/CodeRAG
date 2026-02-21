@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { HybridSearch, SearchResult } from '@coderag/core';
+import type { CrossEncoderReRanker } from '@coderag/core';
 
 export const searchInputSchema = z.object({
   query: z.string().min(1, 'query must not be empty'),
@@ -37,6 +38,7 @@ function formatResult(result: SearchResult): SearchToolResult {
 export async function handleSearch(
   args: Record<string, unknown>,
   hybridSearch: HybridSearch | null,
+  reranker: CrossEncoderReRanker | null = null,
 ): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
   const parsed = searchInputSchema.safeParse(args);
   if (!parsed.success) {
@@ -108,6 +110,15 @@ export async function handleSearch(
       results = results.filter(
         (r) => r.metadata?.chunkType === ct,
       );
+    }
+
+    // Re-rank results if reranker is available
+    if (reranker) {
+      const rerankResult = await reranker.rerank(query, results);
+      if (rerankResult.isOk()) {
+        results = rerankResult.value;
+      }
+      // If reranking fails, fall back to original results (don't fail the search)
     }
 
     const formatted = results.map(formatResult);

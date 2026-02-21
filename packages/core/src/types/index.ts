@@ -7,6 +7,7 @@ export type {
   SearchConfig,
   StorageConfig,
   ProjectConfig,
+  ReRankerConfig,
 } from './config.js';
 export type {
   EmbeddingProvider,

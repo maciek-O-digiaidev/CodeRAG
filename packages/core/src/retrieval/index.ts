@@ -15,3 +15,5 @@ export type {
   AssembledContext,
 } from './token-budget.js';
 export { TokenBudgetOptimizer } from './token-budget.js';
+
+export { CrossEncoderReRanker, ReRankerError } from './cross-encoder-reranker.js';

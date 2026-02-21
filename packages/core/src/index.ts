@@ -94,4 +94,8 @@ export {
   QueryAnalyzer,
   ContextExpander,
   TokenBudgetOptimizer,
+  CrossEncoderReRanker,
+  ReRankerError,
 } from './retrieval/index.js';
+
+export type { ReRankerConfig } from './types/index.js';
