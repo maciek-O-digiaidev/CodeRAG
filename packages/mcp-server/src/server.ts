@@ -14,9 +14,11 @@ import {
   ContextExpander,
   type CodeRAGConfig,
   type SearchResult,
+  type GraphNode,
+  type GraphEdge,
 } from '@coderag/core';
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { handleSearch } from './tools/search.js';
 import { handleContext } from './tools/context.js';
 import { handleStatus } from './tools/status.js';
@@ -67,8 +69,13 @@ export class CodeRAGServer {
         dimensions: this.config.embedding.dimensions,
       });
 
-      // Create LanceDB store
-      const storagePath = join(this.rootDir, this.config.storage.path);
+      // Create LanceDB store (validate path stays within rootDir)
+      const storagePath = resolve(this.rootDir, this.config.storage.path);
+      if (!storagePath.startsWith(resolve(this.rootDir))) {
+        // eslint-disable-next-line no-console
+        console.error('[coderag] Storage path escapes project root');
+        return;
+      }
       this.store = new LanceDBStore(storagePath, this.config.embedding.dimensions);
       await this.store.connect();
 
@@ -95,10 +102,7 @@ export class CodeRAGServer {
       const graphPath = join(storagePath, 'graph.json');
       try {
         const graphData = await readFile(graphPath, 'utf-8');
-        const parsed = JSON.parse(graphData) as {
-          nodes: Parameters<typeof DependencyGraph.fromJSON>[0]['nodes'];
-          edges: Parameters<typeof DependencyGraph.fromJSON>[0]['edges'];
-        };
+        const parsed = JSON.parse(graphData) as { nodes: GraphNode[]; edges: GraphEdge[] };
         graph = DependencyGraph.fromJSON(parsed);
       } catch {
         // No saved graph, start empty
@@ -197,15 +201,14 @@ export class CodeRAGServer {
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
+      const safeArgs: Record<string, unknown> = args ?? {};
+
       switch (name) {
         case 'coderag_search':
-          return handleSearch(
-            (args ?? {}) as Record<string, unknown>,
-            this.hybridSearch,
-          );
+          return handleSearch(safeArgs, this.hybridSearch);
         case 'coderag_context':
           return handleContext(
-            (args ?? {}) as Record<string, unknown>,
+            safeArgs,
             this.hybridSearch,
             this.contextExpander,
           );

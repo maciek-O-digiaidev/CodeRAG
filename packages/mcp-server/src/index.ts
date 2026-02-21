@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { fileURLToPath } from 'node:url';
 import { CodeRAGServer } from './server.js';
 
 export { CodeRAGServer, MCP_SERVER_VERSION } from './server.js';
@@ -16,10 +17,7 @@ async function main(): Promise<void> {
 }
 
 // Only run main when this module is executed directly (not imported)
-const isMainModule =
-  typeof process !== 'undefined' &&
-  process.argv[1] !== undefined &&
-  (process.argv[1].endsWith('/index.js') || process.argv[1].endsWith('/index.ts'));
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
 
 if (isMainModule) {
   main().catch((error: unknown) => {

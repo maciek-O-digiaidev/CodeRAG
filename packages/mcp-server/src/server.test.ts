@@ -247,6 +247,23 @@ describe('handleSearch', () => {
     expect(parsed.error).toBe('Search failed');
     expect(parsed.message).toBe('Unexpected');
   });
+
+  it('should reject top_k above 100', async () => {
+    const response = await handleSearch({ query: 'hello', top_k: 200 }, mockHybridSearch);
+    const parsed = parseResponse(response) as { error: string };
+
+    expect(parsed.error).toBe('Invalid input');
+  });
+
+  it('should reject file_path with path traversal', async () => {
+    const response = await handleSearch(
+      { query: 'hello', file_path: '../../etc/passwd' },
+      mockHybridSearch,
+    );
+    const parsed = parseResponse(response) as { error: string };
+
+    expect(parsed.error).toBe('Invalid input');
+  });
 });
 
 // --- Context Tool Tests ---
@@ -466,6 +483,28 @@ describe('handleContext', () => {
     expect(parsed.error).toBe('Context assembly failed');
     expect(parsed.message).toBe('Boom');
   });
+
+  it('should reject file_path with path traversal', async () => {
+    const response = await handleContext(
+      { file_path: '../../etc/passwd' },
+      mockHybridSearch,
+      mockContextExpander,
+    );
+    const parsed = parseResponse(response) as { error: string };
+
+    expect(parsed.error).toBe('Invalid input');
+  });
+
+  it('should reject max_tokens above 128000', async () => {
+    const response = await handleContext(
+      { file_path: 'src/index.ts', max_tokens: 200000 },
+      mockHybridSearch,
+      mockContextExpander,
+    );
+    const parsed = parseResponse(response) as { error: string };
+
+    expect(parsed.error).toBe('Invalid input');
+  });
 });
 
 // --- Status Tool Tests ---
@@ -582,6 +621,25 @@ describe('tool definitions', () => {
     expect(invalidFloat.success).toBe(false);
   });
 
+  it('coderag_search inputSchema rejects top_k above 100', () => {
+    const at100 = searchInputSchema.safeParse({ query: 'test', top_k: 100 });
+    expect(at100.success).toBe(true);
+
+    const above100 = searchInputSchema.safeParse({ query: 'test', top_k: 101 });
+    expect(above100.success).toBe(false);
+  });
+
+  it('coderag_search inputSchema rejects file_path with path traversal', () => {
+    const valid = searchInputSchema.safeParse({ query: 'test', file_path: 'src/utils' });
+    expect(valid.success).toBe(true);
+
+    const traversal = searchInputSchema.safeParse({ query: 'test', file_path: '../etc/passwd' });
+    expect(traversal.success).toBe(false);
+
+    const midTraversal = searchInputSchema.safeParse({ query: 'test', file_path: 'src/../../secret' });
+    expect(midTraversal.success).toBe(false);
+  });
+
   it('coderag_context inputSchema validates max_tokens as positive integer', () => {
     const valid = contextInputSchema.safeParse({
       file_path: 'src/index.ts',
@@ -594,6 +652,31 @@ describe('tool definitions', () => {
       max_tokens: -100,
     });
     expect(invalidNegative.success).toBe(false);
+  });
+
+  it('coderag_context inputSchema rejects max_tokens above 128000', () => {
+    const at128k = contextInputSchema.safeParse({
+      file_path: 'src/index.ts',
+      max_tokens: 128000,
+    });
+    expect(at128k.success).toBe(true);
+
+    const above128k = contextInputSchema.safeParse({
+      file_path: 'src/index.ts',
+      max_tokens: 128001,
+    });
+    expect(above128k.success).toBe(false);
+  });
+
+  it('coderag_context inputSchema rejects file_path with path traversal', () => {
+    const valid = contextInputSchema.safeParse({ file_path: 'src/index.ts' });
+    expect(valid.success).toBe(true);
+
+    const traversal = contextInputSchema.safeParse({ file_path: '../etc/passwd' });
+    expect(traversal.success).toBe(false);
+
+    const midTraversal = contextInputSchema.safeParse({ file_path: 'src/../../secret' });
+    expect(midTraversal.success).toBe(false);
   });
 
   it('coderag_context inputSchema applies defaults', () => {

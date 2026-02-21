@@ -4,9 +4,12 @@ import type { HybridSearch, SearchResult } from '@coderag/core';
 export const searchInputSchema = z.object({
   query: z.string().min(1, 'query must not be empty'),
   language: z.string().optional(),
-  file_path: z.string().optional(),
+  file_path: z.string().refine(
+    (s) => !s.includes('..'),
+    'file_path must not contain path traversal',
+  ).optional(),
   chunk_type: z.string().optional(),
-  top_k: z.number().int().positive().optional().default(10),
+  top_k: z.number().int().positive().max(100).optional().default(10),
 });
 
 export type SearchInput = z.infer<typeof searchInputSchema>;

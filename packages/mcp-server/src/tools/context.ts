@@ -6,10 +6,13 @@ import {
 } from '@coderag/core';
 
 export const contextInputSchema = z.object({
-  file_path: z.string().min(1, 'file_path must not be empty'),
+  file_path: z.string().min(1, 'file_path must not be empty').refine(
+    (s) => !s.includes('..'),
+    'file_path must not contain path traversal',
+  ),
   include_tests: z.boolean().optional().default(true),
   include_interfaces: z.boolean().optional().default(true),
-  max_tokens: z.number().int().positive().optional().default(8000),
+  max_tokens: z.number().int().positive().max(128000).optional().default(8000),
 });
 
 export type ContextInput = z.infer<typeof contextInputSchema>;
