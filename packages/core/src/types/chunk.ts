@@ -2,6 +2,7 @@ export interface ChunkMetadata {
   chunkType: ChunkType;
   name: string;
   parentName?: string;
+  declarations: string[];
   imports: string[];
   exports: string[];
 }

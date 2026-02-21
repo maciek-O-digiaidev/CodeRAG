@@ -8,6 +8,7 @@ export default defineConfig({
         'src/config/**/*.ts',
         'src/git/**/*.ts',
         'src/parser/**/*.ts',
+        'src/chunker/**/*.ts',
         'src/index.ts',
       ],
       exclude: [
