@@ -108,5 +108,6 @@ export type {
   BacklogItem,
   BacklogQuery,
   BacklogProvider,
+  AzureDevOpsConfig,
 } from './backlog/index.js';
-export { BacklogError } from './backlog/index.js';
+export { BacklogError, AzureDevOpsProvider, scanForABReferences } from './backlog/index.js';

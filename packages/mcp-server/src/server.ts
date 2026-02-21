@@ -19,6 +19,7 @@ import {
   type SearchResult,
   type GraphNode,
   type GraphEdge,
+  type BacklogProvider,
 } from '@coderag/core';
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -28,6 +29,7 @@ import { handleSearch } from './tools/search.js';
 import { handleContext } from './tools/context.js';
 import { handleStatus } from './tools/status.js';
 import { handleExplain } from './tools/explain.js';
+import { handleBacklog } from './tools/backlog.js';
 
 export const MCP_SERVER_VERSION = '0.1.0';
 
@@ -43,6 +45,7 @@ export class CodeRAGServer {
   private hybridSearch: HybridSearch | null = null;
   private contextExpander: ContextExpander | null = null;
   private reranker: ReRanker | null = null;
+  private backlogProvider: BacklogProvider | null = null;
   private httpServer: HttpServer | null = null;
   private transports: Map<string, SSEServerTransport> = new Map();
 
@@ -236,6 +239,49 @@ export class CodeRAGServer {
             required: [],
           },
         },
+        {
+          name: 'coderag_backlog',
+          description:
+            'Query project backlog items linked to code. Supports searching by text, retrieving by ID, and listing with filters for type, state, and tags.',
+          inputSchema: {
+            type: 'object' as const,
+            properties: {
+              action: {
+                type: 'string',
+                enum: ['search', 'get', 'list'],
+                description: 'Action to perform: "search" to find items by text, "get" to retrieve a single item by ID, "list" to list items with filters',
+              },
+              query: {
+                type: 'string',
+                description: 'Search text (required for "search" action)',
+              },
+              id: {
+                type: 'string',
+                description: 'Item ID (required for "get" action)',
+              },
+              types: {
+                type: 'array',
+                items: { type: 'string', enum: ['epic', 'story', 'task', 'bug', 'feature'] },
+                description: 'Filter by backlog item types',
+              },
+              states: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Filter by item states (e.g. "New", "Active", "Resolved")',
+              },
+              tags: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Filter by tags',
+              },
+              limit: {
+                type: 'number',
+                description: 'Maximum number of results to return (default: 10, max: 50)',
+              },
+            },
+            required: ['action'],
+          },
+        },
       ],
     }));
 
@@ -261,6 +307,8 @@ export class CodeRAGServer {
           );
         case 'coderag_status':
           return handleStatus(this.store, this.config);
+        case 'coderag_backlog':
+          return handleBacklog(safeArgs, this.backlogProvider);
         default:
           return {
             content: [
