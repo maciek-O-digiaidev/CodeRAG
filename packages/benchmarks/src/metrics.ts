@@ -5,7 +5,9 @@
  */
 
 /**
- * Precision@K: fraction of top-k retrieved items that are relevant.
+ * Precision@K: fraction of top-k slots that contain relevant items.
+ * Uses standard IR definition where denominator is always k,
+ * not the number of items retrieved (penalizes runners that return fewer than k results).
  * Returns 0 when k <= 0 or retrieved is empty.
  */
 export function precisionAtK(
@@ -19,7 +21,7 @@ export function precisionAtK(
   const relevantSet = new Set(relevant);
   const hits = topK.filter((item) => relevantSet.has(item)).length;
 
-  return hits / Math.min(k, topK.length);
+  return hits / k;
 }
 
 /**

@@ -51,10 +51,11 @@ describe('precisionAtK', () => {
     expect(precisionAtK([], ['a.ts'], 5)).toBe(0);
   });
 
-  it('should handle k larger than retrieved length', () => {
+  it('should penalize when retrieved count is less than k', () => {
     const retrieved = ['a.ts', 'b.ts'];
     const relevant = ['a.ts', 'b.ts'];
-    expect(precisionAtK(retrieved, relevant, 10)).toBe(1.0);
+    // Standard P@K: 2 hits / k=10 = 0.2 (penalizes returning fewer than k)
+    expect(precisionAtK(retrieved, relevant, 10)).toBe(0.2);
   });
 });
 

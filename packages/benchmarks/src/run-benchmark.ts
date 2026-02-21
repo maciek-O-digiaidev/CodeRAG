@@ -5,13 +5,12 @@
  */
 
 import { resolve, dirname } from 'node:path';
-import { writeFile } from 'node:fs/promises';
+import { writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { runBenchmark, generateMarkdownReport } from './benchmark.js';
 import { runGrepSearch } from './runners/grep-runner.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function main(): Promise<void> {
   const datasetPath =
@@ -36,18 +35,11 @@ async function main(): Promise<void> {
   console.log(markdownReport);
 
   // Write JSON report
-  const jsonReportPath = resolve(__dirname, '../results/benchmark-report.json');
   const resultsDir = resolve(__dirname, '../results');
-  await writeFile(
-    resolve(resultsDir, '.gitkeep'),
-    '',
-  ).catch(() => {
-    // results directory might not exist yet
-  });
+  await mkdir(resultsDir, { recursive: true });
 
+  const jsonReportPath = resolve(resultsDir, 'benchmark-report.json');
   try {
-    const { mkdir } = await import('node:fs/promises');
-    await mkdir(resultsDir, { recursive: true });
     await writeFile(jsonReportPath, JSON.stringify(grepReport, null, 2));
     console.log(`JSON report written to: ${jsonReportPath}`);
   } catch (error) {

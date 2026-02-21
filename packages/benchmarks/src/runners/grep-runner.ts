@@ -73,9 +73,16 @@ export async function runGrepSearch(
     return { filePaths, durationMs };
   } catch (error: unknown) {
     // grep exits with code 1 when no matches found — that is not an error
-    const execError = error as { code?: number; stdout?: string };
-    if (execError.code === 1) {
-      return { filePaths: [], durationMs: performance.now() - start };
+    if (error instanceof Error && 'code' in error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === 'ERR_CHILD_PROCESS_EXIT_CODE_1' || String(code) === '1') {
+        return { filePaths: [], durationMs: performance.now() - start };
+      }
+      // execFile stores exit code in the error object
+      const exitCode = (error as unknown as { status?: number }).status;
+      if (exitCode === 1) {
+        return { filePaths: [], durationMs: performance.now() - start };
+      }
     }
     throw error;
   }

@@ -3,7 +3,7 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [],
-  "linked": [["@coderag/core", "@coderag/mcp-server", "coderag"]],
+  "linked": [["@coderag/core", "@coderag/mcp-server", "@coderag/cli"]],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",

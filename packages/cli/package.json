@@ -1,11 +1,11 @@
 {
-  "name": "coderag",
+  "name": "@coderag/cli",
   "version": "0.1.0",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/coderag/coderag.git",
+    "url": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG",
     "directory": "packages/cli"
   },
   "keywords": [
