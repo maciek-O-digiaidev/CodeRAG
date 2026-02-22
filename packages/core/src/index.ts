@@ -153,3 +153,17 @@ export {
   ConfluenceProvider,
   confluenceStorageToPlainText,
 } from './docs/index.js';
+
+export type {
+  SharePointConfig,
+  SharePointPage,
+  SharePointDocument,
+  SharePointItemType,
+  SharePointChangedItem,
+} from './docs/index.js';
+export {
+  SharePointError,
+  SharePointProvider,
+  extractTextFromDocx,
+  extractTextFromPdf,
+} from './docs/index.js';

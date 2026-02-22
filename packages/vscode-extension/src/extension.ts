@@ -10,9 +10,11 @@ import * as vscode from 'vscode';
 import { McpClient } from './mcp-client.js';
 import { StatusBarManager } from './status-bar.js';
 import { ServerManager } from './server-manager.js';
+import { ClaudeConfigManager } from './claude-config.js';
 import { registerSearchCommand } from './commands/search.js';
 import { registerIndexCommand } from './commands/index-cmd.js';
 import { registerStatusCommand } from './commands/status.js';
+import { registerConfigureClaudeCommand } from './commands/configure-claude.js';
 
 const DEFAULT_PORT = 3100;
 
@@ -20,6 +22,7 @@ let statusBar: StatusBarManager | undefined;
 let mcpClient: McpClient | undefined;
 let serverManager: ServerManager | undefined;
 let outputChannel: vscode.OutputChannel | undefined;
+let claudeConfigManager: ClaudeConfigManager | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   outputChannel = vscode.window.createOutputChannel('CodeRAG');
@@ -30,6 +33,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Create status bar
   statusBar = new StatusBarManager(vscode);
   context.subscriptions.push({ dispose: () => statusBar?.dispose() });
+
+  // Create Claude Config Manager
+  claudeConfigManager = new ClaudeConfigManager();
 
   // Determine workspace root
   const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -55,6 +61,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Register commands (available even before server connects)
   registerAllCommands(context);
 
+  // Auto-configure Claude Code MCP settings
+  await autoConfigureClaude(rootPath);
+
   // Auto-start server and connect
   await connectToServer();
 
@@ -70,16 +79,50 @@ export function deactivate(): void {
   serverManager = undefined;
   statusBar = undefined;
   outputChannel = undefined;
+  claudeConfigManager = undefined;
 }
 
 function registerAllCommands(context: vscode.ExtensionContext): void {
-  if (!mcpClient || !statusBar || !outputChannel) {
+  if (!mcpClient || !statusBar || !outputChannel || !claudeConfigManager) {
     return;
   }
 
   registerSearchCommand(vscode, context, mcpClient, outputChannel);
   registerIndexCommand(vscode, context, mcpClient, statusBar, outputChannel);
   registerStatusCommand(vscode, context, mcpClient, statusBar, outputChannel);
+  registerConfigureClaudeCommand(vscode, context, claudeConfigManager, outputChannel);
+}
+
+/**
+ * Auto-configure Claude Code MCP settings if Claude Code is detected
+ * and the workspace is not yet configured.
+ */
+async function autoConfigureClaude(workspaceRoot: string): Promise<void> {
+  if (!claudeConfigManager || !outputChannel) {
+    return;
+  }
+
+  try {
+    const detection = claudeConfigManager.detectClaudeCode();
+    if (!detection.installed) {
+      outputChannel.appendLine('[claude] Claude Code not detected — skipping auto-configuration.');
+      return;
+    }
+
+    outputChannel.appendLine(`[claude] Claude Code detected (v${detection.version ?? 'unknown'}).`);
+
+    const alreadyConfigured = await claudeConfigManager.isConfigured(workspaceRoot);
+    if (alreadyConfigured) {
+      outputChannel.appendLine('[claude] MCP config already present in .claude/settings.json.');
+      return;
+    }
+
+    await claudeConfigManager.writeConfig(workspaceRoot, DEFAULT_PORT);
+    outputChannel.appendLine('[claude] Auto-configured Claude Code MCP settings in .claude/settings.json.');
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    outputChannel.appendLine(`[claude] Auto-configuration failed: ${message}`);
+  }
 }
 
 async function connectToServer(): Promise<void> {

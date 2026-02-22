@@ -40,6 +40,10 @@
       {
         "command": "coderag.status",
         "title": "CodeRAG: Status"
+      },
+      {
+        "command": "coderag.configureClaude",
+        "title": "CodeRAG: Configure Claude Code"
       }
     ]
   },

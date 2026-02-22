@@ -9,6 +9,7 @@ export { handleContext, contextInputSchema, type ContextInput } from './tools/co
 export { handleStatus, type StatusResult } from './tools/status.js';
 export { handleExplain, explainInputSchema, type ExplainInput } from './tools/explain.js';
 export { handleBacklog, backlogInputSchema, type BacklogInput } from './tools/backlog.js';
+export { handleDocs, docsInputSchema, type DocsInput, type DocsToolResult } from './tools/docs.js';
 
 async function main(): Promise<void> {
   const rootDir = process.argv[2] ?? process.cwd();

@@ -30,6 +30,7 @@ import { handleContext } from './tools/context.js';
 import { handleStatus } from './tools/status.js';
 import { handleExplain } from './tools/explain.js';
 import { handleBacklog } from './tools/backlog.js';
+import { handleDocs } from './tools/docs.js';
 
 export const MCP_SERVER_VERSION = '0.1.0';
 
@@ -282,6 +283,34 @@ export class CodeRAGServer {
             required: ['action'],
           },
         },
+        {
+          name: 'coderag_docs',
+          description:
+            'Search project documentation (Markdown, Confluence, etc.) for relevant sections.',
+          inputSchema: {
+            type: 'object' as const,
+            properties: {
+              query: {
+                type: 'string',
+                description: 'Natural language search query for documentation',
+              },
+              source: {
+                type: 'string',
+                enum: ['markdown', 'confluence', 'all'],
+                description: 'Filter by documentation source: "markdown" for local .md files, "confluence" for Confluence pages, "all" for everything (default: "all")',
+              },
+              file_path: {
+                type: 'string',
+                description: 'Filter results by file path substring',
+              },
+              top_k: {
+                type: 'number',
+                description: 'Maximum number of results to return (default: 10)',
+              },
+            },
+            required: ['query'],
+          },
+        },
       ],
     }));
 
@@ -309,6 +338,8 @@ export class CodeRAGServer {
           return handleStatus(this.store, this.config);
         case 'coderag_backlog':
           return handleBacklog(safeArgs, this.backlogProvider);
+        case 'coderag_docs':
+          return handleDocs(safeArgs, this.hybridSearch, this.reranker);
         default:
           return {
             content: [
