@@ -42,7 +42,8 @@
     "ora": "^8.2.0",
     "yaml": "^2.7.0",
     "@coderag/core": "workspace:*",
-    "@coderag/mcp-server": "workspace:*"
+    "@coderag/mcp-server": "workspace:*",
+    "@coderag/api-server": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",

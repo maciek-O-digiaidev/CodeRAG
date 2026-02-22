@@ -5,6 +5,7 @@ import { registerIndexCommand } from './commands/index-cmd.js';
 import { registerSearchCommand } from './commands/search.js';
 import { registerServeCommand } from './commands/serve.js';
 import { registerStatusCommand } from './commands/status.js';
+import { registerViewerCommand } from './commands/viewer.js';
 
 const program = new Command();
 program
@@ -17,5 +18,6 @@ registerIndexCommand(program);
 registerSearchCommand(program);
 registerServeCommand(program);
 registerStatusCommand(program);
+registerViewerCommand(program);
 
 program.parse();

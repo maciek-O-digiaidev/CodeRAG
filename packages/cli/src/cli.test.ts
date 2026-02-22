@@ -5,6 +5,7 @@ import { registerIndexCommand } from './commands/index-cmd.js';
 import { registerSearchCommand } from './commands/search.js';
 import { registerServeCommand } from './commands/serve.js';
 import { registerStatusCommand } from './commands/status.js';
+import { registerViewerCommand } from './commands/viewer.js';
 import { detectLanguages } from './commands/init.js';
 import { formatSearchResult } from './commands/search.js';
 import { formatStatus, formatStatusJSON, type StatusInfo } from './commands/status.js';
@@ -30,6 +31,7 @@ describe('CLI program setup', () => {
     registerSearchCommand(program);
     registerServeCommand(program);
     registerStatusCommand(program);
+    registerViewerCommand(program);
   });
 
   it('should create program with correct name', () => {
@@ -40,17 +42,18 @@ describe('CLI program setup', () => {
     expect(program.version()).toBe('0.1.0');
   });
 
-  it('should register all 5 commands', () => {
+  it('should register all 6 commands', () => {
     const commandNames = program.commands.map((cmd) => cmd.name());
     expect(commandNames).toContain('init');
     expect(commandNames).toContain('index');
     expect(commandNames).toContain('search');
     expect(commandNames).toContain('serve');
     expect(commandNames).toContain('status');
+    expect(commandNames).toContain('viewer');
   });
 
-  it('should have exactly 5 commands', () => {
-    expect(program.commands).toHaveLength(5);
+  it('should have exactly 6 commands', () => {
+    expect(program.commands).toHaveLength(6);
   });
 
   it('init command should have --languages, --force, and --multi options', () => {
