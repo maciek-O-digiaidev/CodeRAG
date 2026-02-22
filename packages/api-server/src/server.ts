@@ -28,6 +28,7 @@ import { createHistoryRouter, HistoryStore } from './routes/history.js';
 import { createOpenAPISpec } from './openapi.js';
 import { DashboardDataCollector } from './dashboard/data-collector.js';
 import { createDashboardRouter } from './dashboard/routes.js';
+import { createViewerRouter } from './routes/viewer.js';
 
 export const API_SERVER_VERSION = '0.1.0';
 
@@ -56,6 +57,7 @@ export class ApiServer {
   private hybridSearch: HybridSearch | null = null;
   private contextExpander: ContextExpander | null = null;
   private reranker: ReRanker | null = null;
+  private graph: DependencyGraph | null = null;
 
   // Dashboard data collector
   private readonly dataCollector: DashboardDataCollector;
@@ -142,6 +144,14 @@ export class ApiServer {
     // History and bookmarks routes
     const historyStore = new HistoryStore();
     this.app.use('/api/v1', createHistoryRouter({ historyStore }));
+
+    // Viewer routes (read-only visualization API)
+    this.app.use('/api/v1/viewer', createViewerRouter({
+      getStore: () => self.store,
+      getConfig: () => self.config,
+      getHybridSearch: () => self.hybridSearch,
+      getGraph: () => self.graph,
+    }));
 
     // --- Dashboard ---
 
@@ -238,6 +248,9 @@ export class ApiServer {
       } catch {
         // No saved graph, start empty
       }
+
+      // Store graph for viewer API
+      this.graph = graph;
 
       // Create context expander
       const chunkLookup = (_chunkId: string): SearchResult | undefined => undefined;

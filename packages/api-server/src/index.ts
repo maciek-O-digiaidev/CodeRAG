@@ -27,6 +27,19 @@ export type { IndexTriggerRequest, IndexTriggerCallback, IndexTriggerRouteDeps }
 export { createOpenAPISpec } from './openapi.js';
 export type { OpenAPISpec } from './openapi.js';
 
+export { createViewerRouter } from './routes/viewer.js';
+export type {
+  ViewerDeps,
+  ViewerStatsResponse,
+  ChunkSummary,
+  ChunkDetail,
+  PaginationMeta,
+  GraphResponse,
+  ViewerSearchResult,
+  ViewerSearchResponse,
+  EmbeddingPoint,
+} from './routes/viewer.js';
+
 export { DashboardDataCollector, createDashboardRouter, renderDashboardPage, esc } from './dashboard/index.js';
 export type {
   DashboardDataCollectorDeps,
