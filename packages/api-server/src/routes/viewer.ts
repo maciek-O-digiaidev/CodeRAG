@@ -122,6 +122,7 @@ export interface EmbeddingPoint {
   id: string;
   filePath: string;
   chunkType: string;
+  language: string;
   vector: number[];
 }
 
@@ -496,6 +497,7 @@ export function createViewerRouter(deps: ViewerDeps): Router {
         id: row.id,
         filePath: row.file_path,
         chunkType: row.chunk_type,
+        language: row.language,
         vector: row.vector,
       }));
 

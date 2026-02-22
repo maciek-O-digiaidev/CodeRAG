@@ -70,11 +70,10 @@ export interface SearchResponse {
 
 export interface EmbeddingPoint {
   id: string;
-  name: string;
-  kind: string;
-  x: number;
-  y: number;
-  cluster: number;
+  filePath: string;
+  chunkType: string;
+  language: string;
+  vector: number[];
 }
 
 // --- Query parameter types ---
@@ -185,7 +184,9 @@ export function createApiClient(): ApiClient {
 
     getEmbeddings(limit?: number): Promise<EmbeddingPoint[]> {
       const qs = limit !== undefined ? buildQueryString({ limit }) : '';
-      return fetchJson<EmbeddingPoint[]>(`${BASE_URL}/embeddings${qs}`);
+      return fetchJson<{ data: EmbeddingPoint[] }>(`${BASE_URL}/embeddings${qs}`).then(
+        (response) => response.data,
+      );
     },
   };
 }

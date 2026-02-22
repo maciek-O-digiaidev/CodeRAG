@@ -202,7 +202,7 @@ describe('ApiClient', () => {
   describe('getEmbeddings', () => {
     it('should fetch embeddings without limit', async () => {
       const points: EmbeddingPoint[] = [];
-      mockFetch.mockResolvedValueOnce(mockJsonResponse(points));
+      mockFetch.mockResolvedValueOnce(mockJsonResponse({ data: points }));
 
       const result = await client.getEmbeddings();
 
@@ -212,7 +212,7 @@ describe('ApiClient', () => {
 
     it('should fetch embeddings with limit param', async () => {
       const points: EmbeddingPoint[] = [];
-      mockFetch.mockResolvedValueOnce(mockJsonResponse(points));
+      mockFetch.mockResolvedValueOnce(mockJsonResponse({ data: points }));
 
       await client.getEmbeddings(100);
 

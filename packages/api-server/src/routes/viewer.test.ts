@@ -623,6 +623,7 @@ describe('GET /api/v1/viewer/embeddings', () => {
       id: 'c1',
       filePath: 'src/hello.ts',
       chunkType: 'function',
+      language: 'typescript',
       vector: [0.1, 0.2],
     });
   });
