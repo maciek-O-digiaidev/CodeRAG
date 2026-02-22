@@ -9,6 +9,7 @@ export type {
   IngestionConfig,
   SearchConfig,
   StorageConfig,
+  QdrantStorageConfig,
   ProjectConfig,
   RepoConfig,
   EmbeddingProvider,
@@ -62,6 +63,11 @@ export type {
   IndexerConfig,
   ChangeSet,
   IndexerResult,
+  RepoIndexResult,
+  MultiRepoIndexResult,
+  MultiRepoProgressCallback,
+  MultiRepoIndexOptions,
+  RepoProcessor,
 } from './indexer/index.js';
 export {
   IndexState,
@@ -70,12 +76,15 @@ export {
   ScanError,
   IncrementalIndexer,
   IndexerError,
+  MultiRepoIndexer,
+  MultiRepoIndexerError,
 } from './indexer/index.js';
 
-export type { OllamaEmbeddingConfig } from './embedding/index.js';
+export type { OllamaEmbeddingConfig, QdrantConfig } from './embedding/index.js';
 export {
   OllamaEmbeddingProvider,
   LanceDBStore,
+  QdrantVectorStore,
   BM25Index,
   HybridSearch,
 } from './embedding/index.js';
@@ -109,5 +118,18 @@ export type {
   BacklogQuery,
   BacklogProvider,
   AzureDevOpsConfig,
+  ClickUpConfig,
+  JiraConfig,
+  BacklogCodeMap,
+  CoverageReport,
 } from './backlog/index.js';
-export { BacklogError, AzureDevOpsProvider, scanForABReferences } from './backlog/index.js';
+export {
+  BacklogError,
+  AzureDevOpsProvider,
+  ClickUpProvider,
+  scanForABReferences,
+  scanForClickUpReferences,
+  JiraProvider,
+  scanForJiraReferences,
+  CodeLinker,
+} from './backlog/index.js';

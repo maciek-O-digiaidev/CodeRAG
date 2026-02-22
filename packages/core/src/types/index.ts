@@ -6,6 +6,7 @@ export type {
   IngestionConfig,
   SearchConfig,
   StorageConfig,
+  QdrantStorageConfig,
   ProjectConfig,
   ReRankerConfig,
   RepoConfig,

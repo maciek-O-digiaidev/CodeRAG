@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@lancedb/lancedb": "^0.26.2",
+    "@qdrant/js-client-rest": "^1.17.0",
     "ignore": "^7.0.5",
     "minisearch": "^7.2.0",
     "neverthrow": "^8.1.1",

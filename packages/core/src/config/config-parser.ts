@@ -36,8 +36,15 @@ const searchConfigSchema = z.object({
   bm25Weight: z.number().min(0, 'bm25Weight must be between 0 and 1').max(1, 'bm25Weight must be between 0 and 1'),
 });
 
+const qdrantStorageConfigSchema = z.object({
+  url: z.string().min(1).optional(),
+  collectionName: z.string().min(1).optional(),
+});
+
 const storageConfigSchema = z.object({
   path: z.string().min(1, 'Storage path must not be empty'),
+  provider: z.enum(['lancedb', 'qdrant']).optional(),
+  qdrant: qdrantStorageConfigSchema.optional(),
 });
 
 const projectConfigSchema = z.object({

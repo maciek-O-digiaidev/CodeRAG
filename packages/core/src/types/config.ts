@@ -20,8 +20,15 @@ export interface SearchConfig {
   bm25Weight: number;
 }
 
+export interface QdrantStorageConfig {
+  url?: string;
+  collectionName?: string;
+}
+
 export interface StorageConfig {
   path: string;
+  provider?: 'lancedb' | 'qdrant';
+  qdrant?: QdrantStorageConfig;
 }
 
 export interface ProjectConfig {

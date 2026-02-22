@@ -5,6 +5,7 @@ export interface ChunkMetadata {
   declarations: string[];
   imports: string[];
   exports: string[];
+  repoName?: string;
 }
 
 export type ChunkType =
