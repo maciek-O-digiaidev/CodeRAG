@@ -167,3 +167,20 @@ export {
   extractTextFromDocx,
   extractTextFromPdf,
 } from './docs/index.js';
+
+export type {
+  Role,
+  Action,
+  RepoAccessLevel,
+  RepoPermission,
+  User,
+  AuthToken,
+  AuditEntry,
+  AuditQuery,
+  AuthProvider,
+  OIDCConfig,
+  OIDCDiscoveryDocument,
+  SAMLConfig,
+  SAMLIdPMetadata,
+} from './auth/index.js';
+export { ROLE_HIERARCHY, AuthError, RBACManager, OIDCProvider, SAMLProvider, AuditLogger } from './auth/index.js';
