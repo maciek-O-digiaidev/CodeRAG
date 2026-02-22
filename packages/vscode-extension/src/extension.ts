@@ -15,6 +15,7 @@ import { registerSearchCommand } from './commands/search.js';
 import { registerIndexCommand } from './commands/index-cmd.js';
 import { registerStatusCommand } from './commands/status.js';
 import { registerConfigureClaudeCommand } from './commands/configure-claude.js';
+import { registerSearchPanel } from './search-panel.js';
 
 const DEFAULT_PORT = 3100;
 
@@ -91,6 +92,7 @@ function registerAllCommands(context: vscode.ExtensionContext): void {
   registerIndexCommand(vscode, context, mcpClient, statusBar, outputChannel);
   registerStatusCommand(vscode, context, mcpClient, statusBar, outputChannel);
   registerConfigureClaudeCommand(vscode, context, claudeConfigManager, outputChannel);
+  registerSearchPanel(vscode, context, mcpClient, outputChannel);
 }
 
 /**

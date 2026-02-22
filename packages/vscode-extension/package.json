@@ -28,6 +28,24 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "coderag-sidebar",
+          "title": "CodeRAG",
+          "icon": "$(search)"
+        }
+      ]
+    },
+    "views": {
+      "coderag-sidebar": [
+        {
+          "type": "webview",
+          "id": "coderag.searchPanel",
+          "name": "Search"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "coderag.search",
