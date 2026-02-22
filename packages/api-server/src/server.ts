@@ -17,13 +17,17 @@ import {
 } from '@coderag/core';
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { parseApiKeys, createAuthMiddleware, type ApiKeyEntry } from './middleware/auth.js';
+import { parseApiKeys, createAuthMiddleware, type ApiKeyEntry, type AuthenticatedRequest } from './middleware/auth.js';
 import { createRateLimitMiddleware, parseRateLimitConfig } from './middleware/rate-limit.js';
 import { createSearchRouter } from './routes/search.js';
 import { createContextRouter } from './routes/context.js';
 import { createStatusRouter } from './routes/status.js';
 import { createIndexTriggerRouter, type IndexTriggerCallback } from './routes/index-trigger.js';
+import { createTeamRouter, createTeamState } from './routes/team.js';
+import { createHistoryRouter, HistoryStore } from './routes/history.js';
 import { createOpenAPISpec } from './openapi.js';
+import { DashboardDataCollector } from './dashboard/data-collector.js';
+import { createDashboardRouter } from './dashboard/routes.js';
 
 export const API_SERVER_VERSION = '0.1.0';
 
@@ -52,6 +56,9 @@ export class ApiServer {
   private hybridSearch: HybridSearch | null = null;
   private contextExpander: ContextExpander | null = null;
   private reranker: ReRanker | null = null;
+
+  // Dashboard data collector
+  private readonly dataCollector: DashboardDataCollector;
 
   constructor(options: ApiServerOptions) {
     this.rootDir = options.rootDir;
@@ -124,6 +131,44 @@ export class ApiServer {
     this.app.use('/api/v1/context', createContextRouter(contextDeps));
     this.app.use('/api/v1/status', createStatusRouter(statusDeps));
     this.app.use('/api/v1/index', createIndexTriggerRouter(indexDeps));
+
+    // Team shared context routes
+    const teamState = createTeamState();
+    this.app.use('/api/v1/team', createTeamRouter({
+      storageProvider: null,
+      teamState,
+    }));
+
+    // History and bookmarks routes
+    const historyStore = new HistoryStore();
+    this.app.use('/api/v1', createHistoryRouter({ historyStore }));
+
+    // --- Dashboard ---
+
+    this.dataCollector = new DashboardDataCollector({
+      getStore: () => self.store,
+      getConfig: () => self.config,
+      apiKeys,
+    });
+
+    // Request tracking middleware (all routes)
+    this.app.use((req, _res, next) => {
+      const authReq = req as AuthenticatedRequest;
+      this.dataCollector.recordRequest(
+        req.method,
+        req.path,
+        authReq.apiKey?.key ?? null,
+      );
+      next();
+    });
+
+    // Mount dashboard (admin-only, handles its own auth)
+    this.app.use('/dashboard', createDashboardRouter({
+      dataCollector: this.dataCollector,
+      onIndex: options.onIndex ?? null,
+      getConfig: () => self.config,
+      apiKeys,
+    }));
   }
 
   /**

@@ -27,6 +27,28 @@ export type { IndexTriggerRequest, IndexTriggerCallback, IndexTriggerRouteDeps }
 export { createOpenAPISpec } from './openapi.js';
 export type { OpenAPISpec } from './openapi.js';
 
+export { DashboardDataCollector, createDashboardRouter, renderDashboardPage, esc } from './dashboard/index.js';
+export type {
+  DashboardDataCollectorDeps,
+  DashboardRouteDeps,
+  OverviewPageData,
+  AnalyticsPageData,
+  UsersPageData,
+  SettingsPageData,
+  PageData,
+  IndexOverview,
+  SearchAnalytics,
+  UserInfo,
+  UsageStats,
+  DashboardConfig,
+  DashboardPage,
+  FlashMessage,
+  DailyQueryCount,
+  TopQuery,
+  SearchRecord,
+  RequestRecord,
+} from './dashboard/index.js';
+
 const DEFAULT_PORT = 3100;
 
 async function main(): Promise<void> {

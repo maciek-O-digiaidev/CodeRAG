@@ -184,3 +184,18 @@ export type {
   SAMLIdPMetadata,
 } from './auth/index.js';
 export { ROLE_HIERARCHY, AuthError, RBACManager, OIDCProvider, SAMLProvider, AuditLogger } from './auth/index.js';
+
+export type {
+  CloudStorageProvider,
+  CloudStorageConfig,
+  S3Config,
+  AzureBlobConfig,
+  GCSConfig,
+  GCSCredentials,
+} from './storage/index.js';
+export {
+  StorageError,
+  S3StorageProvider,
+  AzureBlobStorageProvider,
+  GCSStorageProvider,
+} from './storage/index.js';
