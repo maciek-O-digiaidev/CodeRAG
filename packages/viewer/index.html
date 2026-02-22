@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CodeRAG Viewer</title>
+  <link rel="stylesheet" href="/src/styles/main.css" />
+</head>
+<body>
+  <div id="app">
+    <nav id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <h1 class="logo">CodeRAG</h1>
+        <span class="version">v0.1.0</span>
+      </div>
+      <ul class="nav-list">
+        <li><a href="#/dashboard" class="nav-link active" data-view="dashboard">Dashboard</a></li>
+        <li><a href="#/chunks" class="nav-link" data-view="chunks">Chunk Browser</a></li>
+        <li><a href="#/graph" class="nav-link" data-view="graph">Dependency Graph</a></li>
+        <li><a href="#/embeddings" class="nav-link" data-view="embeddings">Embedding Explorer</a></li>
+        <li><a href="#/search" class="nav-link" data-view="search">Search Playground</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <button id="theme-toggle" class="theme-btn" title="Toggle dark/light mode">
+          <span class="theme-icon"></span>
+        </button>
+      </div>
+    </nav>
+    <main id="content" class="content">
+      <!-- Views rendered here -->
+    </main>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
