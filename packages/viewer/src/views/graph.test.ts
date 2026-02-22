@@ -31,20 +31,23 @@ function mockErrorResponse(status: number, statusText: string): Response {
   } as Response;
 }
 
+// Backend response format — API client unwraps { data } envelope and maps type→kind, symbols→name
 const MOCK_GRAPH_RESPONSE = {
-  nodes: [
-    { id: 'n1', name: 'fooFunction', kind: 'function', filePath: 'src/foo.ts' },
-    { id: 'n2', name: 'BarClass', kind: 'class', filePath: 'src/bar.ts' },
-    { id: 'n3', name: 'bazHelper', kind: 'function', filePath: 'lib/baz.py' },
-    { id: 'n4', name: 'QuxModule', kind: 'module', filePath: 'src/qux.go' },
-    { id: 'n5', name: 'IWidget', kind: 'interface', filePath: 'src/widget.ts' },
-  ],
-  edges: [
-    { source: 'n1', target: 'n2', kind: 'imports' },
-    { source: 'n2', target: 'n3', kind: 'calls' },
-    { source: 'n1', target: 'n5', kind: 'implements' },
-    { source: 'n4', target: 'n2', kind: 'imports' },
-  ],
+  data: {
+    nodes: [
+      { id: 'n1', filePath: 'src/foo.ts', symbols: ['fooFunction'], type: 'function' },
+      { id: 'n2', filePath: 'src/bar.ts', symbols: ['BarClass'], type: 'class' },
+      { id: 'n3', filePath: 'lib/baz.py', symbols: ['bazHelper'], type: 'function' },
+      { id: 'n4', filePath: 'src/qux.go', symbols: ['QuxModule'], type: 'module' },
+      { id: 'n5', filePath: 'src/widget.ts', symbols: ['IWidget'], type: 'interface' },
+    ],
+    edges: [
+      { source: 'n1', target: 'n2', type: 'imports' },
+      { source: 'n2', target: 'n3', type: 'calls' },
+      { source: 'n1', target: 'n5', type: 'implements' },
+      { source: 'n4', target: 'n2', type: 'imports' },
+    ],
+  },
 };
 
 function setupSuccessMock(): void {

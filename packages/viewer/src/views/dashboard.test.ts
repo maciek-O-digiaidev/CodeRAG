@@ -31,16 +31,15 @@ const MOCK_STATS = {
   lastIndexedAt: new Date(Date.now() - 7200_000).toISOString(), // 2 hours ago
 };
 
+// Backend response format — API client unwraps { data, meta } envelope and maps chunkType→kind
 const MOCK_CHUNKS = {
-  items: [
-    { id: '1', filePath: 'a.ts', name: 'foo', kind: 'function', language: 'typescript', startLine: 1, endLine: 10 },
-    { id: '2', filePath: 'b.ts', name: 'Bar', kind: 'class', language: 'typescript', startLine: 1, endLine: 50 },
-    { id: '3', filePath: 'c.ts', name: 'baz', kind: 'function', language: 'typescript', startLine: 1, endLine: 5 },
-    { id: '4', filePath: 'd.ts', name: 'Qux', kind: 'interface', language: 'typescript', startLine: 1, endLine: 8 },
+  data: [
+    { id: '1', filePath: 'a.ts', name: 'foo', chunkType: 'function', language: 'typescript', startLine: 1, endLine: 10 },
+    { id: '2', filePath: 'b.ts', name: 'Bar', chunkType: 'class', language: 'typescript', startLine: 1, endLine: 50 },
+    { id: '3', filePath: 'c.ts', name: 'baz', chunkType: 'function', language: 'typescript', startLine: 1, endLine: 5 },
+    { id: '4', filePath: 'd.ts', name: 'Qux', chunkType: 'interface', language: 'typescript', startLine: 1, endLine: 8 },
   ],
-  total: 4,
-  offset: 0,
-  limit: 1000,
+  meta: { page: 1, pageSize: 1000, total: 4, totalPages: 1 },
 };
 
 function setupSuccessMocks(): void {

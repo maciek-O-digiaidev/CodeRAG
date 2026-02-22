@@ -49,7 +49,9 @@ function makeMockRow(overrides: Partial<MockLanceDBRow> = {}): MockLanceDBRow {
 function makeMockStore(tableRows: MockLanceDBRow[] | null = []): LanceDBStore {
   const mockTable = tableRows !== null
     ? {
-        toArray: vi.fn().mockResolvedValue(tableRows),
+        query: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue(tableRows),
+        }),
         countRows: vi.fn().mockResolvedValue(tableRows.length),
       }
     : null;

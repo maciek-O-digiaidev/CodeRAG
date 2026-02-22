@@ -23,29 +23,30 @@ function mockErrorResponse(status: number, statusText: string): Response {
   } as Response;
 }
 
+// Backend response format for /chunks — API client unwraps { data, meta } envelope
 const MOCK_CHUNKS_PAGE = {
-  items: [
-    { id: 'c1', filePath: 'src/foo.ts', name: 'fooFunction', kind: 'function', language: 'typescript', startLine: 1, endLine: 20 },
-    { id: 'c2', filePath: 'src/bar.ts', name: 'BarClass', kind: 'class', language: 'typescript', startLine: 5, endLine: 45 },
-    { id: 'c3', filePath: 'lib/baz.py', name: 'baz_helper', kind: 'function', language: 'python', startLine: 10, endLine: 30 },
+  data: [
+    { id: 'c1', filePath: 'src/foo.ts', name: 'fooFunction', chunkType: 'function', language: 'typescript', startLine: 1, endLine: 20 },
+    { id: 'c2', filePath: 'src/bar.ts', name: 'BarClass', chunkType: 'class', language: 'typescript', startLine: 5, endLine: 45 },
+    { id: 'c3', filePath: 'lib/baz.py', name: 'baz_helper', chunkType: 'function', language: 'python', startLine: 10, endLine: 30 },
   ],
-  total: 50,
-  offset: 0,
-  limit: 25,
+  meta: { page: 1, pageSize: 25, total: 50, totalPages: 2 },
 };
 
+// Backend response format for /chunks/:id — API client unwraps { data } envelope
 const MOCK_CHUNK_DETAIL = {
-  id: 'c1',
-  filePath: 'src/foo.ts',
-  name: 'fooFunction',
-  kind: 'function',
-  language: 'typescript',
-  startLine: 1,
-  endLine: 20,
-  content: 'function fooFunction() {\n  return 42;\n}',
-  summary: 'A function that returns 42.',
-  dependencies: ['barHelper'],
-  vector: null,
+  data: {
+    id: 'c1',
+    filePath: 'src/foo.ts',
+    name: 'fooFunction',
+    chunkType: 'function',
+    language: 'typescript',
+    startLine: 1,
+    endLine: 20,
+    content: 'function fooFunction() {\n  return 42;\n}',
+    nlSummary: 'A function that returns 42.',
+    metadata: { dependencies: ['barHelper'] },
+  },
 };
 
 function setupSuccessMocks(): void {
@@ -315,10 +316,8 @@ describe('Chunk Browser View', () => {
 
   it('should show empty state when no chunks match', async () => {
     mockFetch.mockResolvedValue(mockJsonResponse({
-      items: [],
-      total: 0,
-      offset: 0,
-      limit: 25,
+      data: [],
+      meta: { page: 1, pageSize: 25, total: 0, totalPages: 1 },
     }));
     render(container);
 

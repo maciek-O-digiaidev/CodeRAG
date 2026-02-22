@@ -202,12 +202,9 @@ export function createViewerRouter(deps: ViewerDeps): Router {
     try {
       const { page, pageSize, language, type, file, q } = parsed.data;
 
-      // LanceDB store does not expose a "list all" method publicly.
-      // We use the internal table reference to query data directly.
-      // Access the internal table via casting (documented viewer-only pattern).
-      const storeInternal = store as unknown as { table: { toArray: () => Promise<LanceDBRow[]>; countRows: () => Promise<number> } | null };
+      const table = getInternalTable(store);
 
-      if (!storeInternal.table) {
+      if (!table) {
         res.json({
           data: [],
           meta: { page, pageSize, total: 0, totalPages: 0 } satisfies PaginationMeta,
@@ -215,7 +212,7 @@ export function createViewerRouter(deps: ViewerDeps): Router {
         return;
       }
 
-      const allRows = await storeInternal.table.toArray() as LanceDBRow[];
+      const allRows = await table.query().toArray() as LanceDBRow[];
 
       // Apply filters
       let filtered = allRows;
@@ -303,14 +300,14 @@ export function createViewerRouter(deps: ViewerDeps): Router {
     }
 
     try {
-      const storeInternal = store as unknown as { table: { toArray: () => Promise<LanceDBRow[]> } | null };
+      const table = getInternalTable(store);
 
-      if (!storeInternal.table) {
+      if (!table) {
         res.status(404).json({ error: 'Chunk not found' });
         return;
       }
 
-      const allRows = await storeInternal.table.toArray() as LanceDBRow[];
+      const allRows = await table.query().toArray() as LanceDBRow[];
       const row = allRows.find((r) => r.id === chunkId);
 
       if (!row) {
@@ -483,14 +480,14 @@ export function createViewerRouter(deps: ViewerDeps): Router {
     try {
       const { limit } = parsed.data;
 
-      const storeInternal = store as unknown as { table: { toArray: () => Promise<LanceDBRow[]> } | null };
+      const table = getInternalTable(store);
 
-      if (!storeInternal.table) {
+      if (!table) {
         res.json({ data: [] });
         return;
       }
 
-      const allRows = await storeInternal.table.toArray() as LanceDBRow[];
+      const allRows = await table.query().toArray() as LanceDBRow[];
       const limitedRows = allRows.slice(0, limit);
 
       const data: EmbeddingPoint[] = limitedRows.map((row) => ({
@@ -521,4 +518,15 @@ interface LanceDBRow {
   file_path: string;
   language: string;
   metadata: string;
+}
+
+// Helper to access internal LanceDB table for direct queries (viewer-only pattern).
+// LanceDB Table does not expose .toArray() directly; use .query().toArray() instead.
+function getInternalTable(
+  store: LanceDBStore,
+): { query: () => { toArray: () => Promise<LanceDBRow[]> } } | null {
+  const internal = store as unknown as {
+    table: { query: () => { toArray: () => Promise<LanceDBRow[]> } } | null;
+  };
+  return internal.table;
 }

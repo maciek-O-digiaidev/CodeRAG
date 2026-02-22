@@ -165,17 +165,86 @@ export function createApiClient(): ApiClient {
 
     getChunks(params?: ChunkQueryParams): Promise<PaginatedResponse<ChunkSummary>> {
       const qs = params ? buildQueryString(params) : '';
-      return fetchJson<PaginatedResponse<ChunkSummary>>(`${BASE_URL}/chunks${qs}`);
+      return fetchJson<{
+        data: Array<{
+          id: string;
+          filePath: string;
+          chunkType: string;
+          name: string;
+          language: string;
+          startLine: number;
+          endLine: number;
+        }>;
+        meta: { page: number; pageSize: number; total: number; totalPages: number };
+      }>(`${BASE_URL}/chunks${qs}`).then((r) => ({
+        items: r.data.map((c) => ({
+          id: c.id,
+          filePath: c.filePath,
+          name: c.name,
+          kind: c.chunkType,
+          language: c.language,
+          startLine: c.startLine,
+          endLine: c.endLine,
+        })),
+        total: r.meta.total,
+        offset: (r.meta.page - 1) * r.meta.pageSize,
+        limit: r.meta.pageSize,
+      }));
     },
 
     getChunk(id: string, includeVector?: boolean): Promise<ChunkDetail> {
       const qs = includeVector !== undefined ? buildQueryString({ includeVector }) : '';
-      return fetchJson<ChunkDetail>(`${BASE_URL}/chunks/${encodeURIComponent(id)}${qs}`);
+      return fetchJson<{
+        data: {
+          id: string;
+          filePath: string;
+          chunkType: string;
+          name: string;
+          language: string;
+          startLine: number;
+          endLine: number;
+          content: string;
+          nlSummary: string;
+          metadata: Record<string, unknown>;
+          vector?: number[];
+        };
+      }>(`${BASE_URL}/chunks/${encodeURIComponent(id)}${qs}`).then((r) => ({
+        id: r.data.id,
+        filePath: r.data.filePath,
+        name: r.data.name,
+        kind: r.data.chunkType,
+        language: r.data.language,
+        startLine: r.data.startLine,
+        endLine: r.data.endLine,
+        content: r.data.content,
+        summary: r.data.nlSummary,
+        dependencies: Array.isArray(r.data.metadata?.['dependencies'])
+          ? (r.data.metadata['dependencies'] as string[])
+          : [],
+        vector: r.data.vector ?? null,
+      }));
     },
 
     getGraph(params?: GraphQueryParams): Promise<GraphResponse> {
       const qs = params ? buildQueryString(params) : '';
-      return fetchJson<GraphResponse>(`${BASE_URL}/graph${qs}`);
+      return fetchJson<{
+        data: {
+          nodes: Array<{ id: string; filePath: string; symbols: string[]; type: string }>;
+          edges: Array<{ source: string; target: string; type: string }>;
+        };
+      }>(`${BASE_URL}/graph${qs}`).then((r) => ({
+        nodes: r.data.nodes.map((n) => ({
+          id: n.id,
+          name: n.symbols[0] ?? n.id,
+          kind: n.type,
+          filePath: n.filePath,
+        })),
+        edges: r.data.edges.map((e) => ({
+          source: e.source,
+          target: e.target,
+          kind: e.type,
+        })),
+      }));
     },
 
     search(params: SearchParams): Promise<SearchResponse> {

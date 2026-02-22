@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createApiClient, ApiError, type StatsResponse, type PaginatedResponse, type ChunkSummary, type ChunkDetail, type GraphResponse, type SearchResponse, type EmbeddingPoint } from './api.js';
+import { createApiClient, ApiError, type StatsResponse, type SearchResponse, type EmbeddingPoint } from './api.js';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -60,29 +60,31 @@ describe('ApiClient', () => {
   });
 
   describe('getChunks', () => {
-    it('should fetch chunks without params', async () => {
-      const chunks: PaginatedResponse<ChunkSummary> = {
-        items: [],
-        total: 0,
-        offset: 0,
-        limit: 20,
+    it('should fetch chunks without params and unwrap data envelope', async () => {
+      const backendResponse = {
+        data: [
+          { id: 'c1', filePath: 'src/a.ts', chunkType: 'function', name: 'hello', language: 'typescript', startLine: 1, endLine: 5 },
+        ],
+        meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
       };
-      mockFetch.mockResolvedValueOnce(mockJsonResponse(chunks));
+      mockFetch.mockResolvedValueOnce(mockJsonResponse(backendResponse));
 
       const result = await client.getChunks();
 
       expect(mockFetch).toHaveBeenCalledWith('/api/v1/viewer/chunks');
-      expect(result).toEqual(chunks);
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]!.kind).toBe('function');
+      expect(result.total).toBe(1);
+      expect(result.offset).toBe(0);
+      expect(result.limit).toBe(50);
     });
 
     it('should fetch chunks with query params', async () => {
-      const chunks: PaginatedResponse<ChunkSummary> = {
-        items: [],
-        total: 0,
-        offset: 0,
-        limit: 10,
+      const backendResponse = {
+        data: [],
+        meta: { page: 1, pageSize: 10, total: 0, totalPages: 1 },
       };
-      mockFetch.mockResolvedValueOnce(mockJsonResponse(chunks));
+      mockFetch.mockResolvedValueOnce(mockJsonResponse(backendResponse));
 
       await client.getChunks({ offset: 0, limit: 10, language: 'typescript' });
 
@@ -95,52 +97,60 @@ describe('ApiClient', () => {
   });
 
   describe('getChunk', () => {
-    it('should fetch a single chunk by ID', async () => {
-      const chunk: ChunkDetail = {
-        id: 'abc123',
-        filePath: 'src/main.ts',
-        name: 'main',
-        kind: 'function',
-        language: 'typescript',
-        startLine: 1,
-        endLine: 10,
-        content: 'function main() {}',
-        summary: 'Main entry point',
-        dependencies: [],
-        vector: null,
+    it('should fetch a single chunk by ID and unwrap data envelope', async () => {
+      const backendResponse = {
+        data: {
+          id: 'abc123',
+          filePath: 'src/main.ts',
+          chunkType: 'function',
+          name: 'main',
+          language: 'typescript',
+          startLine: 1,
+          endLine: 10,
+          content: 'function main() {}',
+          nlSummary: 'Main entry point',
+          metadata: {},
+        },
       };
-      mockFetch.mockResolvedValueOnce(mockJsonResponse(chunk));
+      mockFetch.mockResolvedValueOnce(mockJsonResponse(backendResponse));
 
       const result = await client.getChunk('abc123');
 
       expect(mockFetch).toHaveBeenCalledWith('/api/v1/viewer/chunks/abc123');
-      expect(result).toEqual(chunk);
+      expect(result.id).toBe('abc123');
+      expect(result.kind).toBe('function');
+      expect(result.summary).toBe('Main entry point');
+      expect(result.vector).toBeNull();
     });
 
     it('should include vector query param when requested', async () => {
-      const chunk: ChunkDetail = {
-        id: 'abc123',
-        filePath: 'src/main.ts',
-        name: 'main',
-        kind: 'function',
-        language: 'typescript',
-        startLine: 1,
-        endLine: 10,
-        content: 'function main() {}',
-        summary: null,
-        dependencies: [],
-        vector: [0.1, 0.2, 0.3],
+      const backendResponse = {
+        data: {
+          id: 'abc123',
+          filePath: 'src/main.ts',
+          chunkType: 'function',
+          name: 'main',
+          language: 'typescript',
+          startLine: 1,
+          endLine: 10,
+          content: 'function main() {}',
+          nlSummary: '',
+          metadata: {},
+          vector: [0.1, 0.2, 0.3],
+        },
       };
-      mockFetch.mockResolvedValueOnce(mockJsonResponse(chunk));
+      mockFetch.mockResolvedValueOnce(mockJsonResponse(backendResponse));
 
-      await client.getChunk('abc123', true);
+      const result = await client.getChunk('abc123', true);
 
       const calledUrl = mockFetch.mock.calls[0]?.[0] as string;
       expect(calledUrl).toContain('includeVector=true');
+      expect(result.vector).toEqual([0.1, 0.2, 0.3]);
     });
 
     it('should encode special characters in chunk ID', async () => {
-      mockFetch.mockResolvedValueOnce(mockJsonResponse({} as ChunkDetail));
+      const backendResponse = { data: { id: 'x', filePath: '', chunkType: '', name: '', language: '', startLine: 0, endLine: 0, content: '', nlSummary: '', metadata: {} } };
+      mockFetch.mockResolvedValueOnce(mockJsonResponse(backendResponse));
 
       await client.getChunk('path/to/file#chunk');
 
@@ -150,19 +160,32 @@ describe('ApiClient', () => {
   });
 
   describe('getGraph', () => {
-    it('should fetch graph without params', async () => {
-      const graph: GraphResponse = { nodes: [], edges: [] };
-      mockFetch.mockResolvedValueOnce(mockJsonResponse(graph));
+    it('should fetch graph without params and unwrap data envelope', async () => {
+      const backendResponse = {
+        data: {
+          nodes: [
+            { id: 'n1', filePath: 'src/foo.ts', symbols: ['fooFn'], type: 'function' },
+          ],
+          edges: [
+            { source: 'n1', target: 'n2', type: 'imports' },
+          ],
+        },
+      };
+      mockFetch.mockResolvedValueOnce(mockJsonResponse(backendResponse));
 
       const result = await client.getGraph();
 
       expect(mockFetch).toHaveBeenCalledWith('/api/v1/viewer/graph');
-      expect(result).toEqual(graph);
+      expect(result.nodes).toHaveLength(1);
+      expect(result.nodes[0]!.kind).toBe('function');
+      expect(result.nodes[0]!.name).toBe('fooFn');
+      expect(result.edges).toHaveLength(1);
+      expect(result.edges[0]!.kind).toBe('imports');
     });
 
     it('should fetch graph with root node and depth', async () => {
-      const graph: GraphResponse = { nodes: [], edges: [] };
-      mockFetch.mockResolvedValueOnce(mockJsonResponse(graph));
+      const backendResponse = { data: { nodes: [], edges: [] } };
+      mockFetch.mockResolvedValueOnce(mockJsonResponse(backendResponse));
 
       await client.getGraph({ rootId: 'node1', depth: 3 });
 
