@@ -6,6 +6,14 @@ export interface ChunkMetadata {
   imports: string[];
   exports: string[];
   repoName?: string;
+  /** Wikilinks extracted from documentation chunks ([[link]] syntax). */
+  links?: string[];
+  /** Tags extracted from documentation chunks (#tag syntax + frontmatter). */
+  tags?: string[];
+  /** Aliases from Obsidian frontmatter. */
+  aliases?: string[];
+  /** Document title from frontmatter. */
+  docTitle?: string;
 }
 
 export type ChunkType =
@@ -16,7 +24,8 @@ export type ChunkType =
   | 'interface'
   | 'type_alias'
   | 'config_block'
-  | 'import_block';
+  | 'import_block'
+  | 'doc';
 
 export interface Chunk {
   id: string;

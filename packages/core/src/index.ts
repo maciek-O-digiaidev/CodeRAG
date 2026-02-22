@@ -45,8 +45,15 @@ export type {
 } from './git/index.js';
 export { GitError, SimpleGitClient, createIgnoreFilter } from './git/index.js';
 
-export type { SupportedLanguage } from './parser/index.js';
-export { TreeSitterParser, LanguageRegistry } from './parser/index.js';
+export type { SupportedLanguage, MarkdownFrontmatter, ParsedMarkdown, MarkdownParserConfig } from './parser/index.js';
+export {
+  TreeSitterParser,
+  LanguageRegistry,
+  MarkdownParser,
+  parseFrontmatter,
+  extractWikilinks,
+  extractTags,
+} from './parser/index.js';
 
 export type { ASTChunkerConfig } from './chunker/index.js';
 export { ASTChunker } from './chunker/index.js';
@@ -133,3 +140,16 @@ export {
   scanForJiraReferences,
   CodeLinker,
 } from './backlog/index.js';
+
+export type {
+  ConfluenceConfig,
+  ConfluencePage,
+  ConfluenceContentType,
+  ConfluenceChangedItem,
+  DocsProvider,
+} from './docs/index.js';
+export {
+  ConfluenceError,
+  ConfluenceProvider,
+  confluenceStorageToPlainText,
+} from './docs/index.js';
