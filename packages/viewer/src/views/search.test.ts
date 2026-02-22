@@ -28,14 +28,14 @@ function mockErrorResponse(status: number, statusText: string): Response {
 }
 
 const MOCK_SEARCH_RESPONSE = {
-  results: [
-    { chunkId: 'c1', score: 0.95, filePath: 'src/foo.ts', name: 'fooFunction', kind: 'function', snippet: 'A function that does foo' },
-    { chunkId: 'c2', score: 0.80, filePath: 'src/bar.ts', name: 'BarClass', kind: 'class', snippet: 'A class for bar operations' },
-    { chunkId: 'c3', score: 0.65, filePath: 'lib/baz.py', name: 'baz_helper', kind: 'function', snippet: 'Helper for baz logic' },
-  ],
-  query: 'test query',
-  totalResults: 3,
-  timingMs: 42,
+  data: {
+    results: [
+      { chunkId: 'c1', score: 0.95, filePath: 'src/foo.ts', name: 'fooFunction', chunkType: 'function', content: 'foo content', nlSummary: 'A function that does foo', method: 'hybrid' },
+      { chunkId: 'c2', score: 0.80, filePath: 'src/bar.ts', name: 'BarClass', chunkType: 'class', content: 'bar content', nlSummary: 'A class for bar operations', method: 'hybrid' },
+      { chunkId: 'c3', score: 0.65, filePath: 'lib/baz.py', name: 'baz_helper', chunkType: 'function', content: 'baz content', nlSummary: 'Helper for baz logic', method: 'bm25' },
+    ],
+    timing: { totalMs: 42 },
+  },
 };
 
 function setupSearchMock(): void {
@@ -317,10 +317,10 @@ describe('Search Playground View', () => {
   it('should show empty results message when no results found', async () => {
     mockPerformanceNow.mockReturnValue(0);
     mockFetch.mockResolvedValue(mockJsonResponse({
-      results: [],
-      query: 'obscure query',
-      totalResults: 0,
-      timingMs: 10,
+      data: {
+        results: [],
+        timing: { totalMs: 10 },
+      },
     }));
     render(container);
 

@@ -253,8 +253,9 @@ async function executeSearch(container: HTMLElement): Promise<void> {
     const startTime = performance.now();
     const response: SearchResponse = await api.search({
       query: state.query,
-      limit: state.topK,
-      mode: 'hybrid',
+      topK: state.topK,
+      vectorWeight: state.vectorWeight,
+      bm25Weight: state.bm25Weight,
     });
     const totalMs = Math.round(performance.now() - startTime);
 

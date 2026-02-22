@@ -24,11 +24,13 @@ function mockErrorResponse(status: number, statusText: string): Response {
 }
 
 const MOCK_STATS = {
-  totalChunks: 150,
-  totalFiles: 42,
-  totalEmbeddings: 140,
-  languages: { typescript: 80, python: 30, go: 15 },
-  lastIndexedAt: new Date(Date.now() - 7200_000).toISOString(), // 2 hours ago
+  data: {
+    chunkCount: 150,
+    fileCount: 42,
+    languages: ['typescript', 'python', 'go'],
+    storageBytes: null,
+    lastIndexed: new Date(Date.now() - 7200_000).toISOString(), // 2 hours ago
+  },
 };
 
 // Backend response format — API client unwraps { data, meta } envelope and maps chunkType→kind
@@ -197,8 +199,7 @@ describe('Dashboard View', () => {
     mockFetch.mockImplementation((url: string) => {
       if (typeof url === 'string' && url.includes('/stats')) {
         return Promise.resolve(mockJsonResponse({
-          ...MOCK_STATS,
-          lastIndexedAt: null,
+          data: { ...MOCK_STATS.data, lastIndexed: null },
         }));
       }
       if (typeof url === 'string' && url.includes('/chunks')) {

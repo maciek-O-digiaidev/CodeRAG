@@ -94,8 +94,9 @@ export interface GraphQueryParams {
 
 export interface SearchParams {
   query: string;
-  limit?: number;
-  mode?: 'hybrid' | 'semantic' | 'keyword';
+  topK?: number;
+  vectorWeight?: number;
+  bm25Weight?: number;
 }
 
 // --- API Client ---
@@ -142,17 +143,6 @@ async function fetchJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    throw new ApiError(response.status, response.statusText);
-  }
-  return response.json() as Promise<T>;
-}
 
 /**
  * Create an API client for the CodeRAG viewer REST endpoints.
@@ -160,7 +150,23 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 export function createApiClient(): ApiClient {
   return {
     getStats(): Promise<StatsResponse> {
-      return fetchJson<StatsResponse>(`${BASE_URL}/stats`);
+      return fetchJson<{
+        data: {
+          chunkCount: number;
+          fileCount: number;
+          languages: string[] | 'auto';
+          storageBytes: number | null;
+          lastIndexed: string | null;
+        };
+      }>(`${BASE_URL}/stats`).then((r) => ({
+        totalChunks: r.data.chunkCount,
+        totalFiles: r.data.fileCount,
+        totalEmbeddings: r.data.chunkCount,
+        languages: Array.isArray(r.data.languages)
+          ? Object.fromEntries(r.data.languages.map((l) => [l, 1]))
+          : {},
+        lastIndexedAt: r.data.lastIndexed,
+      }));
     },
 
     getChunks(params?: ChunkQueryParams): Promise<PaginatedResponse<ChunkSummary>> {
@@ -248,7 +254,39 @@ export function createApiClient(): ApiClient {
     },
 
     search(params: SearchParams): Promise<SearchResponse> {
-      return postJson<SearchResponse>(`${BASE_URL}/search`, params);
+      const qs = buildQueryString({
+        q: params.query,
+        ...(params.topK !== undefined && { topK: params.topK }),
+        ...(params.vectorWeight !== undefined && { vectorWeight: params.vectorWeight }),
+        ...(params.bm25Weight !== undefined && { bm25Weight: params.bm25Weight }),
+      });
+      return fetchJson<{
+        data: {
+          results: Array<{
+            chunkId: string;
+            filePath: string;
+            chunkType: string;
+            name: string;
+            content: string;
+            nlSummary: string;
+            score: number;
+            method: string;
+          }>;
+          timing: { totalMs: number };
+        };
+      }>(`${BASE_URL}/search${qs}`).then((r) => ({
+        results: r.data.results.map((sr) => ({
+          chunkId: sr.chunkId,
+          score: sr.score,
+          filePath: sr.filePath,
+          name: sr.name,
+          kind: sr.chunkType,
+          snippet: sr.nlSummary || sr.content.slice(0, 200),
+        })),
+        query: params.query,
+        totalResults: r.data.results.length,
+        timingMs: r.data.timing.totalMs,
+      }));
     },
 
     getEmbeddings(limit?: number): Promise<EmbeddingPoint[]> {

@@ -35,20 +35,46 @@ describe('ApiClient', () => {
   });
 
   describe('getStats', () => {
-    it('should fetch stats from the correct endpoint', async () => {
-      const stats: StatsResponse = {
-        totalChunks: 100,
-        totalFiles: 20,
-        totalEmbeddings: 95,
-        languages: { typescript: 80, javascript: 20 },
-        lastIndexedAt: '2026-02-22T10:00:00Z',
+    it('should fetch stats and unwrap data envelope with field mapping', async () => {
+      const serverResponse = {
+        data: {
+          chunkCount: 100,
+          fileCount: 20,
+          languages: ['typescript', 'javascript'],
+          storageBytes: null,
+          lastIndexed: '2026-02-22T10:00:00Z',
+        },
       };
-      mockFetch.mockResolvedValueOnce(mockJsonResponse(stats));
+      mockFetch.mockResolvedValueOnce(mockJsonResponse(serverResponse));
 
       const result = await client.getStats();
 
       expect(mockFetch).toHaveBeenCalledWith('/api/v1/viewer/stats');
-      expect(result).toEqual(stats);
+      expect(result).toEqual({
+        totalChunks: 100,
+        totalFiles: 20,
+        totalEmbeddings: 100,
+        languages: { typescript: 1, javascript: 1 },
+        lastIndexedAt: '2026-02-22T10:00:00Z',
+      });
+    });
+
+    it('should handle "auto" languages as empty record', async () => {
+      const serverResponse = {
+        data: {
+          chunkCount: 50,
+          fileCount: 10,
+          languages: 'auto',
+          storageBytes: null,
+          lastIndexed: null,
+        },
+      };
+      mockFetch.mockResolvedValueOnce(mockJsonResponse(serverResponse));
+
+      const result = await client.getStats();
+
+      expect(result.languages).toEqual({});
+      expect(result.lastIndexedAt).toBeNull();
     });
 
     it('should throw ApiError on non-ok response', async () => {
@@ -196,23 +222,72 @@ describe('ApiClient', () => {
   });
 
   describe('search', () => {
-    it('should POST search query to the correct endpoint', async () => {
-      const searchResponse: SearchResponse = {
-        results: [],
-        query: 'test query',
-        totalResults: 0,
-        timingMs: 42,
+    it('should GET search with query params, unwrap data, and map fields', async () => {
+      const serverResponse = {
+        data: {
+          results: [
+            {
+              chunkId: 'c1',
+              filePath: 'src/foo.ts',
+              chunkType: 'function',
+              name: 'doStuff',
+              content: 'function doStuff() { return 42; }',
+              nlSummary: 'Does stuff and returns 42',
+              score: 0.95,
+              method: 'hybrid',
+            },
+          ],
+          timing: { totalMs: 42 },
+        },
       };
-      mockFetch.mockResolvedValueOnce(mockJsonResponse(searchResponse));
+      mockFetch.mockResolvedValueOnce(mockJsonResponse(serverResponse));
 
-      const result = await client.search({ query: 'test query', limit: 10, mode: 'hybrid' });
+      const result = await client.search({ query: 'test query', topK: 10 });
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/v1/viewer/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: 'test query', limit: 10, mode: 'hybrid' }),
+      const calledUrl = mockFetch.mock.calls[0]?.[0] as string;
+      expect(calledUrl).toContain('/api/v1/viewer/search?');
+      expect(calledUrl).toContain('q=test+query');
+      expect(calledUrl).toContain('topK=10');
+      // Should be GET (no second argument with method/body)
+      expect(mockFetch.mock.calls[0]?.[1]).toBeUndefined();
+
+      expect(result.query).toBe('test query');
+      expect(result.totalResults).toBe(1);
+      expect(result.timingMs).toBe(42);
+      expect(result.results[0]).toEqual({
+        chunkId: 'c1',
+        score: 0.95,
+        filePath: 'src/foo.ts',
+        name: 'doStuff',
+        kind: 'function',
+        snippet: 'Does stuff and returns 42',
       });
-      expect(result).toEqual(searchResponse);
+    });
+
+    it('should pass vectorWeight and bm25Weight as query params', async () => {
+      const serverResponse = { data: { results: [], timing: { totalMs: 5 } } };
+      mockFetch.mockResolvedValueOnce(mockJsonResponse(serverResponse));
+
+      await client.search({ query: 'foo', vectorWeight: 0.7, bm25Weight: 0.3 });
+
+      const calledUrl = mockFetch.mock.calls[0]?.[0] as string;
+      expect(calledUrl).toContain('vectorWeight=0.7');
+      expect(calledUrl).toContain('bm25Weight=0.3');
+    });
+
+    it('should fall back to content snippet when nlSummary is empty', async () => {
+      const longContent = 'x'.repeat(300);
+      const serverResponse = {
+        data: {
+          results: [{ chunkId: 'c2', filePath: 'a.ts', chunkType: 'class', name: 'A', content: longContent, nlSummary: '', score: 0.5, method: 'bm25' }],
+          timing: { totalMs: 1 },
+        },
+      };
+      mockFetch.mockResolvedValueOnce(mockJsonResponse(serverResponse));
+
+      const result = await client.search({ query: 'A' });
+
+      expect(result.results[0]!.snippet).toBe('x'.repeat(200));
     });
 
     it('should handle search errors', async () => {
