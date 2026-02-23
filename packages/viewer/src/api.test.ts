@@ -40,7 +40,7 @@ describe('ApiClient', () => {
         data: {
           chunkCount: 100,
           fileCount: 20,
-          languages: ['typescript', 'javascript'],
+          languages: { typescript: 75, javascript: 25 },
           storageBytes: null,
           lastIndexed: '2026-02-22T10:00:00Z',
         },
@@ -54,17 +54,17 @@ describe('ApiClient', () => {
         totalChunks: 100,
         totalFiles: 20,
         totalEmbeddings: 100,
-        languages: { typescript: 1, javascript: 1 },
+        languages: { typescript: 75, javascript: 25 },
         lastIndexedAt: '2026-02-22T10:00:00Z',
       });
     });
 
-    it('should handle "auto" languages as empty record', async () => {
+    it('should handle empty languages as empty record', async () => {
       const serverResponse = {
         data: {
           chunkCount: 50,
           fileCount: 10,
-          languages: 'auto',
+          languages: {},
           storageBytes: null,
           lastIndexed: null,
         },

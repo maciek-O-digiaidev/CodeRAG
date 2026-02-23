@@ -53,7 +53,7 @@ export interface ViewerStatsResponse {
   data: {
     chunkCount: number;
     fileCount: number;
-    languages: string[] | 'auto';
+    languages: Record<string, number>;
     storageBytes: number | null;
     lastIndexed: string | null;
   };
@@ -143,7 +143,6 @@ export function createViewerRouter(deps: ViewerDeps): Router {
   // GET /stats — Index statistics
   router.get('/stats', async (_req, res) => {
     const store = deps.getStore();
-    const config = deps.getConfig();
 
     if (!store) {
       res.status(503).json({ error: 'Service not initialized' });
@@ -151,26 +150,63 @@ export function createViewerRouter(deps: ViewerDeps): Router {
     }
 
     try {
-      const countResult = await store.count();
-      if (countResult.isErr()) {
-        res.status(500).json({
-          error: 'Failed to retrieve index statistics',
-          message: countResult.error.message,
-        });
+      const table = getInternalTable(store);
+
+      if (!table) {
+        res.json({
+          data: {
+            chunkCount: 0,
+            fileCount: 0,
+            languages: {},
+            storageBytes: null,
+            lastIndexed: null,
+          },
+        } satisfies ViewerStatsResponse);
         return;
       }
 
-      const chunkCount = countResult.value;
-      // Estimate file count: assume ~5 chunks per file on average
-      const fileCount = Math.max(1, Math.ceil(chunkCount / 5));
+      const allRows = await table.query().toArray() as LanceDBRow[];
+      const chunkCount = allRows.length;
+
+      // Compute unique file paths and language counts from actual data
+      const filePaths = new Set<string>();
+      const languageCounts: Record<string, number> = {};
+      for (const row of allRows) {
+        if (row.file_path) filePaths.add(row.file_path);
+        if (row.language) {
+          languageCounts[row.language] = (languageCounts[row.language] ?? 0) + 1;
+        }
+      }
+
+      // Read lastIndexed from index-state.json if available
+      // Format: { "path/to/file": { filePath, contentHash, lastIndexedAt, chunkIds }, ... }
+      let lastIndexed: string | null = null;
+      try {
+        const fs = await import('node:fs');
+        const path = await import('node:path');
+        const storagePath = (store as unknown as { storagePath: string }).storagePath;
+        const statePath = path.join(storagePath, 'index-state.json');
+        if (fs.existsSync(statePath)) {
+          const stateJson = JSON.parse(fs.readFileSync(statePath, 'utf-8')) as Record<string, { lastIndexedAt?: string }>;
+          let latest = '';
+          for (const entry of Object.values(stateJson)) {
+            if (entry.lastIndexedAt && entry.lastIndexedAt > latest) {
+              latest = entry.lastIndexedAt;
+            }
+          }
+          if (latest) lastIndexed = latest;
+        }
+      } catch {
+        // Ignore — lastIndexed stays null
+      }
 
       const response: ViewerStatsResponse = {
         data: {
           chunkCount,
-          fileCount,
-          languages: config?.project.languages ?? 'auto',
+          fileCount: filePaths.size,
+          languages: languageCounts,
           storageBytes: null,
-          lastIndexed: null,
+          lastIndexed,
         },
       };
 

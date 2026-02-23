@@ -5,12 +5,11 @@ import { ok, err } from 'neverthrow';
 import { createViewerRouter, type ViewerDeps } from './viewer.js';
 import type {
   LanceDBStore,
-  CodeRAGConfig,
   HybridSearch,
   DependencyGraph,
   SearchResult,
 } from '@coderag/core';
-import { EmbedError, StoreError } from '@coderag/core';
+import { EmbedError } from '@coderag/core';
 
 // --- Mock LanceDB row shape ---
 
@@ -64,19 +63,6 @@ function makeMockStore(tableRows: MockLanceDBRow[] | null = []): LanceDBStore {
     close: vi.fn(),
     table: mockTable,
   } as unknown as LanceDBStore;
-}
-
-function makeMockConfig(overrides: Partial<CodeRAGConfig> = {}): CodeRAGConfig {
-  return {
-    version: '1',
-    project: { name: 'test-project', languages: ['typescript', 'python'] },
-    ingestion: { maxTokensPerChunk: 512, exclude: [] },
-    embedding: { provider: 'ollama', model: 'nomic-embed-text', dimensions: 768 },
-    llm: { provider: 'ollama', model: 'qwen2.5-coder:7b' },
-    search: { topK: 10, vectorWeight: 0.7, bm25Weight: 0.3 },
-    storage: { path: '.coderag' },
-    ...overrides,
-  };
 }
 
 function makeMockGraph(): DependencyGraph {
@@ -161,23 +147,24 @@ function createTestApp(deps: Partial<ViewerDeps> = {}): express.Express {
 
 describe('GET /api/v1/viewer/stats', () => {
   it('should return index statistics when store is initialized', async () => {
-    const rows = [makeMockRow(), makeMockRow({ id: 'chunk-2' })];
+    const rows = [
+      makeMockRow(),
+      makeMockRow({ id: 'chunk-2', file_path: 'src/world.ts', language: 'python' }),
+      makeMockRow({ id: 'chunk-3', file_path: 'src/hello.ts', language: 'typescript' }),
+    ];
     const store = makeMockStore(rows);
-    vi.mocked(store.count).mockResolvedValue(ok(42));
-    const config = makeMockConfig();
 
     const app = createTestApp({
       getStore: () => store,
-      getConfig: () => config,
     });
 
     const res = await request(app).get('/api/v1/viewer/stats');
 
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({
-      chunkCount: 42,
-      fileCount: 9,
-      languages: ['typescript', 'python'],
+      chunkCount: 3,
+      fileCount: 2,
+      languages: { typescript: 2, python: 1 },
       storageBytes: null,
       lastIndexed: null,
     });
@@ -194,13 +181,15 @@ describe('GET /api/v1/viewer/stats', () => {
     expect(res.body).toHaveProperty('error', 'Service not initialized');
   });
 
-  it('should handle store count errors', async () => {
+  it('should handle table query errors', async () => {
     const store = makeMockStore([]);
-    vi.mocked(store.count).mockResolvedValue(err(new StoreError('DB connection lost')));
+    // Override the mock table to throw on query
+    (store as unknown as { table: { query: ReturnType<typeof vi.fn> } }).table.query = vi.fn().mockReturnValue({
+      toArray: vi.fn().mockRejectedValue(new Error('DB connection lost')),
+    });
 
     const app = createTestApp({
       getStore: () => store,
-      getConfig: () => makeMockConfig(),
     });
 
     const res = await request(app).get('/api/v1/viewer/stats');
@@ -209,22 +198,23 @@ describe('GET /api/v1/viewer/stats', () => {
     expect(res.body.message).toContain('DB connection lost');
   });
 
-  it('should use auto languages when config has auto', async () => {
-    const store = makeMockStore([]);
-    vi.mocked(store.count).mockResolvedValue(ok(10));
-    const config = makeMockConfig({
-      project: { name: 'test', languages: 'auto' },
-    });
+  it('should return empty stats when table is null', async () => {
+    const store = makeMockStore(null);
 
     const app = createTestApp({
       getStore: () => store,
-      getConfig: () => config,
     });
 
     const res = await request(app).get('/api/v1/viewer/stats');
 
     expect(res.status).toBe(200);
-    expect(res.body.data.languages).toBe('auto');
+    expect(res.body.data).toEqual({
+      chunkCount: 0,
+      fileCount: 0,
+      languages: {},
+      storageBytes: null,
+      lastIndexed: null,
+    });
   });
 });
 

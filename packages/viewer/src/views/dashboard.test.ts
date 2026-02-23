@@ -27,7 +27,7 @@ const MOCK_STATS = {
   data: {
     chunkCount: 150,
     fileCount: 42,
-    languages: ['typescript', 'python', 'go'],
+    languages: { typescript: 80, python: 50, go: 20 },
     storageBytes: null,
     lastIndexed: new Date(Date.now() - 7200_000).toISOString(), // 2 hours ago
   },

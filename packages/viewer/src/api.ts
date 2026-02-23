@@ -154,7 +154,7 @@ export function createApiClient(): ApiClient {
         data: {
           chunkCount: number;
           fileCount: number;
-          languages: string[] | 'auto';
+          languages: Record<string, number>;
           storageBytes: number | null;
           lastIndexed: string | null;
         };
@@ -162,9 +162,7 @@ export function createApiClient(): ApiClient {
         totalChunks: r.data.chunkCount,
         totalFiles: r.data.fileCount,
         totalEmbeddings: r.data.chunkCount,
-        languages: Array.isArray(r.data.languages)
-          ? Object.fromEntries(r.data.languages.map((l) => [l, 1]))
-          : {},
+        languages: r.data.languages ?? {},
         lastIndexedAt: r.data.lastIndexed,
       }));
     },
