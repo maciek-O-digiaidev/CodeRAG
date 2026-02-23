@@ -11,7 +11,7 @@ export interface OllamaConfig {
 const DEFAULT_CONFIG: OllamaConfig = {
   baseUrl: 'http://localhost:11434',
   model: 'qwen2.5-coder:7b',
-  timeout: 30_000,
+  timeout: 60_000,
   maxTokens: 100,
 };
 

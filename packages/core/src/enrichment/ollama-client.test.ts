@@ -19,7 +19,7 @@ describe('OllamaClient', () => {
 
       expect(config.baseUrl).toBe('http://localhost:11434');
       expect(config.model).toBe('qwen2.5-coder:7b');
-      expect(config.timeout).toBe(30_000);
+      expect(config.timeout).toBe(60_000);
       expect(config.maxTokens).toBe(100);
     });
 
@@ -44,7 +44,7 @@ describe('OllamaClient', () => {
 
       expect(config.baseUrl).toBe('http://localhost:11434');
       expect(config.model).toBe('codellama');
-      expect(config.timeout).toBe(30_000);
+      expect(config.timeout).toBe(60_000);
     });
   });
 
