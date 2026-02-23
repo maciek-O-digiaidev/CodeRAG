@@ -17,6 +17,8 @@ import {
   LanceDBStore,
   BM25Index,
   GraphBuilder,
+  DependencyGraph,
+  scanForABReferences,
   IndexState,
   MultiRepoIndexer,
   AzureDevOpsProvider,
@@ -26,6 +28,7 @@ import {
   type BacklogItem,
   type Chunk,
   type ChunkMetadata,
+  type GraphNode,
   type ParsedFile,
   type CodeRAGConfig,
   type BacklogConfig,
@@ -622,7 +625,94 @@ async function indexBacklog(
   // Save backlog state
   await writeFile(backlogStatePath, JSON.stringify(backlogState, null, 2), 'utf-8');
 
+  // Link backlog items into the dependency graph
+  await logger.info('Backlog: linking items to dependency graph...');
+  await linkBacklogToGraph(items, storagePath, bm25Path, logger);
+
   return { itemsFetched: items.length, itemsIndexed: changedItems.length, skipped };
+}
+
+/**
+ * Augment the dependency graph with backlog nodes and edges.
+ *
+ * Two linking directions:
+ *  1. Backlog → Code: each item's linkedCodePaths creates a 'references' edge
+ *  2. Code → Backlog: scan code chunks for AB#XXXX references, create reverse edges
+ */
+async function linkBacklogToGraph(
+  items: BacklogItem[],
+  storagePath: string,
+  bm25Path: string,
+  logger: IndexLogger,
+): Promise<void> {
+  // Load existing graph
+  const graphPath = join(storagePath, 'graph.json');
+  let graph: DependencyGraph;
+  try {
+    const graphData = await readFile(graphPath, 'utf-8');
+    graph = DependencyGraph.fromJSON(JSON.parse(graphData) as { nodes: GraphNode[]; edges: { source: string; target: string; type: 'imports' | 'extends' | 'implements' | 'calls' | 'references' }[] });
+  } catch {
+    await logger.warn('Backlog: no graph.json found, skipping graph linking');
+    return;
+  }
+
+  const existingNodeIds = new Set(graph.getAllNodes().map((n) => n.id));
+  let edgesAdded = 0;
+
+  // 1. Add backlog items as nodes + edges from linkedCodePaths
+  for (const item of items) {
+    const nodeId = `backlog:${item.externalId}`;
+
+    if (!existingNodeIds.has(nodeId)) {
+      graph.addNode({
+        id: nodeId,
+        filePath: `backlog/${item.externalId}`,
+        symbols: [item.title],
+        type: 'backlog',
+      });
+      existingNodeIds.add(nodeId);
+    }
+
+    // Edges: backlog item → linked code files
+    for (const codePath of item.linkedCodePaths) {
+      const normalizedPath = codePath.replace(/\\/g, '/');
+      if (existingNodeIds.has(normalizedPath)) {
+        graph.addEdge({ source: nodeId, target: normalizedPath, type: 'references' });
+        edgesAdded++;
+      }
+    }
+  }
+
+  // 2. Scan code chunks for AB# references → create code → backlog edges
+  //    Search BM25 for "AB" to find chunks likely containing AB#XXXX references
+  const backlogIdSet = new Set(items.map((i) => i.externalId));
+  try {
+    const bm25Data = await readFile(bm25Path, 'utf-8');
+    const bm25 = BM25Index.deserialize(bm25Data);
+    const candidateResults = bm25.search('AB', 500);
+
+    for (const result of candidateResults) {
+      if (result.chunkId.startsWith('backlog:') || !result.chunk) continue;
+      const refs = scanForABReferences(result.content);
+      for (const refId of refs) {
+        const externalId = `AB#${refId}`;
+        const backlogNodeId = `backlog:${externalId}`;
+        if (backlogIdSet.has(externalId) && existingNodeIds.has(backlogNodeId)) {
+          const codeNodeId = result.chunk.filePath.replace(/\\/g, '/');
+          if (existingNodeIds.has(codeNodeId)) {
+            graph.addEdge({ source: codeNodeId, target: backlogNodeId, type: 'references' });
+            edgesAdded++;
+          }
+        }
+      }
+    }
+  } catch {
+    // BM25 not available yet — skip code→backlog linking
+  }
+
+  // Save augmented graph
+  await writeFile(graphPath, JSON.stringify(graph.toJSON()), 'utf-8');
+  await logger.info(`Backlog: added ${items.length} backlog nodes, ${edgesAdded} reference edges to graph`);
 }
 
 export function registerIndexCommand(program: Command): void {

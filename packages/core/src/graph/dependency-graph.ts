@@ -2,13 +2,13 @@ export interface GraphNode {
   id: string;
   filePath: string;
   symbols: string[];
-  type: 'module' | 'class' | 'function';
+  type: 'module' | 'class' | 'function' | 'backlog';
 }
 
 export interface GraphEdge {
   source: string;
   target: string;
-  type: 'imports' | 'extends' | 'implements' | 'calls';
+  type: 'imports' | 'extends' | 'implements' | 'calls' | 'references';
 }
 
 export class DependencyGraph {

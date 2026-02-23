@@ -13,7 +13,8 @@ export type RelationshipType =
   | 'imported_by'
   | 'test_for'
   | 'interface_of'
-  | 'sibling';
+  | 'sibling'
+  | 'backlog';
 
 export interface RelatedChunk {
   chunk: SearchResult;
@@ -118,6 +119,11 @@ export class ContextExpander {
   ): RelationshipType {
     const sourceNode = this.graph.getNode(sourceId);
     const relatedNode = this.graph.getNode(relatedId);
+
+    // Check if either node is a backlog item
+    if (sourceNode?.type === 'backlog' || relatedNode?.type === 'backlog') {
+      return 'backlog';
+    }
 
     // Check if the related file is a test file for the source
     if (relatedNode?.filePath && isTestFileFor(relatedNode.filePath, sourceNode?.filePath)) {
