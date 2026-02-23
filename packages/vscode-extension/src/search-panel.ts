@@ -167,9 +167,20 @@ export class SearchPanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Open a file at a specific line in the editor.
+   * Paths from search results are relative to the workspace root.
    */
   async openResult(filePath: string, startLine: number, endLine: number): Promise<void> {
-    const uri = this.vscodeApi.Uri.file(filePath);
+    let uri: vscode.Uri;
+    if (filePath.startsWith('/')) {
+      uri = this.vscodeApi.Uri.file(filePath);
+    } else {
+      const wsFolder = this.vscodeApi.workspace.workspaceFolders?.[0];
+      if (wsFolder) {
+        uri = this.vscodeApi.Uri.joinPath(wsFolder.uri, filePath);
+      } else {
+        uri = this.vscodeApi.Uri.file(filePath);
+      }
+    }
     const doc = await this.vscodeApi.workspace.openTextDocument(uri);
     const line = Math.max(0, startLine - 1);
     await this.vscodeApi.window.showTextDocument(doc, {
