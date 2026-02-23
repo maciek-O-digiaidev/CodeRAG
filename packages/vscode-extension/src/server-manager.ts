@@ -2,11 +2,18 @@
  * ServerManager — handles auto-starting and managing the CodeRAG MCP server.
  *
  * When the extension activates, it attempts to connect to an existing server.
- * If no server is running, it spawns `npx coderag serve --port <port>` and
- * waits for it to become available.
+ * If no server is running, it resolves the CLI location and spawns
+ * `coderag serve --port <port>`, waiting for it to become available.
+ *
+ * CLI resolution order:
+ *   1. Local monorepo: {workspace}/packages/cli/dist/index.js
+ *   2. node_modules:   {workspace}/node_modules/.bin/coderag
+ *   3. PATH:           coderag (global install)
  */
 
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn, execSync, type ChildProcess } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import type * as vscode from 'vscode';
 
 const DEFAULT_PORT = 3100;
@@ -85,11 +92,48 @@ export class ServerManager {
     }
   }
 
+  /**
+   * Resolve the CLI command and arguments to start the server.
+   * Tries local monorepo path, node_modules bin, then global PATH.
+   */
+  private resolveCliCommand(): { command: string; args: string[] } {
+    const portArgs = ['serve', '--port', String(this.port)];
+
+    // 1. Local monorepo: packages/cli/dist/index.js
+    const monorepoPath = join(this.workspaceRoot, 'packages', 'cli', 'dist', 'index.js');
+    if (existsSync(monorepoPath)) {
+      this.outputChannel.appendLine(`[server] Using local CLI: ${monorepoPath}`);
+      return { command: 'node', args: [monorepoPath, ...portArgs] };
+    }
+
+    // 2. node_modules/.bin/coderag
+    const nmBin = join(this.workspaceRoot, 'node_modules', '.bin', 'coderag');
+    if (existsSync(nmBin)) {
+      this.outputChannel.appendLine(`[server] Using node_modules CLI: ${nmBin}`);
+      return { command: nmBin, args: portArgs };
+    }
+
+    // 3. Global PATH — check if `coderag` is available
+    try {
+      execSync('command -v coderag', { stdio: 'ignore' });
+      this.outputChannel.appendLine('[server] Using global coderag from PATH');
+      return { command: 'coderag', args: portArgs };
+    } catch {
+      // Not in PATH
+    }
+
+    // 4. Fallback to npx (will fetch from npm if published)
+    this.outputChannel.appendLine('[server] Falling back to npx coderag');
+    return { command: 'npx', args: ['coderag', ...portArgs] };
+  }
+
   private async startServer(): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
+      const { command, args } = this.resolveCliCommand();
+
       const child = spawn(
-        'npx',
-        ['coderag', 'serve', '--port', String(this.port)],
+        command,
+        args,
         {
           cwd: this.workspaceRoot,
           shell: true,
