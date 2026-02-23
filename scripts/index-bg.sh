@@ -25,6 +25,24 @@ RETRY_DELAY=10  # seconds
 # Ensure storage dir exists before anything writes to it
 mkdir -p "$STORAGE_DIR"
 
+# Lock file to prevent multiple concurrent instances
+LOCK_FILE="$STORAGE_DIR/index.lock"
+
+if [ -f "$LOCK_FILE" ]; then
+  existing_pid=$(cat "$LOCK_FILE" 2>/dev/null)
+  if kill -0 "$existing_pid" 2>/dev/null; then
+    echo "ERROR: Another indexing process is already running (PID $existing_pid)"
+    echo "  If this is stale, remove: $LOCK_FILE"
+    exit 1
+  else
+    echo "Removing stale lock file (PID $existing_pid is no longer running)"
+    rm -f "$LOCK_FILE"
+  fi
+fi
+
+echo $$ > "$LOCK_FILE"
+trap 'rm -f "$LOCK_FILE"' EXIT
+
 # Extract exported env vars from shell profile (avoids sourcing interactive setup)
 # This picks up ADO_PAT and other credentials defined in user's shell config
 for profile in "$HOME/.zshenv" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.bashrc"; do
