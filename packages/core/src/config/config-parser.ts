@@ -121,6 +121,65 @@ const DEFAULT_CONFIG: CodeRAGConfig = {
   },
 };
 
+// --- Environment variable interpolation ---
+
+const ENV_VAR_PATTERN = /\$\{([^}]+)\}/g;
+const ESCAPED_ENV_VAR_PATTERN = /\\\$\{([^}]+)\}/g;
+
+function interpolateEnvVarsInString(value: string): string | ConfigError {
+  // First, temporarily replace escaped \${...} with a placeholder
+  const placeholder = '\x00ENV_ESCAPED\x00';
+  const withPlaceholders = value.replace(ESCAPED_ENV_VAR_PATTERN, `${placeholder}$1${placeholder}`);
+
+  // Check for unresolved env vars
+  const missing: string[] = [];
+  const resolved = withPlaceholders.replace(ENV_VAR_PATTERN, (_match, varName: string) => {
+    const envValue = process.env[varName];
+    if (envValue === undefined) {
+      missing.push(varName);
+      return _match;
+    }
+    return envValue;
+  });
+
+  if (missing.length > 0) {
+    return new ConfigError(
+      `Missing environment variable(s): ${missing.join(', ')}. Set them before running CodeRAG.`,
+    );
+  }
+
+  // Restore escaped sequences as literal ${...}
+  return resolved.replace(
+    new RegExp(`${placeholder.replace(/\x00/g, '\\x00')}(.+?)${placeholder.replace(/\x00/g, '\\x00')}`, 'g'),
+    (_match, varName: string) => `\${${varName}}`,
+  );
+}
+
+export function interpolateEnvVars(obj: unknown): unknown | ConfigError {
+  if (typeof obj === 'string') {
+    return interpolateEnvVarsInString(obj);
+  }
+  if (Array.isArray(obj)) {
+    const result: unknown[] = [];
+    for (const item of obj) {
+      const interpolated = interpolateEnvVars(item);
+      if (interpolated instanceof ConfigError) return interpolated;
+      result.push(interpolated);
+    }
+    return result;
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      const interpolated = interpolateEnvVars(value);
+      if (interpolated instanceof ConfigError) return interpolated;
+      result[key] = interpolated;
+    }
+    return result;
+  }
+  return obj;
+}
+
 // --- Helpers ---
 
 function formatZodErrors(error: z.ZodError): string {
@@ -200,7 +259,13 @@ export async function loadConfig(rootDir: string): Promise<Result<CodeRAGConfig,
     return err(new ConfigError('Config file is empty or not a valid YAML object'));
   }
 
-  const withDefaults = applyDefaults(parsed as Record<string, unknown>);
+  // Interpolate environment variables (e.g., ${ADO_PAT} → process.env.ADO_PAT)
+  const interpolated = interpolateEnvVars(parsed);
+  if (interpolated instanceof ConfigError) {
+    return err(interpolated);
+  }
+
+  const withDefaults = applyDefaults(interpolated as Record<string, unknown>);
 
   const validationResult = codeRAGConfigSchema.safeParse(withDefaults);
   if (!validationResult.success) {

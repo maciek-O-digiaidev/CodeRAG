@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { writeFile, readFile } from 'node:fs/promises';
 import { join, resolve, sep } from 'node:path';
+import { createHash } from 'node:crypto';
 import {
   loadConfig,
   createIgnoreFilter,
@@ -17,9 +18,16 @@ import {
   GraphBuilder,
   IndexState,
   MultiRepoIndexer,
+  AzureDevOpsProvider,
+  JiraProvider,
+  ClickUpProvider,
+  type BacklogProvider,
+  type BacklogItem,
   type Chunk,
+  type ChunkMetadata,
   type ParsedFile,
   type CodeRAGConfig,
+  type BacklogConfig,
 } from '@coderag/core';
 
 /**
@@ -224,6 +232,218 @@ async function indexSingleRepo(
   return { filesProcessed: filesToProcess.length, chunksCreated: enrichedChunks.length, parseErrors, parseErrorDetails };
 }
 
+// ---------------------------------------------------------------------------
+// Backlog indexing
+// ---------------------------------------------------------------------------
+
+function createBacklogProvider(backlogConfig: BacklogConfig): BacklogProvider | null {
+  switch (backlogConfig.provider) {
+    case 'ado':
+    case 'azure-devops':
+      return new AzureDevOpsProvider();
+    case 'jira':
+      return new JiraProvider();
+    case 'clickup':
+      return new ClickUpProvider();
+    default:
+      return null;
+  }
+}
+
+function backlogItemToChunk(item: BacklogItem): Chunk {
+  const lines: string[] = [];
+  lines.push(`# ${item.externalId}: ${item.title}`);
+  lines.push('');
+  lines.push(`**Type:** ${item.type} | **State:** ${item.state}`);
+  if (item.assignedTo) lines.push(`**Assigned to:** ${item.assignedTo}`);
+  if (item.tags.length > 0) lines.push(`**Tags:** ${item.tags.join(', ')}`);
+  if (item.url) lines.push(`**URL:** ${item.url}`);
+  lines.push('');
+
+  if (item.description) {
+    // Strip HTML tags for cleaner embedding
+    const plainDesc = item.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (plainDesc) {
+      lines.push('## Description');
+      lines.push(plainDesc);
+      lines.push('');
+    }
+  }
+
+  if (item.linkedCodePaths.length > 0) {
+    lines.push('## Linked Code');
+    for (const path of item.linkedCodePaths) {
+      lines.push(`- ${path}`);
+    }
+  }
+
+  const content = lines.join('\n');
+
+  const metadata: ChunkMetadata = {
+    chunkType: 'doc',
+    name: `${item.externalId}: ${item.title}`,
+    declarations: [],
+    imports: [],
+    exports: [],
+    tags: item.tags,
+    docTitle: item.title,
+  };
+
+  return {
+    id: `backlog:${item.externalId}`,
+    content,
+    nlSummary: `${item.type} work item "${item.title}" (${item.state})${item.assignedTo ? ` assigned to ${item.assignedTo}` : ''}`,
+    filePath: `backlog/${item.externalId}`,
+    startLine: 1,
+    endLine: content.split('\n').length,
+    language: 'markdown',
+    metadata,
+  };
+}
+
+function hashBacklogItem(item: BacklogItem): string {
+  const data = JSON.stringify({
+    title: item.title,
+    description: item.description,
+    state: item.state,
+    type: item.type,
+    assignedTo: item.assignedTo,
+    tags: item.tags,
+    linkedCodePaths: item.linkedCodePaths,
+  });
+  return createHash('sha256').update(data).digest('hex');
+}
+
+interface BacklogIndexResult {
+  itemsFetched: number;
+  itemsIndexed: number;
+  skipped: number;
+  error?: string;
+}
+
+async function indexBacklog(
+  backlogConfig: BacklogConfig,
+  storagePath: string,
+  config: CodeRAGConfig,
+  options: { full?: boolean },
+  spinner: ReturnType<typeof ora>,
+): Promise<BacklogIndexResult> {
+  // Create provider
+  const provider = createBacklogProvider(backlogConfig);
+  if (!provider) {
+    return { itemsFetched: 0, itemsIndexed: 0, skipped: 0, error: `Unknown backlog provider: ${backlogConfig.provider}` };
+  }
+
+  // Initialize provider
+  spinner.text = 'Backlog: connecting to provider...';
+  const initResult = await provider.initialize(backlogConfig.config ?? {});
+  if (initResult.isErr()) {
+    return { itemsFetched: 0, itemsIndexed: 0, skipped: 0, error: `Backlog init failed: ${initResult.error.message}` };
+  }
+
+  // Fetch all items
+  spinner.text = 'Backlog: fetching work items...';
+  const itemsResult = await provider.getItems({ limit: 500 });
+  if (itemsResult.isErr()) {
+    return { itemsFetched: 0, itemsIndexed: 0, skipped: 0, error: `Backlog fetch failed: ${itemsResult.error.message}` };
+  }
+
+  const items = itemsResult.value;
+  if (items.length === 0) {
+    return { itemsFetched: 0, itemsIndexed: 0, skipped: 0 };
+  }
+
+  // Load backlog index state for incremental indexing
+  const backlogStatePath = join(storagePath, 'backlog-state.json');
+  let backlogState: Record<string, string> = {};
+  if (!options.full) {
+    try {
+      const stateData = await readFile(backlogStatePath, 'utf-8');
+      backlogState = JSON.parse(stateData) as Record<string, string>;
+    } catch {
+      // No saved state, index all
+    }
+  }
+
+  // Filter to changed items (incremental)
+  const changedItems: BacklogItem[] = [];
+  let skipped = 0;
+  for (const item of items) {
+    const currentHash = hashBacklogItem(item);
+    if (!options.full && backlogState[item.externalId] === currentHash) {
+      skipped++;
+      continue;
+    }
+    backlogState[item.externalId] = currentHash;
+    changedItems.push(item);
+  }
+
+  if (changedItems.length === 0) {
+    return { itemsFetched: items.length, itemsIndexed: 0, skipped };
+  }
+
+  spinner.text = `Backlog: converting ${changedItems.length} items to chunks...`;
+  const chunks = changedItems.map(backlogItemToChunk);
+
+  // Embed chunks
+  spinner.text = `Backlog: embedding ${chunks.length} items...`;
+  const embeddingProvider = new OllamaEmbeddingProvider({
+    model: config.embedding.model,
+    dimensions: config.embedding.dimensions,
+  });
+
+  const textsToEmbed = chunks.map(
+    (c) => c.nlSummary ? `${c.nlSummary}\n\n${c.content}` : c.content,
+  );
+  const embedResult = await embeddingProvider.embed(textsToEmbed);
+  if (embedResult.isErr()) {
+    return { itemsFetched: items.length, itemsIndexed: 0, skipped, error: `Backlog embedding failed: ${embedResult.error.message}` };
+  }
+  const embeddings = embedResult.value;
+
+  // Store in LanceDB
+  spinner.text = `Backlog: storing ${chunks.length} items in vector database...`;
+  const store = new LanceDBStore(storagePath, config.embedding.dimensions);
+  await store.connect();
+
+  const ids = chunks.map((c) => c.id);
+  const metadata = chunks.map((c) => ({
+    content: c.content,
+    nl_summary: c.nlSummary,
+    chunk_type: c.metadata.chunkType,
+    file_path: c.filePath,
+    language: c.language,
+    start_line: c.startLine,
+    end_line: c.endLine,
+    name: c.metadata.name,
+  }));
+
+  const upsertResult = await store.upsert(ids, embeddings, metadata);
+  store.close();
+
+  if (upsertResult.isErr()) {
+    return { itemsFetched: items.length, itemsIndexed: 0, skipped, error: `Backlog store failed: ${upsertResult.error.message}` };
+  }
+
+  // Add to BM25 index (append to existing)
+  spinner.text = 'Backlog: updating BM25 index...';
+  const bm25Path = join(storagePath, 'bm25-index.json');
+  let bm25: BM25Index;
+  try {
+    const existingBm25 = await readFile(bm25Path, 'utf-8');
+    bm25 = BM25Index.deserialize(existingBm25);
+  } catch {
+    bm25 = new BM25Index();
+  }
+  bm25.addChunks(chunks);
+  await writeFile(bm25Path, bm25.serialize(), 'utf-8');
+
+  // Save backlog state
+  await writeFile(backlogStatePath, JSON.stringify(backlogState, null, 2), 'utf-8');
+
+  return { itemsFetched: items.length, itemsIndexed: changedItems.length, skipped };
+}
+
 export function registerIndexCommand(program: Command): void {
   program
     .command('index')
@@ -282,6 +502,17 @@ export function registerIndexCommand(program: Command): void {
           return;
         }
 
+        // Backlog indexing (if configured)
+        let backlogResult: BacklogIndexResult | null = null;
+        if (config.backlog) {
+          try {
+            backlogResult = await indexBacklog(config.backlog, storagePath, config, options, spinner);
+          } catch (backlogError: unknown) {
+            const msg = backlogError instanceof Error ? backlogError.message : String(backlogError);
+            backlogResult = { itemsFetched: 0, itemsIndexed: 0, skipped: 0, error: msg };
+          }
+        }
+
         // Summary
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
         spinner.succeed('Indexing complete!');
@@ -304,6 +535,18 @@ export function registerIndexCommand(program: Command): void {
           if (result.parseErrorDetails.length > 10) {
             // eslint-disable-next-line no-console
             console.log(`    ${chalk.gray(`… and ${result.parseErrorDetails.length - 10} more`)}`);
+          }
+        }
+        if (backlogResult) {
+          if (backlogResult.error) {
+            // eslint-disable-next-line no-console
+            console.log(`  Backlog:         ${chalk.yellow(backlogResult.error)}`);
+          } else if (backlogResult.itemsIndexed > 0) {
+            // eslint-disable-next-line no-console
+            console.log(`  Backlog indexed: ${chalk.cyan(String(backlogResult.itemsIndexed))} items (${backlogResult.skipped} unchanged)`);
+          } else if (backlogResult.itemsFetched > 0) {
+            // eslint-disable-next-line no-console
+            console.log(`  Backlog:         ${chalk.green('up to date')} (${backlogResult.itemsFetched} items)`);
           }
         }
         // eslint-disable-next-line no-console

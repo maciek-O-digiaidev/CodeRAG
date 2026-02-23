@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { loadConfig, ConfigError } from './config-parser.js';
+import { loadConfig, ConfigError, interpolateEnvVars } from './config-parser.js';
 
 describe('loadConfig', () => {
   let tempDir: string;
@@ -543,6 +543,119 @@ search:
       expect(result.error).toBeInstanceOf(ConfigError);
       expect(result.error.message).toContain('Config validation failed');
       expect(result.error.message).toContain('topK');
+    }
+  });
+});
+
+describe('interpolateEnvVars', () => {
+  const ORIG_ENV = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...ORIG_ENV };
+  });
+
+  it('should replace ${VAR} with process.env value', () => {
+    process.env['TEST_TOKEN'] = 'secret123';
+    const result = interpolateEnvVars({ pat: '${TEST_TOKEN}' });
+    expect(result).toEqual({ pat: 'secret123' });
+  });
+
+  it('should replace multiple vars in one string', () => {
+    process.env['HOST'] = 'localhost';
+    process.env['PORT'] = '8080';
+    const result = interpolateEnvVars({ url: 'http://${HOST}:${PORT}' });
+    expect(result).toEqual({ url: 'http://localhost:8080' });
+  });
+
+  it('should return ConfigError for missing env var', () => {
+    delete process.env['MISSING_VAR'];
+    const result = interpolateEnvVars({ key: '${MISSING_VAR}' });
+    expect(result).toBeInstanceOf(ConfigError);
+    expect((result as ConfigError).message).toContain('MISSING_VAR');
+  });
+
+  it('should NOT interpolate escaped \\${VAR}', () => {
+    const result = interpolateEnvVars({ key: '\\${NOT_A_VAR}' });
+    expect(result).toEqual({ key: '${NOT_A_VAR}' });
+  });
+
+  it('should traverse nested objects recursively', () => {
+    process.env['NESTED_VAL'] = 'deep';
+    const result = interpolateEnvVars({
+      level1: { level2: { value: '${NESTED_VAL}' } },
+    });
+    expect(result).toEqual({
+      level1: { level2: { value: 'deep' } },
+    });
+  });
+
+  it('should traverse arrays', () => {
+    process.env['ARR_VAL'] = 'item';
+    const result = interpolateEnvVars({ items: ['${ARR_VAL}', 'literal'] });
+    expect(result).toEqual({ items: ['item', 'literal'] });
+  });
+
+  it('should leave non-string values untouched', () => {
+    const result = interpolateEnvVars({ num: 42, bool: true, nil: null });
+    expect(result).toEqual({ num: 42, bool: true, nil: null });
+  });
+});
+
+describe('loadConfig with env var interpolation', () => {
+  let tempDir: string;
+  const ORIG_ENV = { ...process.env };
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'coderag-env-'));
+  });
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true });
+    process.env = { ...ORIG_ENV };
+  });
+
+  it('should resolve ${ADO_PAT} in backlog config', async () => {
+    process.env['ADO_PAT'] = 'my-secret-pat';
+    const configContent = `
+version: "1"
+project:
+  name: env-test
+backlog:
+  provider: ado
+  config:
+    organization: myorg
+    project: MyProject
+    pat: \${ADO_PAT}
+`;
+    writeFileSync(join(tempDir, '.coderag.yaml'), configContent);
+
+    const result = await loadConfig(tempDir);
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.backlog?.config?.['pat']).toBe('my-secret-pat');
+    }
+  });
+
+  it('should return error when referenced env var is missing', async () => {
+    delete process.env['MISSING_PAT'];
+    const configContent = `
+version: "1"
+project:
+  name: missing-env
+backlog:
+  provider: ado
+  config:
+    pat: \${MISSING_PAT}
+`;
+    writeFileSync(join(tempDir, '.coderag.yaml'), configContent);
+
+    const result = await loadConfig(tempDir);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(ConfigError);
+      expect(result.error.message).toContain('MISSING_PAT');
     }
   });
 });
