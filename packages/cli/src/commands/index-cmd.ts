@@ -10,6 +10,7 @@ import {
   createIgnoreFilter,
   FileScanner,
   TreeSitterParser,
+  MarkdownParser,
   ASTChunker,
   OllamaClient,
   NLEnricher,
@@ -173,7 +174,7 @@ async function indexSingleRepo(
   options: { full?: boolean },
   logger: IndexLogger,
   repoLabel?: string,
-): Promise<{ filesProcessed: number; chunksCreated: number; parseErrors: number; parseErrorDetails: Array<{ file: string; reason: string }> }> {
+): Promise<{ filesProcessed: number; chunksCreated: number; parseErrors: number; skippedFiles: number; parseErrorDetails: Array<{ file: string; reason: string }> }> {
   const prefix = repoLabel ? `[${repoLabel}] ` : '';
 
   // Load or create index state
@@ -207,12 +208,12 @@ async function indexSingleRepo(
       (f) => indexState.isDirty(f.filePath, f.contentHash),
     );
     if (filesToProcess.length === 0) {
-      return { filesProcessed: 0, chunksCreated: 0, parseErrors: 0, parseErrorDetails: [] };
+      return { filesProcessed: 0, chunksCreated: 0, parseErrors: 0, skippedFiles: 0, parseErrorDetails: [] };
     }
     await logger.info(`${prefix}${filesToProcess.length} file(s) changed, processing...`);
   }
 
-  // Initialize parser
+  // Initialize parsers
   await logger.setPhase('parse');
   await logger.info(`${prefix}Initializing parser...`);
   const parser = new TreeSitterParser();
@@ -220,6 +221,7 @@ async function indexSingleRepo(
   if (initResult.isErr()) {
     throw new Error(`Parser init failed: ${initResult.error.message}`);
   }
+  const mdParser = new MarkdownParser({ maxTokensPerChunk: config.ingestion.maxTokensPerChunk });
 
   // Parse and chunk
   await logger.info(`${prefix}Parsing ${filesToProcess.length} files...`);
@@ -227,11 +229,29 @@ async function indexSingleRepo(
   const allChunks: Chunk[] = [];
   const allParsedFiles: ParsedFile[] = [];
   let parseErrors = 0;
+  let skippedFiles = 0;
   const parseErrorDetails: Array<{ file: string; reason: string }> = [];
 
   for (const file of filesToProcess) {
+    // Route .md/.mdx files to MarkdownParser (produces chunks directly)
+    if (MarkdownParser.isMarkdownFile(file.filePath)) {
+      const mdResult = mdParser.parse(file.filePath, file.content);
+      if (mdResult.isErr()) {
+        parseErrors++;
+        parseErrorDetails.push({ file: file.filePath, reason: mdResult.error.message });
+        continue;
+      }
+      allChunks.push(...mdResult.value.chunks);
+      continue;
+    }
+
     const parseResult = await parser.parse(file.filePath, file.content);
     if (parseResult.isErr()) {
+      // Distinguish true parse errors from unsupported file types
+      if (parseResult.error.message.startsWith('Unsupported file type:')) {
+        skippedFiles++;
+        continue;
+      }
       parseErrors++;
       parseErrorDetails.push({ file: file.filePath, reason: parseResult.error.message });
       continue;
@@ -250,7 +270,8 @@ async function indexSingleRepo(
     allChunks.push(...chunkResult.value);
   }
 
-  await logger.info(`${prefix}Parsed ${filesToProcess.length - parseErrors} files, created ${allChunks.length} chunks`);
+  const parsedCount = filesToProcess.length - parseErrors - skippedFiles;
+  await logger.info(`${prefix}Parsed ${parsedCount} files, created ${allChunks.length} chunks${skippedFiles > 0 ? ` (${skippedFiles} unsupported skipped)` : ''}`);
   await logger.updateCount('totalChunks', allChunks.length);
 
   // Stamp repoName in chunk metadata if multi-repo
@@ -272,7 +293,7 @@ async function indexSingleRepo(
     }
     await writeFile(indexStatePath, JSON.stringify(indexState.toJSON(), null, 2), 'utf-8');
 
-    return { filesProcessed: filesToProcess.length, chunksCreated: 0, parseErrors, parseErrorDetails };
+    return { filesProcessed: filesToProcess.length, chunksCreated: 0, parseErrors, skippedFiles, parseErrorDetails };
   }
 
   // Enrich with NL summaries — batched with checkpointing
@@ -453,7 +474,7 @@ async function indexSingleRepo(
 
   store.close();
 
-  return { filesProcessed: filesToProcess.length, chunksCreated: enrichedChunks.length, parseErrors, parseErrorDetails };
+  return { filesProcessed: filesToProcess.length, chunksCreated: enrichedChunks.length, parseErrors, skippedFiles, parseErrorDetails };
 }
 
 // ---------------------------------------------------------------------------
@@ -514,7 +535,7 @@ function backlogItemToChunk(item: BacklogItem): Chunk {
   };
 
   return {
-    id: `backlog:${item.externalId}`,
+    id: `backlog:${item.externalId.replace('#', '-')}`,
     content,
     nlSummary: `${item.type} work item "${item.title}" (${item.state})${item.assignedTo ? ` assigned to ${item.assignedTo}` : ''}`,
     filePath: `backlog/${item.externalId}`,
@@ -701,7 +722,7 @@ async function linkBacklogToGraph(
 
   // 1. Add backlog items as nodes + edges from linkedCodePaths
   for (const item of items) {
-    const nodeId = `backlog:${item.externalId}`;
+    const nodeId = `backlog:${item.externalId.replace('#', '-')}`;
 
     if (!existingNodeIds.has(nodeId)) {
       graph.addNode({
@@ -736,7 +757,7 @@ async function linkBacklogToGraph(
       const refs = scanForABReferences(result.content);
       for (const refId of refs) {
         const externalId = `AB#${refId}`;
-        const backlogNodeId = `backlog:${externalId}`;
+        const backlogNodeId = `backlog:${externalId.replace('#', '-')}`;
         if (backlogIdSet.has(externalId) && existingNodeIds.has(backlogNodeId)) {
           const codeNodeId = result.chunk.filePath.replace(/\\/g, '/');
           if (existingNodeIds.has(codeNodeId)) {
@@ -844,6 +865,10 @@ export function registerIndexCommand(program: Command): void {
         console.log(`  Files processed: ${chalk.cyan(String(result.filesProcessed))}`);
         // eslint-disable-next-line no-console
         console.log(`  Chunks created:  ${chalk.cyan(String(result.chunksCreated))}`);
+        if (result.skippedFiles > 0) {
+          // eslint-disable-next-line no-console
+          console.log(`  Skipped:         ${chalk.gray(String(result.skippedFiles))} (unsupported file types)`);
+        }
         if (result.parseErrors > 0) {
           // eslint-disable-next-line no-console
           console.log(`  Parse errors:    ${chalk.yellow(String(result.parseErrors))}`);
