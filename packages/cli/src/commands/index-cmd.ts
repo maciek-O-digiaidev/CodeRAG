@@ -283,9 +283,11 @@ async function indexSingleRepo(
   // Load checkpoint to resume after crash/restart
   const checkpoint = await loadEnrichmentCheckpoint(storagePath);
   const savedSummaries: Record<string, string> = checkpoint?.summaries ?? {};
+  await logger.info(`${prefix}Checkpoint: ${checkpoint ? `loaded (${Object.keys(savedSummaries).length} summaries)` : 'none found'}`);
+
   const chunksToEnrich = allChunks.filter((c) => !(c.id in savedSummaries));
 
-  if (checkpoint && Object.keys(savedSummaries).length > 0) {
+  if (Object.keys(savedSummaries).length > 0) {
     await logger.info(
       `${prefix}Resuming enrichment: ${Object.keys(savedSummaries).length} already done, ${chunksToEnrich.length} remaining`,
     );
@@ -293,7 +295,16 @@ async function indexSingleRepo(
     await logger.info(`${prefix}Enriching ${allChunks.length} chunks with NL summaries...`);
   }
 
+  // Pre-flight: verify Ollama is reachable before starting enrichment
+  const ollamaAvailable = await ollamaClient.isAvailable();
+  if (!ollamaAvailable) {
+    await logger.fail(`${prefix}Ollama is not reachable at ${ollamaClient.currentConfig.baseUrl}. Start Ollama first, then re-run.`);
+    throw new Error(`Ollama is not reachable at ${ollamaClient.currentConfig.baseUrl}`);
+  }
+
   let enrichErrors = 0;
+  let consecutiveFailures = 0;
+  const MAX_CONSECUTIVE_FAILURES = 3;
   const totalBatches = Math.ceil(chunksToEnrich.length / ENRICHMENT_BATCH_SIZE);
 
   for (let i = 0; i < chunksToEnrich.length; i += ENRICHMENT_BATCH_SIZE) {
@@ -305,6 +316,7 @@ async function indexSingleRepo(
 
     const enrichResult = await enricher.enrichBatch(batch);
     if (enrichResult.isOk()) {
+      consecutiveFailures = 0;
       for (const enriched of enrichResult.value) {
         if (enriched.nlSummary) {
           savedSummaries[enriched.id] = enriched.nlSummary;
@@ -312,7 +324,21 @@ async function indexSingleRepo(
       }
     } else {
       enrichErrors++;
+      consecutiveFailures++;
       await logger.warn(`${prefix}Batch ${batchNum} enrichment failed: ${enrichResult.error.message}`);
+
+      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+        await logger.fail(
+          `${prefix}Enrichment aborted: ${MAX_CONSECUTIVE_FAILURES} consecutive batch failures. ` +
+          `Is Ollama running? Check: curl ${ollamaClient.currentConfig.baseUrl}/api/tags`,
+        );
+        // Save checkpoint before aborting so progress is preserved
+        await saveEnrichmentCheckpoint(storagePath, {
+          summaries: savedSummaries,
+          totalProcessed: Object.keys(savedSummaries).length,
+        });
+        throw new Error(`Enrichment aborted after ${MAX_CONSECUTIVE_FAILURES} consecutive failures`);
+      }
     }
 
     // Save checkpoint after every batch
