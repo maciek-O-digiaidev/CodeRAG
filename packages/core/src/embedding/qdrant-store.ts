@@ -128,7 +128,7 @@ export class QdrantVectorStore implements VectorStore {
   async query(
     embedding: number[],
     topK: number,
-  ): Promise<Result<{ id: string; score: number }[], StoreError>> {
+  ): Promise<Result<{ id: string; score: number; metadata?: Record<string, unknown> }[], StoreError>> {
     try {
       await this.ensureConnected();
 
@@ -145,9 +145,11 @@ export class QdrantVectorStore implements VectorStore {
       const mapped = results.map((point) => {
         const payload = point.payload ?? {};
         const id = (payload['_coderag_id'] as string) ?? String(point.id);
+        const { _coderag_id: _, ...metadata } = payload as Record<string, unknown>;
         return {
           id,
           score: point.score,
+          metadata,
         };
       });
 

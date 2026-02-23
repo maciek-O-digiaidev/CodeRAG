@@ -2,6 +2,7 @@ import { ok, err, type Result } from 'neverthrow';
 import { EmbedError, type EmbeddingProvider, type VectorStore } from '../types/provider.js';
 import type { SearchConfig } from '../types/config.js';
 import type { SearchOptions, SearchResult } from '../types/search.js';
+import type { ChunkMetadata } from '../types/chunk.js';
 import type { BM25Index } from './bm25-index.js';
 
 const RRF_K = 60;
@@ -61,11 +62,15 @@ export class HybridSearch {
       string,
       { vectorScore: number; bm25Score: number; result?: SearchResult }
     >();
+    const vectorMetadataMap = new Map<string, Record<string, unknown>>();
 
     // Process vector results with RRF
     for (let rank = 0; rank < vectorResults.length; rank++) {
       const item = vectorResults[rank]!;
       const rrfScore = 1 / (RRF_K + rank + 1);
+      if (item.metadata) {
+        vectorMetadataMap.set(item.id, item.metadata);
+      }
       const existing = fusedScores.get(item.id);
       if (existing) {
         existing.vectorScore = rrfScore;
@@ -108,19 +113,37 @@ export class HybridSearch {
           method: 'hybrid',
         });
       } else {
-        // Only found in vector results, create minimal result
+        // Vector-only hit: hydrate from vector store metadata
+        const meta = vectorMetadataMap.get(chunkId) ?? {};
+        const storedName = (meta['name'] as string | undefined) ?? '';
+        const storedChunkType = (meta['chunk_type'] as string | undefined) ?? 'function';
+        const storedFilePath = (meta['file_path'] as string | undefined) ?? '';
+        const storedLanguage = (meta['language'] as string | undefined) ?? 'unknown';
+
+        const chunkMetadata: ChunkMetadata = {
+          chunkType: storedChunkType as ChunkMetadata['chunkType'],
+          name: storedName,
+          declarations: [],
+          imports: [],
+          exports: [],
+        };
+
         merged.push({
           chunkId,
-          content: '',
-          nlSummary: '',
+          content: (meta['content'] as string | undefined) ?? '',
+          nlSummary: (meta['nl_summary'] as string | undefined) ?? '',
           score: fusedScore,
           method: 'hybrid',
-          metadata: {
-            chunkType: 'function',
-            name: '',
-            declarations: [],
-            imports: [],
-            exports: [],
+          metadata: chunkMetadata,
+          chunk: {
+            id: chunkId,
+            content: (meta['content'] as string | undefined) ?? '',
+            nlSummary: (meta['nl_summary'] as string | undefined) ?? '',
+            filePath: storedFilePath,
+            startLine: 0,
+            endLine: 0,
+            language: storedLanguage,
+            metadata: chunkMetadata,
           },
         });
       }

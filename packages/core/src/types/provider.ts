@@ -66,7 +66,7 @@ export interface VectorStore {
   query(
     embedding: number[],
     topK: number,
-  ): Promise<Result<{ id: string; score: number }[], StoreError>>;
+  ): Promise<Result<{ id: string; score: number; metadata?: Record<string, unknown> }[], StoreError>>;
   delete(ids: string[]): Promise<Result<void, StoreError>>;
   count(): Promise<Result<number, StoreError>>;
   close(): void;

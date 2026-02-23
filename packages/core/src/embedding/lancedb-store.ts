@@ -5,6 +5,18 @@ import * as lancedb from '@lancedb/lancedb';
 const TABLE_NAME = 'chunks';
 const SAFE_ID_PATTERN = /^[a-zA-Z0-9_\-:.]+$/;
 
+function safeParseJSON(json: string): Record<string, unknown> {
+  try {
+    const parsed: unknown = JSON.parse(json);
+    if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+    return {};
+  } catch {
+    return {};
+  }
+}
+
 interface LanceDBRow {
   id: string;
   vector: number[];
@@ -125,7 +137,7 @@ export class LanceDBStore implements VectorStore {
   async query(
     embedding: number[],
     topK: number,
-  ): Promise<Result<{ id: string; score: number }[], StoreError>> {
+  ): Promise<Result<{ id: string; score: number; metadata?: Record<string, unknown> }[], StoreError>> {
     try {
       await this.ensureConnected();
 
@@ -141,6 +153,14 @@ export class LanceDBStore implements VectorStore {
       const mapped = results.map((row) => ({
         id: row.id,
         score: 1 / (1 + (row._distance ?? 0)),
+        metadata: {
+          content: row.content,
+          nl_summary: row.nl_summary,
+          chunk_type: row.chunk_type,
+          file_path: row.file_path,
+          language: row.language,
+          ...(row.metadata ? safeParseJSON(row.metadata) : {}),
+        },
       }));
 
       return ok(mapped);

@@ -18,7 +18,7 @@ function createMockEmbeddingProvider(
 }
 
 function createMockVectorStore(
-  results: { id: string; score: number }[] = [],
+  results: { id: string; score: number; metadata?: Record<string, unknown> }[] = [],
 ): VectorStore {
   return {
     upsert: vi.fn().mockResolvedValue(ok(undefined)),
@@ -68,9 +68,9 @@ describe('HybridSearch', () => {
   beforeEach(() => {
     embeddingProvider = createMockEmbeddingProvider();
     vectorStore = createMockVectorStore([
-      { id: 'chunk-1', score: 0.95 },
-      { id: 'chunk-2', score: 0.80 },
-      { id: 'chunk-3', score: 0.70 },
+      { id: 'chunk-1', score: 0.95, metadata: { content: 'vector content 1', nl_summary: 'vector summary 1', chunk_type: 'function', file_path: 'src/a.ts', language: 'typescript', name: 'chunk-1' } },
+      { id: 'chunk-2', score: 0.80, metadata: { content: 'vector content 2', nl_summary: 'vector summary 2', chunk_type: 'class', file_path: 'src/b.ts', language: 'typescript', name: 'chunk-2' } },
+      { id: 'chunk-3', score: 0.70, metadata: { content: 'vector content 3', nl_summary: 'vector summary 3', chunk_type: 'function', file_path: 'src/c.ts', language: 'typescript', name: 'chunk-3' } },
     ]);
     bm25Index = createMockBM25Index([
       makeSearchResult({ chunkId: 'chunk-2', score: 5.0 }),
@@ -229,6 +229,24 @@ describe('HybridSearch', () => {
         // Only vector RRF score, no BM25 contribution
         const expectedScore = 0.7 * (1 / 63);
         expect(chunk3!.score).toBeCloseTo(expectedScore, 6);
+      }
+    });
+
+    it('should hydrate vector-only results with metadata from vector store', async () => {
+      // chunk-3 only appears in vector results (not in BM25)
+      const result = await hybridSearch.search('test query');
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        const chunk3 = result.value.find((r) => r.chunkId === 'chunk-3');
+        expect(chunk3).toBeDefined();
+        expect(chunk3!.content).toBe('vector content 3');
+        expect(chunk3!.nlSummary).toBe('vector summary 3');
+        expect(chunk3!.metadata.name).toBe('chunk-3');
+        expect(chunk3!.metadata.chunkType).toBe('function');
+        expect(chunk3!.chunk).toBeDefined();
+        expect(chunk3!.chunk!.filePath).toBe('src/c.ts');
+        expect(chunk3!.chunk!.language).toBe('typescript');
       }
     });
 
