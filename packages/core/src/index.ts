@@ -61,7 +61,7 @@ export { ASTChunker } from './chunker/index.js';
 export type { GraphNode, GraphEdge, ImportInfo, CrossRepoDependency, PackageManifest, DependencyType } from './graph/index.js';
 export { DependencyGraph, extractImports, GraphBuilder, GraphError, CrossRepoResolver, CrossRepoError, parsePackageJson, parseGoMod, parseCargoToml } from './graph/index.js';
 
-export type { OllamaConfig } from './enrichment/index.js';
+export type { OllamaConfig, EnrichBatchResult } from './enrichment/index.js';
 export { OllamaClient, OllamaError, NLEnricher, EnrichmentError } from './enrichment/index.js';
 
 export type {

@@ -9,6 +9,11 @@ export class EnrichmentError extends Error {
   }
 }
 
+export interface EnrichBatchResult {
+  readonly enriched: Chunk[];
+  readonly failedCount: number;
+}
+
 function buildPrompt(chunk: Chunk): string {
   return `Summarize this ${chunk.language} code in one sentence. Focus on what it does, not how. Code:\n\`\`\`\n${chunk.content}\n\`\`\``;
 }
@@ -41,9 +46,9 @@ export class NLEnricher {
   async enrichBatch(
     chunks: Chunk[],
     concurrency = 6,
-  ): Promise<Result<Chunk[], EnrichmentError>> {
+  ): Promise<Result<EnrichBatchResult, EnrichmentError>> {
     if (chunks.length === 0) {
-      return ok([]);
+      return ok({ enriched: [], failedCount: 0 });
     }
 
     const results: Chunk[] = [];
@@ -64,14 +69,6 @@ export class NLEnricher {
       }
     }
 
-    if (errors.length > 0) {
-      return err(
-        new EnrichmentError(
-          `Failed to enrich ${errors.length} chunk(s): ${errors[0]!.message}`,
-        ),
-      );
-    }
-
-    return ok(results);
+    return ok({ enriched: results, failedCount: errors.length });
   }
 }

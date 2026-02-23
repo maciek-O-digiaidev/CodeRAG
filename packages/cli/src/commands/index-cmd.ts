@@ -316,29 +316,43 @@ async function indexSingleRepo(
 
     const enrichResult = await enricher.enrichBatch(batch);
     if (enrichResult.isOk()) {
-      consecutiveFailures = 0;
-      for (const enriched of enrichResult.value) {
-        if (enriched.nlSummary) {
-          savedSummaries[enriched.id] = enriched.nlSummary;
+      const { enriched, failedCount } = enrichResult.value;
+      for (const chunk of enriched) {
+        if (chunk.nlSummary) {
+          savedSummaries[chunk.id] = chunk.nlSummary;
+        }
+      }
+
+      if (failedCount === 0) {
+        consecutiveFailures = 0;
+      } else if (enriched.length > 0) {
+        // Partial success — reset consecutive failures but log the partial failure
+        consecutiveFailures = 0;
+        enrichErrors++;
+        await logger.warn(`${prefix}Batch ${batchNum}: ${enriched.length} OK, ${failedCount} failed`);
+      } else {
+        // Complete batch failure — all chunks failed
+        consecutiveFailures++;
+        enrichErrors++;
+        await logger.warn(`${prefix}Batch ${batchNum}: all ${failedCount} chunks failed`);
+
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          await logger.fail(
+            `${prefix}Enrichment aborted: ${MAX_CONSECUTIVE_FAILURES} consecutive batch failures. ` +
+            `Is Ollama running? Check: curl ${ollamaClient.currentConfig.baseUrl}/api/tags`,
+          );
+          await saveEnrichmentCheckpoint(storagePath, {
+            summaries: savedSummaries,
+            totalProcessed: Object.keys(savedSummaries).length,
+          });
+          throw new Error(`Enrichment aborted after ${MAX_CONSECUTIVE_FAILURES} consecutive failures`);
         }
       }
     } else {
+      // Should not happen with new enrichBatch, but handle gracefully
       enrichErrors++;
       consecutiveFailures++;
-      await logger.warn(`${prefix}Batch ${batchNum} enrichment failed: ${enrichResult.error.message}`);
-
-      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-        await logger.fail(
-          `${prefix}Enrichment aborted: ${MAX_CONSECUTIVE_FAILURES} consecutive batch failures. ` +
-          `Is Ollama running? Check: curl ${ollamaClient.currentConfig.baseUrl}/api/tags`,
-        );
-        // Save checkpoint before aborting so progress is preserved
-        await saveEnrichmentCheckpoint(storagePath, {
-          summaries: savedSummaries,
-          totalProcessed: Object.keys(savedSummaries).length,
-        });
-        throw new Error(`Enrichment aborted after ${MAX_CONSECUTIVE_FAILURES} consecutive failures`);
-      }
+      await logger.warn(`${prefix}Batch ${batchNum} enrichment error: ${enrichResult.error.message}`);
     }
 
     // Save checkpoint after every batch

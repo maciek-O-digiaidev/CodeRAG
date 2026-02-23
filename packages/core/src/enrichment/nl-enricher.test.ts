@@ -118,10 +118,11 @@ describe('NLEnricher', () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value).toHaveLength(3);
-        expect(result.value[0]!.nlSummary).toBe('Summary 1.');
-        expect(result.value[1]!.nlSummary).toBe('Summary 2.');
-        expect(result.value[2]!.nlSummary).toBe('Summary 3.');
+        expect(result.value.enriched).toHaveLength(3);
+        expect(result.value.failedCount).toBe(0);
+        expect(result.value.enriched[0]!.nlSummary).toBe('Summary 1.');
+        expect(result.value.enriched[1]!.nlSummary).toBe('Summary 2.');
+        expect(result.value.enriched[2]!.nlSummary).toBe('Summary 3.');
       }
     });
 
@@ -153,7 +154,8 @@ describe('NLEnricher', () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value).toHaveLength(6);
+        expect(result.value.enriched).toHaveLength(6);
+        expect(result.value.failedCount).toBe(0);
       }
       expect(maxConcurrent).toBeLessThanOrEqual(2);
     });
@@ -166,11 +168,12 @@ describe('NLEnricher', () => {
 
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
-        expect(result.value).toEqual([]);
+        expect(result.value.enriched).toEqual([]);
+        expect(result.value.failedCount).toBe(0);
       }
     });
 
-    it('should return EnrichmentError when any chunk fails', async () => {
+    it('should return partial results when some chunks fail', async () => {
       let callCount = 0;
       const mockClient = createMockClient(
         vi.fn().mockImplementation(() => {
@@ -193,10 +196,12 @@ describe('NLEnricher', () => {
 
       const result = await enricher.enrichBatch(chunks);
 
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error).toBeInstanceOf(EnrichmentError);
-        expect(result.error.message).toContain('Failed to enrich');
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.enriched).toHaveLength(2);
+        expect(result.value.failedCount).toBe(1);
+        expect(result.value.enriched[0]!.id).toBe('c1');
+        expect(result.value.enriched[1]!.id).toBe('c3');
       }
     });
   });
