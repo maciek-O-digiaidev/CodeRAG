@@ -62,8 +62,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Register commands (available even before server connects)
   registerAllCommands(context);
 
-  // Auto-configure Claude Code MCP settings
-  await autoConfigureClaude(rootPath);
+  // Auto-configure Claude Code MCP settings (opt-in via setting)
+  const autoConfigEnabled = vscode.workspace.getConfiguration('coderag').get<boolean>('autoConfigureClaude', false);
+  if (autoConfigEnabled) {
+    await autoConfigureClaude(rootPath);
+  }
 
   // Auto-start server and connect
   await connectToServer();

@@ -46,6 +46,16 @@
         }
       ]
     },
+    "configuration": {
+      "title": "CodeRAG",
+      "properties": {
+        "coderag.autoConfigureClaude": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically detect Claude Code CLI and inject CodeRAG MCP server configuration into .claude/settings.json on activation."
+        }
+      }
+    },
     "commands": [
       {
         "command": "coderag.search",
