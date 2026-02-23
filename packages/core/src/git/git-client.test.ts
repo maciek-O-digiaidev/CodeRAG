@@ -16,6 +16,8 @@ describe('SimpleGitClient', () => {
     await git.init();
     await git.addConfig('user.email', 'test@coderag.dev');
     await git.addConfig('user.name', 'Test Author');
+    // Disable GPG/SSH signing — avoids 1Password timeouts in CI/test
+    await git.addConfig('commit.gpgSign', 'false');
 
     writeFileSync(join(tempDir, 'initial.txt'), 'initial content');
     await git.add('initial.txt');
