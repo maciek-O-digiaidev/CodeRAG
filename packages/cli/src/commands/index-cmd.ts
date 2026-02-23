@@ -1,9 +1,10 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
-import { writeFile, readFile } from 'node:fs/promises';
+import { writeFile, readFile, mkdir, appendFile, unlink } from 'node:fs/promises';
 import { join, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import {
   loadConfig,
   createIgnoreFilter,
@@ -30,6 +31,132 @@ import {
   type BacklogConfig,
 } from '@coderag/core';
 
+// ---------------------------------------------------------------------------
+// IndexLogger — dual output: ora spinner (interactive) + file log
+// ---------------------------------------------------------------------------
+
+class IndexLogger {
+  private spinner: ReturnType<typeof ora>;
+  private logPath: string;
+  private progressPath: string;
+  private phase = 'init';
+  private counts: Record<string, number> = {};
+
+  constructor(storagePath: string) {
+    this.spinner = ora();
+    this.logPath = join(storagePath, 'index.log');
+    this.progressPath = join(storagePath, 'index-progress.json');
+  }
+
+  async init(): Promise<void> {
+    const dir = resolve(this.logPath, '..');
+    if (!existsSync(dir)) {
+      await mkdir(dir, { recursive: true });
+    }
+    await this.log('='.repeat(60));
+    await this.log(`Indexing started at ${new Date().toISOString()}`);
+    await this.log('='.repeat(60));
+  }
+
+  start(text: string): void {
+    this.spinner.start(text);
+    void this.log(text);
+  }
+
+  async info(text: string): Promise<void> {
+    this.spinner.text = text;
+    await this.log(text);
+  }
+
+  async succeed(text: string): Promise<void> {
+    this.spinner.succeed(text);
+    await this.log(`[OK] ${text}`);
+  }
+
+  async warn(text: string): Promise<void> {
+    this.spinner.warn(text);
+    await this.log(`[WARN] ${text}`);
+  }
+
+  async fail(text: string): Promise<void> {
+    this.spinner.fail(text);
+    await this.log(`[FAIL] ${text}`);
+  }
+
+  async setPhase(phase: string, counts?: Record<string, number>): Promise<void> {
+    this.phase = phase;
+    if (counts) this.counts = { ...this.counts, ...counts };
+    await this.writeProgress();
+  }
+
+  async updateCount(key: string, value: number): Promise<void> {
+    this.counts[key] = value;
+    await this.writeProgress();
+  }
+
+  private async log(message: string): Promise<void> {
+    const timestamp = new Date().toISOString();
+    const line = `[${timestamp}] ${message}\n`;
+    try {
+      await appendFile(this.logPath, line, 'utf-8');
+    } catch {
+      // Ignore log write failures
+    }
+  }
+
+  private async writeProgress(): Promise<void> {
+    const progress = {
+      phase: this.phase,
+      updatedAt: new Date().toISOString(),
+      ...this.counts,
+    };
+    try {
+      await writeFile(this.progressPath, JSON.stringify(progress, null, 2), 'utf-8');
+    } catch {
+      // Ignore progress write failures
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Enrichment with checkpointing
+// ---------------------------------------------------------------------------
+
+interface EnrichmentCheckpoint {
+  /** Map of chunkId → nlSummary for already-enriched chunks */
+  summaries: Record<string, string>;
+  totalProcessed: number;
+}
+
+async function loadEnrichmentCheckpoint(storagePath: string): Promise<EnrichmentCheckpoint | null> {
+  const checkpointPath = join(storagePath, 'enrichment-checkpoint.json');
+  try {
+    const data = await readFile(checkpointPath, 'utf-8');
+    return JSON.parse(data) as EnrichmentCheckpoint;
+  } catch {
+    return null;
+  }
+}
+
+async function saveEnrichmentCheckpoint(
+  storagePath: string,
+  checkpoint: EnrichmentCheckpoint,
+): Promise<void> {
+  const checkpointPath = join(storagePath, 'enrichment-checkpoint.json');
+  await writeFile(checkpointPath, JSON.stringify(checkpoint), 'utf-8');
+}
+
+async function clearEnrichmentCheckpoint(storagePath: string): Promise<void> {
+  const checkpointPath = join(storagePath, 'enrichment-checkpoint.json');
+  try {
+    await unlink(checkpointPath);
+  } catch {
+    // Ignore if file doesn't exist
+  }
+}
+
+const ENRICHMENT_BATCH_SIZE = 100;
+
 /**
  * Index a single repo directory using the full pipeline:
  * scan, parse, chunk, enrich, embed, store.
@@ -41,7 +168,7 @@ async function indexSingleRepo(
   storagePath: string,
   config: CodeRAGConfig,
   options: { full?: boolean },
-  spinner: ReturnType<typeof ora>,
+  logger: IndexLogger,
   repoLabel?: string,
 ): Promise<{ filesProcessed: number; chunksCreated: number; parseErrors: number; parseErrorDetails: Array<{ file: string; reason: string }> }> {
   const prefix = repoLabel ? `[${repoLabel}] ` : '';
@@ -59,7 +186,8 @@ async function indexSingleRepo(
   }
 
   // Scan files
-  spinner.text = `${prefix}Scanning files...`;
+  await logger.setPhase('scan');
+  await logger.info(`${prefix}Scanning files...`);
   const ignoreFilter = createIgnoreFilter(rootDir);
   const scanner = new FileScanner(rootDir, ignoreFilter);
   const scanResult = await scanner.scanFiles();
@@ -67,7 +195,7 @@ async function indexSingleRepo(
     throw new Error(`Scan failed: ${scanResult.error.message}`);
   }
   const scannedFiles = scanResult.value;
-  spinner.text = `${prefix}Scanned ${scannedFiles.length} files`;
+  await logger.info(`${prefix}Scanned ${scannedFiles.length} files`);
 
   // Filter to changed files (incremental)
   let filesToProcess = scannedFiles;
@@ -78,11 +206,12 @@ async function indexSingleRepo(
     if (filesToProcess.length === 0) {
       return { filesProcessed: 0, chunksCreated: 0, parseErrors: 0, parseErrorDetails: [] };
     }
-    spinner.text = `${prefix}${filesToProcess.length} file(s) changed, processing...`;
+    await logger.info(`${prefix}${filesToProcess.length} file(s) changed, processing...`);
   }
 
   // Initialize parser
-  spinner.text = `${prefix}Initializing parser...`;
+  await logger.setPhase('parse');
+  await logger.info(`${prefix}Initializing parser...`);
   const parser = new TreeSitterParser();
   const initResult = await parser.initialize();
   if (initResult.isErr()) {
@@ -90,7 +219,7 @@ async function indexSingleRepo(
   }
 
   // Parse and chunk
-  spinner.text = `${prefix}Parsing ${filesToProcess.length} files...`;
+  await logger.info(`${prefix}Parsing ${filesToProcess.length} files...`);
   const chunker = new ASTChunker({ maxTokensPerChunk: config.ingestion.maxTokensPerChunk });
   const allChunks: Chunk[] = [];
   const allParsedFiles: ParsedFile[] = [];
@@ -118,7 +247,8 @@ async function indexSingleRepo(
     allChunks.push(...chunkResult.value);
   }
 
-  spinner.text = `${prefix}Parsed ${filesToProcess.length - parseErrors} files, created ${allChunks.length} chunks`;
+  await logger.info(`${prefix}Parsed ${filesToProcess.length - parseErrors} files, created ${allChunks.length} chunks`);
+  await logger.updateCount('totalChunks', allChunks.length);
 
   // Stamp repoName in chunk metadata if multi-repo
   if (repoLabel) {
@@ -142,21 +272,70 @@ async function indexSingleRepo(
     return { filesProcessed: filesToProcess.length, chunksCreated: 0, parseErrors, parseErrorDetails };
   }
 
-  // Enrich with NL summaries
-  spinner.text = `${prefix}Enriching ${allChunks.length} chunks with NL summaries...`;
+  // Enrich with NL summaries — batched with checkpointing
+  await logger.setPhase('enrich', { totalChunks: allChunks.length, enrichedChunks: 0 });
   const ollamaClient = new OllamaClient({ model: config.llm.model });
   const enricher = new NLEnricher(ollamaClient);
-  const enrichResult = await enricher.enrichBatch(allChunks);
-  let enrichedChunks: Chunk[];
-  if (enrichResult.isErr()) {
-    spinner.text = chalk.yellow(`${prefix}NL enrichment failed, using chunks without summaries`);
-    enrichedChunks = allChunks;
+
+  // Load checkpoint to resume after crash/restart
+  const checkpoint = await loadEnrichmentCheckpoint(storagePath);
+  const savedSummaries: Record<string, string> = checkpoint?.summaries ?? {};
+  const chunksToEnrich = allChunks.filter((c) => !(c.id in savedSummaries));
+
+  if (checkpoint && Object.keys(savedSummaries).length > 0) {
+    await logger.info(
+      `${prefix}Resuming enrichment: ${Object.keys(savedSummaries).length} already done, ${chunksToEnrich.length} remaining`,
+    );
   } else {
-    enrichedChunks = enrichResult.value;
+    await logger.info(`${prefix}Enriching ${allChunks.length} chunks with NL summaries...`);
   }
 
+  let enrichErrors = 0;
+  const totalBatches = Math.ceil(chunksToEnrich.length / ENRICHMENT_BATCH_SIZE);
+
+  for (let i = 0; i < chunksToEnrich.length; i += ENRICHMENT_BATCH_SIZE) {
+    const batchNum = Math.floor(i / ENRICHMENT_BATCH_SIZE) + 1;
+    const batch = chunksToEnrich.slice(i, i + ENRICHMENT_BATCH_SIZE);
+    await logger.info(
+      `${prefix}Enrichment batch ${batchNum}/${totalBatches} (${batch.length} chunks, ${Object.keys(savedSummaries).length}/${allChunks.length} total)...`,
+    );
+
+    const enrichResult = await enricher.enrichBatch(batch);
+    if (enrichResult.isOk()) {
+      for (const enriched of enrichResult.value) {
+        if (enriched.nlSummary) {
+          savedSummaries[enriched.id] = enriched.nlSummary;
+        }
+      }
+    } else {
+      enrichErrors++;
+      await logger.warn(`${prefix}Batch ${batchNum} enrichment failed: ${enrichResult.error.message}`);
+    }
+
+    // Save checkpoint after every batch
+    await saveEnrichmentCheckpoint(storagePath, {
+      summaries: savedSummaries,
+      totalProcessed: Object.keys(savedSummaries).length,
+    });
+    await logger.updateCount('enrichedChunks', Object.keys(savedSummaries).length);
+  }
+
+  // Apply saved summaries to all chunks
+  const enrichedChunks = allChunks.map((c) => {
+    const summary = savedSummaries[c.id];
+    return summary ? { ...c, nlSummary: summary } : c;
+  });
+
+  if (enrichErrors > 0) {
+    await logger.warn(`${prefix}${enrichErrors} enrichment batch(es) failed, some chunks have no NL summary`);
+  }
+
+  // Clear checkpoint — enrichment phase complete
+  await clearEnrichmentCheckpoint(storagePath);
+
   // Embed chunks
-  spinner.text = `${prefix}Embedding ${enrichedChunks.length} chunks...`;
+  await logger.setPhase('embed');
+  await logger.info(`${prefix}Embedding ${enrichedChunks.length} chunks...`);
   const embeddingProvider = new OllamaEmbeddingProvider({
     model: config.embedding.model,
     dimensions: config.embedding.dimensions,
@@ -172,7 +351,8 @@ async function indexSingleRepo(
   const embeddings = embedResult.value;
 
   // Store in LanceDB
-  spinner.text = `${prefix}Storing embeddings in LanceDB...`;
+  await logger.setPhase('store');
+  await logger.info(`${prefix}Storing embeddings in LanceDB...`);
   const store = new LanceDBStore(storagePath, config.embedding.dimensions);
   await store.connect();
 
@@ -196,14 +376,14 @@ async function indexSingleRepo(
   }
 
   // Build BM25 index
-  spinner.text = `${prefix}Building BM25 index...`;
+  await logger.info(`${prefix}Building BM25 index...`);
   const bm25 = new BM25Index();
   bm25.addChunks(enrichedChunks);
   const bm25Path = join(storagePath, 'bm25-index.json');
   await writeFile(bm25Path, bm25.serialize(), 'utf-8');
 
   // Build dependency graph
-  spinner.text = `${prefix}Building dependency graph...`;
+  await logger.info(`${prefix}Building dependency graph...`);
   const graphBuilder = new GraphBuilder(rootDir);
   const graphResult = graphBuilder.buildFromFiles(allParsedFiles);
   if (graphResult.isOk()) {
@@ -212,7 +392,8 @@ async function indexSingleRepo(
   }
 
   // Update index state
-  spinner.text = `${prefix}Saving index state...`;
+  await logger.setPhase('finalize');
+  await logger.info(`${prefix}Saving index state...`);
   for (const file of filesToProcess) {
     const fileChunkIds = enrichedChunks
       .filter((c) => c.filePath === file.filePath)
@@ -326,7 +507,7 @@ async function indexBacklog(
   storagePath: string,
   config: CodeRAGConfig,
   options: { full?: boolean },
-  spinner: ReturnType<typeof ora>,
+  logger: IndexLogger,
 ): Promise<BacklogIndexResult> {
   // Create provider
   const provider = createBacklogProvider(backlogConfig);
@@ -335,14 +516,14 @@ async function indexBacklog(
   }
 
   // Initialize provider
-  spinner.text = 'Backlog: connecting to provider...';
+  await logger.info('Backlog: connecting to provider...');
   const initResult = await provider.initialize(backlogConfig.config ?? {});
   if (initResult.isErr()) {
     return { itemsFetched: 0, itemsIndexed: 0, skipped: 0, error: `Backlog init failed: ${initResult.error.message}` };
   }
 
   // Fetch all items
-  spinner.text = 'Backlog: fetching work items...';
+  await logger.info('Backlog: fetching work items...');
   const itemsResult = await provider.getItems({ limit: 500 });
   if (itemsResult.isErr()) {
     return { itemsFetched: 0, itemsIndexed: 0, skipped: 0, error: `Backlog fetch failed: ${itemsResult.error.message}` };
@@ -382,11 +563,11 @@ async function indexBacklog(
     return { itemsFetched: items.length, itemsIndexed: 0, skipped };
   }
 
-  spinner.text = `Backlog: converting ${changedItems.length} items to chunks...`;
+  await logger.info(`Backlog: converting ${changedItems.length} items to chunks...`);
   const chunks = changedItems.map(backlogItemToChunk);
 
   // Embed chunks
-  spinner.text = `Backlog: embedding ${chunks.length} items...`;
+  await logger.info(`Backlog: embedding ${chunks.length} items...`);
   const embeddingProvider = new OllamaEmbeddingProvider({
     model: config.embedding.model,
     dimensions: config.embedding.dimensions,
@@ -402,7 +583,7 @@ async function indexBacklog(
   const embeddings = embedResult.value;
 
   // Store in LanceDB
-  spinner.text = `Backlog: storing ${chunks.length} items in vector database...`;
+  await logger.info(`Backlog: storing ${chunks.length} items in vector database...`);
   const store = new LanceDBStore(storagePath, config.embedding.dimensions);
   await store.connect();
 
@@ -426,7 +607,7 @@ async function indexBacklog(
   }
 
   // Add to BM25 index (append to existing)
-  spinner.text = 'Backlog: updating BM25 index...';
+  await logger.info('Backlog: updating BM25 index...');
   const bm25Path = join(storagePath, 'bm25-index.json');
   let bm25: BM25Index;
   try {
@@ -451,7 +632,8 @@ export function registerIndexCommand(program: Command): void {
     .option('--full', 'Force a complete re-index (ignore incremental state)')
     .action(async (options: { full?: boolean }) => {
       const startTime = Date.now();
-      const spinner = ora('Loading configuration...').start();
+      // Use a temporary spinner for config loading (logger needs storagePath from config)
+      const bootSpinner = ora('Loading configuration...').start();
 
       try {
         const rootDir = process.cwd();
@@ -459,7 +641,7 @@ export function registerIndexCommand(program: Command): void {
         // Step 1: Load config
         const configResult = await loadConfig(rootDir);
         if (configResult.isErr()) {
-          spinner.fail(configResult.error.message);
+          bootSpinner.fail(configResult.error.message);
           // eslint-disable-next-line no-console
           console.error(chalk.red('Run "coderag init" first to create a configuration file.'));
           process.exit(1);
@@ -469,26 +651,33 @@ export function registerIndexCommand(program: Command): void {
 
         // Prevent path traversal outside project root
         if (!storagePath.startsWith(resolve(rootDir) + sep) && storagePath !== resolve(rootDir)) {
-          spinner.fail('Storage path escapes project root');
+          bootSpinner.fail('Storage path escapes project root');
           process.exit(1);
         }
 
+        bootSpinner.succeed('Configuration loaded');
+
+        // Create IndexLogger — writes to .coderag/index.log + progress JSON
+        const logger = new IndexLogger(storagePath);
+        await logger.init();
+
         // Multi-repo path: if repos are configured, index each independently
         if (config.repos && config.repos.length > 0) {
-          await indexMultiRepo(config, storagePath, options, spinner, startTime);
+          await indexMultiRepo(config, storagePath, options, logger, startTime);
           return;
         }
 
-        // Single-repo path: existing behavior
-        const result = await indexSingleRepo(rootDir, storagePath, config, options, spinner);
+        // Single-repo path
+        logger.start('Starting indexing...');
+        const result = await indexSingleRepo(rootDir, storagePath, config, options, logger);
 
         if (result.filesProcessed === 0 && result.chunksCreated === 0 && result.parseErrors === 0) {
-          spinner.succeed('No changes detected, index is up to date.');
+          await logger.succeed('No changes detected, index is up to date.');
           return;
         }
 
         if (result.chunksCreated === 0 && result.parseErrors > 0) {
-          spinner.warn('No chunks produced. Nothing to index.');
+          await logger.warn('No chunks produced. Nothing to index.');
           // eslint-disable-next-line no-console
           console.log(chalk.yellow(`  ${result.parseErrors} file(s) failed to parse:`));
           for (const detail of result.parseErrorDetails.slice(0, 5)) {
@@ -506,7 +695,7 @@ export function registerIndexCommand(program: Command): void {
         let backlogResult: BacklogIndexResult | null = null;
         if (config.backlog) {
           try {
-            backlogResult = await indexBacklog(config.backlog, storagePath, config, options, spinner);
+            backlogResult = await indexBacklog(config.backlog, storagePath, config, options, logger);
           } catch (backlogError: unknown) {
             const msg = backlogError instanceof Error ? backlogError.message : String(backlogError);
             backlogResult = { itemsFetched: 0, itemsIndexed: 0, skipped: 0, error: msg };
@@ -515,7 +704,7 @@ export function registerIndexCommand(program: Command): void {
 
         // Summary
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-        spinner.succeed('Indexing complete!');
+        await logger.succeed('Indexing complete!');
 
         // eslint-disable-next-line no-console
         console.log('');
@@ -551,11 +740,12 @@ export function registerIndexCommand(program: Command): void {
         }
         // eslint-disable-next-line no-console
         console.log(`  Time elapsed:    ${chalk.cyan(elapsed + 's')}`);
+        // eslint-disable-next-line no-console
+        console.log(`  Log file:        ${chalk.gray(join(storagePath, 'index.log'))}`);
       } catch (error: unknown) {
-        spinner.fail('Indexing failed');
         const message = error instanceof Error ? error.message : String(error);
         // eslint-disable-next-line no-console
-        console.error(chalk.red('Error:'), message);
+        console.error(chalk.red('\nIndexing failed:'), message);
         process.exit(1);
       }
     });
@@ -569,7 +759,7 @@ async function indexMultiRepo(
   config: CodeRAGConfig,
   storagePath: string,
   options: { full?: boolean },
-  spinner: ReturnType<typeof ora>,
+  logger: IndexLogger,
   startTime: number,
 ): Promise<void> {
   const repos = config.repos!;
@@ -587,15 +777,16 @@ async function indexMultiRepo(
   let totalChunks = 0;
   let totalErrors = 0;
 
+  logger.start('Starting multi-repo indexing...');
   const result = await multiRepoIndexer.indexAll({
     full: options.full,
     onProgress: (repoName, status) => {
-      spinner.text = `[${repoName}] ${status}`;
+      void logger.info(`[${repoName}] ${status}`);
     },
   });
 
   if (result.isErr()) {
-    spinner.fail(`Multi-repo indexing failed: ${result.error.message}`);
+    await logger.fail(`Multi-repo indexing failed: ${result.error.message}`);
     process.exit(1);
   }
 
@@ -606,21 +797,18 @@ async function indexMultiRepo(
 
     if (repoResult.errors.length > 0) {
       totalErrors += repoResult.errors.length;
-      spinner.fail(`[${repoResult.repoName}] Failed`);
+      await logger.fail(`[${repoResult.repoName}] Failed`);
       for (const error of repoResult.errors) {
         // eslint-disable-next-line no-console
         console.log(`    ${chalk.gray('→')} ${chalk.red(error)}`);
       }
     } else if (repoResult.filesProcessed === 0) {
-      spinner.succeed(`[${repoResult.repoName}] Up to date`);
+      await logger.succeed(`[${repoResult.repoName}] Up to date`);
     } else {
-      spinner.succeed(
+      await logger.succeed(
         `[${repoResult.repoName}] ${repoResult.filesProcessed} file(s) processed`,
       );
     }
-
-    // Reset spinner for next repo
-    spinner = ora();
   }
 
   // Total summary
@@ -642,4 +830,6 @@ async function indexMultiRepo(
   }
   // eslint-disable-next-line no-console
   console.log(`  Time elapsed:    ${chalk.cyan(elapsed + 's')}`);
+  // eslint-disable-next-line no-console
+  console.log(`  Log file:        ${chalk.gray(join(storagePath, 'index.log'))}`);
 }
