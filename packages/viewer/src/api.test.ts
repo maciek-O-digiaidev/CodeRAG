@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createApiClient, ApiError, type StatsResponse, type SearchResponse, type EmbeddingPoint } from './api.js';
+import { createApiClient, ApiError, type EmbeddingPoint } from './api.js';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
