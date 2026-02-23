@@ -386,6 +386,14 @@ export class CodeRAGServer {
       const pathname = parsedUrl.pathname;
 
       if (req.method === 'GET' && pathname === '/sse') {
+        // Close any existing connections — SSEServerTransport is single-client.
+        // This handles VS Code extension reloads gracefully.
+        for (const [id, old] of this.transports) {
+          await old.close();
+          this.transports.delete(id);
+        }
+        await this.server.close();
+
         const transport = new SSEServerTransport('/messages', res);
         this.transports.set(transport.sessionId, transport);
 
