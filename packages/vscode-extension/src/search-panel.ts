@@ -168,8 +168,19 @@ export class SearchPanelProvider implements vscode.WebviewViewProvider {
   /**
    * Open a file at a specific line in the editor.
    * Paths from search results are relative to the workspace root.
+   * Backlog items (backlog/AB#NNN) open in the browser as ADO work items.
    */
   async openResult(filePath: string, startLine: number, endLine: number): Promise<void> {
+    // Backlog items → open ADO work item in browser
+    const backlogMatch = filePath.match(/^backlog\/AB#(\d+)/);
+    if (backlogMatch) {
+      const adoUrl = this.vscodeApi.Uri.parse(
+        `https://dev.azure.com/momc-pl/CodeRAG/_workitems/edit/${backlogMatch[1]}`,
+      );
+      await this.vscodeApi.env.openExternal(adoUrl);
+      return;
+    }
+
     let uri: vscode.Uri;
     if (filePath.startsWith('/')) {
       uri = this.vscodeApi.Uri.file(filePath);
