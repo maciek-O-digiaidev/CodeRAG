@@ -3,6 +3,10 @@
     "ado-momc": {
       "command": "npx",
       "args": ["-y", "@azure-devops/mcp@latest", "momc-pl", "--authentication", "azcli"]
+    },
+    "coderag": {
+      "command": "node",
+      "args": ["packages/mcp-server/dist/index.js", "/Users/mos/sources/CodeRAG"]
     }
   }
 }

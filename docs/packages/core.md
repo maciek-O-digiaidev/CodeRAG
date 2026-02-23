@@ -16,22 +16,22 @@ All external functionality is accessed through provider interfaces, making it ea
 
 ## Module Map
 
-| Directory | Key Exports | Purpose |
-|-----------|-------------|---------|
-| `types/` | `Chunk`, `ChunkMetadata`, `ChunkType`, `CodeRAGConfig`, `SearchResult`, `SearchQuery`, `EmbeddingProvider`, `VectorStore`, `LLMProvider`, `Parser`, `Chunker`, `ReRanker` | Shared TypeScript types and provider interfaces |
-| `config/` | `loadConfig`, `ConfigError`, `repoConfigSchema` | `.coderag.yaml` parser with Zod validation |
-| `parser/` | `TreeSitterParser`, `LanguageRegistry`, `MarkdownParser`, `parseFrontmatter`, `extractWikilinks`, `extractTags` | Tree-sitter WASM code parsing and Markdown parsing |
-| `chunker/` | `ASTChunker`, `ASTChunkerConfig` | AST-based semantic chunking (functions, classes, methods) |
-| `enrichment/` | `OllamaClient`, `NLEnricher`, `EnrichmentError` | Natural language summary generation via Ollama |
-| `embedding/` | `OllamaEmbeddingProvider`, `LanceDBStore`, `QdrantVectorStore`, `BM25Index`, `HybridSearch` | Embedding generation, vector storage, keyword index, hybrid search with RRF |
-| `graph/` | `DependencyGraph`, `GraphBuilder`, `extractImports`, `CrossRepoResolver` | Import-based dependency graph construction and cross-repo resolution |
-| `retrieval/` | `QueryAnalyzer`, `ContextExpander`, `TokenBudgetOptimizer`, `CrossEncoderReRanker` | Query analysis, graph expansion, token budget assembly, re-ranking |
-| `indexer/` | `IndexState`, `FileScanner`, `IncrementalIndexer`, `MultiRepoIndexer`, `computeFileHash` | File scanning, incremental indexing, multi-repo orchestration |
-| `git/` | `SimpleGitClient`, `createIgnoreFilter`, `GitError` | Git integration via simple-git, `.gitignore` filtering |
-| `backlog/` | `AzureDevOpsProvider`, `JiraProvider`, `ClickUpProvider`, `CodeLinker`, `scanForABReferences` | Project backlog integrations and code-to-work-item linking |
-| `docs/` | `ConfluenceProvider`, `SharePointProvider`, `confluenceStorageToPlainText`, `extractTextFromDocx`, `extractTextFromPdf` | Documentation source integrations |
-| `auth/` | `RBACManager`, `OIDCProvider`, `SAMLProvider`, `AuditLogger`, `ROLE_HIERARCHY` | Authentication, authorization, and audit logging |
-| `storage/` | `S3StorageProvider`, `AzureBlobStorageProvider`, `GCSStorageProvider` | Cloud storage providers for team index sharing |
+| Directory     | Key Exports                                                                                                                                                               | Purpose                                                                     |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `types/`      | `Chunk`, `ChunkMetadata`, `ChunkType`, `CodeRAGConfig`, `SearchResult`, `SearchQuery`, `EmbeddingProvider`, `VectorStore`, `LLMProvider`, `Parser`, `Chunker`, `ReRanker` | Shared TypeScript types and provider interfaces                             |
+| `config/`     | `loadConfig`, `ConfigError`, `repoConfigSchema`                                                                                                                           | `.coderag.yaml` parser with Zod validation                                  |
+| `parser/`     | `TreeSitterParser`, `LanguageRegistry`, `MarkdownParser`, `parseFrontmatter`, `extractWikilinks`, `extractTags`                                                           | Tree-sitter WASM code parsing and Markdown parsing                          |
+| `chunker/`    | `ASTChunker`, `ASTChunkerConfig`                                                                                                                                          | AST-based semantic chunking (functions, classes, methods)                   |
+| `enrichment/` | `OllamaClient`, `NLEnricher`, `EnrichmentError`                                                                                                                           | Natural language summary generation via Ollama                              |
+| `embedding/`  | `OllamaEmbeddingProvider`, `LanceDBStore`, `QdrantVectorStore`, `BM25Index`, `HybridSearch`                                                                               | Embedding generation, vector storage, keyword index, hybrid search with RRF |
+| `graph/`      | `DependencyGraph`, `GraphBuilder`, `extractImports`, `CrossRepoResolver`                                                                                                  | Import-based dependency graph construction and cross-repo resolution        |
+| `retrieval/`  | `QueryAnalyzer`, `ContextExpander`, `TokenBudgetOptimizer`, `CrossEncoderReRanker`                                                                                        | Query analysis, graph expansion, token budget assembly, re-ranking          |
+| `indexer/`    | `IndexState`, `FileScanner`, `IncrementalIndexer`, `MultiRepoIndexer`, `computeFileHash`                                                                                  | File scanning, incremental indexing, multi-repo orchestration               |
+| `git/`        | `SimpleGitClient`, `createIgnoreFilter`, `GitError`                                                                                                                       | Git integration via simple-git, `.gitignore` filtering                      |
+| `backlog/`    | `AzureDevOpsProvider`, `JiraProvider`, `ClickUpProvider`, `CodeLinker`, `scanForABReferences`                                                                             | Project backlog integrations and code-to-work-item linking                  |
+| `docs/`       | `ConfluenceProvider`, `SharePointProvider`, `confluenceStorageToPlainText`, `extractTextFromDocx`, `extractTextFromPdf`                                                   | Documentation source integrations                                           |
+| `auth/`       | `RBACManager`, `OIDCProvider`, `SAMLProvider`, `AuditLogger`, `ROLE_HIERARCHY`                                                                                            | Authentication, authorization, and audit logging                            |
+| `storage/`    | `S3StorageProvider`, `AzureBlobStorageProvider`, `GCSStorageProvider`                                                                                                     | Cloud storage providers for team index sharing                              |
 
 ## Key Dependencies
 
