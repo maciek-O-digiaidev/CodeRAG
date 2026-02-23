@@ -20,6 +20,7 @@ describe('OllamaClient', () => {
       expect(config.baseUrl).toBe('http://localhost:11434');
       expect(config.model).toBe('qwen2.5-coder:7b');
       expect(config.timeout).toBe(30_000);
+      expect(config.maxTokens).toBe(100);
     });
 
     it('should accept custom config values', () => {
@@ -27,12 +28,14 @@ describe('OllamaClient', () => {
         baseUrl: 'http://remote:9999',
         model: 'llama3.2',
         timeout: 60_000,
+        maxTokens: 200,
       });
       const config = client.currentConfig;
 
       expect(config.baseUrl).toBe('http://remote:9999');
       expect(config.model).toBe('llama3.2');
       expect(config.timeout).toBe(60_000);
+      expect(config.maxTokens).toBe(200);
     });
 
     it('should merge partial config with defaults', () => {
@@ -72,6 +75,7 @@ describe('OllamaClient', () => {
             model: 'qwen2.5-coder:7b',
             prompt: 'Summarize this code',
             stream: false,
+            options: { num_predict: 100 },
           }),
         }),
       );

@@ -40,7 +40,7 @@ export class NLEnricher {
 
   async enrichBatch(
     chunks: Chunk[],
-    concurrency = 3,
+    concurrency = 6,
   ): Promise<Result<Chunk[], EnrichmentError>> {
     if (chunks.length === 0) {
       return ok([]);

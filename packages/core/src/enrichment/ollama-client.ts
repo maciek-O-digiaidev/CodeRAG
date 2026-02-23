@@ -4,12 +4,15 @@ export interface OllamaConfig {
   baseUrl: string;
   model: string;
   timeout: number;
+  /** Maximum tokens to generate per request (Ollama num_predict). 0 = unlimited. */
+  maxTokens: number;
 }
 
 const DEFAULT_CONFIG: OllamaConfig = {
   baseUrl: 'http://localhost:11434',
   model: 'qwen2.5-coder:7b',
   timeout: 30_000,
+  maxTokens: 100,
 };
 
 export class OllamaError extends Error {
@@ -45,6 +48,7 @@ export class OllamaClient {
             model: this.config.model,
             prompt,
             stream: false,
+            ...(this.config.maxTokens > 0 ? { options: { num_predict: this.config.maxTokens } } : {}),
           }),
           signal: AbortSignal.timeout(this.config.timeout),
         },

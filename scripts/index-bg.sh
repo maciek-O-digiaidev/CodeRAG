@@ -37,6 +37,9 @@ done
 
 cd "$PROJECT_DIR"
 
+# Ollama parallel inference — allows multiple requests to be processed concurrently
+export OLLAMA_NUM_PARALLEL="${OLLAMA_NUM_PARALLEL:-6}"
+
 log() {
   local timestamp
   timestamp="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
