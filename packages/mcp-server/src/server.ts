@@ -7,6 +7,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import {
   loadConfig,
+  checkIndexExists,
   OllamaEmbeddingProvider,
   LanceDBStore,
   BM25Index,
@@ -20,6 +21,7 @@ import {
   type GraphNode,
   type GraphEdge,
   type BacklogProvider,
+  type IndexCheckResult,
 } from '@coderag/core';
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -33,6 +35,17 @@ import { handleBacklog } from './tools/backlog.js';
 import { handleDocs } from './tools/docs.js';
 
 export const MCP_SERVER_VERSION = '0.1.0';
+
+/** Message printed when the CLI `serve` command cannot find an index. */
+export const NO_INDEX_MESSAGE = `CodeRAG: No index found for this project.
+
+To build the RAG index, run:
+  npx coderag index
+
+Or in VS Code, use the command:
+  CodeRAG: Index
+
+The MCP server will start automatically once indexing is complete.`;
 
 export interface CodeRAGServerOptions {
   rootDir: string;
@@ -49,6 +62,7 @@ export class CodeRAGServer {
   private backlogProvider: BacklogProvider | null = null;
   private httpServer: HttpServer | null = null;
   private transports: Map<string, SSEServerTransport> = new Map();
+  private indexCheck: IndexCheckResult = { exists: false, empty: false };
 
   constructor(options: CodeRAGServerOptions) {
     this.rootDir = options.rootDir;
@@ -59,6 +73,31 @@ export class CodeRAGServer {
     );
 
     this.registerHandlers();
+  }
+
+  /**
+   * Check whether a RAG index exists for the project.
+   * Loads config to determine storage path, then checks for LanceDB + BM25 data.
+   * Returns the index check result, or null if config could not be loaded.
+   */
+  async checkIndex(): Promise<IndexCheckResult | null> {
+    const configResult = await loadConfig(this.rootDir);
+    if (configResult.isErr()) {
+      return null;
+    }
+
+    const config = configResult.value;
+    const storagePath = resolve(this.rootDir, config.storage.path);
+    if (!storagePath.startsWith(resolve(this.rootDir))) {
+      return null;
+    }
+
+    return checkIndexExists(storagePath);
+  }
+
+  /** Get the current index check result (set during initialize). */
+  getIndexCheck(): IndexCheckResult {
+    return this.indexCheck;
   }
 
   /**
@@ -89,6 +128,10 @@ export class CodeRAGServer {
         console.error('[coderag] Storage path escapes project root');
         return;
       }
+
+      // Check index existence before connecting
+      this.indexCheck = await checkIndexExists(storagePath);
+
       this.store = new LanceDBStore(storagePath, this.config.embedding.dimensions);
       await this.store.connect();
 

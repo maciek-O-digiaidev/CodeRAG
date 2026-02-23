@@ -1,6 +1,9 @@
 export type { IndexedFileState } from './index-state.js';
 export { IndexState, computeFileHash } from './index-state.js';
 
+export type { IndexCheckResult } from './index-check.js';
+export { checkIndexExists } from './index-check.js';
+
 export type { ScannedFile } from './file-scanner.js';
 export { FileScanner, ScanError } from './file-scanner.js';
 

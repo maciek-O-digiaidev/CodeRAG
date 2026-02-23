@@ -3,7 +3,7 @@
 import { fileURLToPath } from 'node:url';
 import { CodeRAGServer } from './server.js';
 
-export { CodeRAGServer, MCP_SERVER_VERSION } from './server.js';
+export { CodeRAGServer, MCP_SERVER_VERSION, NO_INDEX_MESSAGE } from './server.js';
 export { handleSearch, searchInputSchema, type SearchInput, type SearchToolResult } from './tools/search.js';
 export { handleContext, contextInputSchema, type ContextInput } from './tools/context.js';
 export { handleStatus, type StatusResult } from './tools/status.js';

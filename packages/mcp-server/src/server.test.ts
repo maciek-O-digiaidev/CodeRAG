@@ -746,11 +746,86 @@ describe('CodeRAGServer', () => {
     expect(mod.MCP_SERVER_VERSION).toBe('0.1.0');
   });
 
+  it('should export NO_INDEX_MESSAGE', async () => {
+    const mod = await import('./server.js');
+    expect(mod.NO_INDEX_MESSAGE).toContain('No index found');
+    expect(mod.NO_INDEX_MESSAGE).toContain('npx coderag index');
+    expect(mod.NO_INDEX_MESSAGE).toContain('CodeRAG: Index');
+  });
+
   it('should create a server instance', async () => {
     const { CodeRAGServer } = await import('./server.js');
     const server = new CodeRAGServer({ rootDir: '/tmp/test' });
     expect(server).toBeDefined();
     expect(server.getServer()).toBeDefined();
+  });
+
+  it('should default indexCheck to exists:false', async () => {
+    const { CodeRAGServer } = await import('./server.js');
+    const server = new CodeRAGServer({ rootDir: '/tmp/test-index-check' });
+    const check = server.getIndexCheck();
+    expect(check.exists).toBe(false);
+    expect(check.empty).toBe(false);
+  });
+
+  it('checkIndex should return null when config is missing', async () => {
+    const { CodeRAGServer } = await import('./server.js');
+    const server = new CodeRAGServer({ rootDir: '/tmp/nonexistent-project-dir' });
+    const result = await server.checkIndex();
+    expect(result).toBeNull();
+  });
+});
+
+// --- Index Check Integration ---
+
+import { mkdtemp, writeFile, mkdir, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+
+describe('CodeRAGServer.checkIndex', () => {
+  let tempDir: string;
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'coderag-server-check-'));
+  });
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('should return exists:false when no index exists but config does', async () => {
+    // Write a minimal .coderag.yaml
+    await writeFile(
+      join(tempDir, '.coderag.yaml'),
+      'version: "1"\nproject:\n  name: test\n  languages: auto\n',
+    );
+
+    const { CodeRAGServer: CS } = await import('./server.js');
+    const server = new CS({ rootDir: tempDir });
+    const result = await server.checkIndex();
+
+    expect(result).not.toBeNull();
+    expect(result!.exists).toBe(false);
+  });
+
+  it('should return exists:true when index data exists', async () => {
+    await writeFile(
+      join(tempDir, '.coderag.yaml'),
+      'version: "1"\nproject:\n  name: test\n  languages: auto\n',
+    );
+
+    // Create index data
+    const storagePath = join(tempDir, '.coderag');
+    await mkdir(join(storagePath, 'chunks.lance'), { recursive: true });
+    await writeFile(join(storagePath, 'bm25-index.json'), '{"documentCount": 10}');
+
+    const { CodeRAGServer: CS } = await import('./server.js');
+    const server = new CS({ rootDir: tempDir });
+    const result = await server.checkIndex();
+
+    expect(result).not.toBeNull();
+    expect(result!.exists).toBe(true);
+    expect(result!.empty).toBe(false);
   });
 });
 

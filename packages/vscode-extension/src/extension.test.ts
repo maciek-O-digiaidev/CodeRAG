@@ -224,6 +224,31 @@ describe('StatusBarManager', () => {
     manager.dispose();
   });
 
+  it('should update text for noIndex status', async () => {
+    const { StatusBarManager } = await import('./status-bar.js');
+    const manager = new StatusBarManager(mockApi);
+    const item = (mockApi.window.createStatusBarItem as ReturnType<typeof vi.fn>).mock.results[0]!.value as vscode.StatusBarItem;
+
+    manager.update('noIndex');
+
+    expect(item.text).toContain('No Index');
+    expect(item.text).toContain('$(warning)');
+    expect(manager.getStatus()).toBe('noIndex');
+    manager.dispose();
+  });
+
+  it('should set tooltip for noIndex status', async () => {
+    const { StatusBarManager } = await import('./status-bar.js');
+    const manager = new StatusBarManager(mockApi);
+    const item = (mockApi.window.createStatusBarItem as ReturnType<typeof vi.fn>).mock.results[0]!.value as vscode.StatusBarItem;
+
+    manager.update('noIndex');
+
+    expect(item.tooltip).toContain('No CodeRAG index found');
+    expect(item.tooltip).toContain('CodeRAG: Index');
+    manager.dispose();
+  });
+
   it('should set tooltip for connected status', async () => {
     const { StatusBarManager } = await import('./status-bar.js');
     const manager = new StatusBarManager(mockApi);
@@ -543,8 +568,8 @@ describe('ServerManager', () => {
 
 describe('Types', () => {
   it('IndexStatus should support all valid values', () => {
-    const statuses: IndexStatus[] = ['connected', 'indexing', 'error', 'disconnected'];
-    expect(statuses).toHaveLength(4);
+    const statuses: IndexStatus[] = ['connected', 'indexing', 'error', 'disconnected', 'noIndex'];
+    expect(statuses).toHaveLength(5);
   });
 
   it('SearchResultItem should be constructable', () => {

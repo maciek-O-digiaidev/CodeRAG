@@ -20,6 +20,17 @@ const DEFAULT_PORT = 3100;
 const SERVER_STARTUP_TIMEOUT_MS = 30_000;
 const HEALTH_CHECK_INTERVAL_MS = 1_000;
 
+/** Substring present in server stderr output when no index exists. */
+const NO_INDEX_MARKER = 'No index found for this project';
+
+/** Result of attempting to ensure the server is running. */
+export interface EnsureRunningResult {
+  /** Whether the server is available. */
+  readonly running: boolean;
+  /** Whether the server failed because no index exists. */
+  readonly noIndex: boolean;
+}
+
 export interface ServerManagerOptions {
   readonly port?: number;
   readonly outputChannel: vscode.OutputChannel;
@@ -71,12 +82,13 @@ export class ServerManager {
 
   /**
    * Ensure the server is running. If not already running, spawn it.
-   * Returns true if the server is available, false if startup failed.
+   * Returns a result indicating whether the server is available and
+   * whether it failed because no index exists.
    */
-  async ensureRunning(): Promise<boolean> {
+  async ensureRunning(): Promise<EnsureRunningResult> {
     if (await this.isServerRunning()) {
       this.outputChannel.appendLine('[server] MCP server already running.');
-      return true;
+      return { running: true, noIndex: false };
     }
 
     this.outputChannel.appendLine('[server] Starting MCP server...');
@@ -127,9 +139,10 @@ export class ServerManager {
     return { command: 'npx', args: ['coderag', ...portArgs] };
   }
 
-  private async startServer(): Promise<boolean> {
-    return new Promise<boolean>((resolve) => {
+  private async startServer(): Promise<EnsureRunningResult> {
+    return new Promise<EnsureRunningResult>((resolve) => {
       const { command, args } = this.resolveCliCommand();
+      let detectedNoIndex = false;
 
       const child = spawn(
         command,
@@ -149,27 +162,42 @@ export class ServerManager {
       });
 
       child.stderr?.on('data', (data: Buffer) => {
-        this.outputChannel.appendLine(`[server] ${data.toString().trimEnd()}`);
+        const text = data.toString().trimEnd();
+        this.outputChannel.appendLine(`[server] ${text}`);
+        if (text.includes(NO_INDEX_MARKER)) {
+          detectedNoIndex = true;
+        }
       });
 
       child.on('error', (err: Error) => {
         this.outputChannel.appendLine(`[server] Failed to start: ${err.message}`);
         this.serverProcess = null;
-        resolve(false);
+        resolve({ running: false, noIndex: false });
       });
 
       child.on('exit', (code) => {
         this.outputChannel.appendLine(`[server] Process exited with code ${code ?? 'unknown'}`);
         this.serverProcess = null;
+        // If the server exited with code 1 and we detected the no-index marker,
+        // resolve immediately so the extension can show the appropriate UI.
+        if (code === 1 && detectedNoIndex) {
+          resolve({ running: false, noIndex: true });
+        }
       });
 
       // Poll for server availability
       const startTime = Date.now();
       const checkInterval = setInterval(() => {
+        // If the process already exited with no-index, stop polling
+        if (detectedNoIndex && this.serverProcess === null) {
+          clearInterval(checkInterval);
+          return;
+        }
+
         if (Date.now() - startTime > SERVER_STARTUP_TIMEOUT_MS) {
           clearInterval(checkInterval);
           this.outputChannel.appendLine('[server] Startup timeout — server did not become available.');
-          resolve(false);
+          resolve({ running: false, noIndex: false });
           return;
         }
 
@@ -177,7 +205,7 @@ export class ServerManager {
           if (running) {
             clearInterval(checkInterval);
             this.outputChannel.appendLine('[server] MCP server is ready.');
-            resolve(true);
+            resolve({ running: true, noIndex: false });
           }
         }).catch(() => {
           // ignore — keep polling

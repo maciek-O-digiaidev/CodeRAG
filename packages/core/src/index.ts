@@ -75,6 +75,7 @@ export type {
   MultiRepoProgressCallback,
   MultiRepoIndexOptions,
   RepoProcessor,
+  IndexCheckResult,
 } from './indexer/index.js';
 export {
   IndexState,
@@ -85,6 +86,7 @@ export {
   IndexerError,
   MultiRepoIndexer,
   MultiRepoIndexerError,
+  checkIndexExists,
 } from './indexer/index.js';
 
 export type { OllamaEmbeddingConfig, QdrantConfig } from './embedding/index.js';

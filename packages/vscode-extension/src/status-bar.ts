@@ -19,6 +19,7 @@ interface StatusBarIcons {
   readonly indexing: string;
   readonly error: string;
   readonly disconnected: string;
+  readonly noIndex: string;
 }
 
 const ICONS: StatusBarIcons = {
@@ -26,6 +27,7 @@ const ICONS: StatusBarIcons = {
   indexing: '$(sync~spin)',
   error: '$(error)',
   disconnected: '$(debug-disconnect)',
+  noIndex: '$(warning)',
 };
 
 export class StatusBarManager {
@@ -84,6 +86,8 @@ export class StatusBarManager {
         return 'CodeRAG: Error';
       case 'disconnected':
         return 'CodeRAG: Disconnected';
+      case 'noIndex':
+        return 'CodeRAG: No Index';
     }
   }
 
@@ -97,6 +101,8 @@ export class StatusBarManager {
         return 'CodeRAG encountered an error. Click for details.';
       case 'disconnected':
         return 'CodeRAG is not connected. Click to check status.';
+      case 'noIndex':
+        return 'No CodeRAG index found. Run "CodeRAG: Index" to build it.';
     }
   }
 }

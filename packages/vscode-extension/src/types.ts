@@ -3,7 +3,7 @@
  */
 
 /** Status of the CodeRAG index. */
-export type IndexStatus = 'connected' | 'indexing' | 'error' | 'disconnected';
+export type IndexStatus = 'connected' | 'indexing' | 'error' | 'disconnected' | 'noIndex';
 
 /** Result from a CodeRAG search via MCP. */
 export interface SearchResultItem {

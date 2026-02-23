@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { CodeRAGServer } from '@coderag/mcp-server';
+import { CodeRAGServer, NO_INDEX_MESSAGE } from '@coderag/mcp-server';
 
 export function registerServeCommand(program: Command): void {
   program
@@ -11,6 +11,15 @@ export function registerServeCommand(program: Command): void {
       try {
         const rootDir = process.cwd();
         const server = new CodeRAGServer({ rootDir });
+
+        // Guard: check if index exists before starting the server
+        const indexCheck = await server.checkIndex();
+        if (indexCheck !== null && !indexCheck.exists) {
+          // eslint-disable-next-line no-console
+          console.error(chalk.yellow(NO_INDEX_MESSAGE));
+          process.exit(1);
+        }
+
         await server.initialize();
 
         // Graceful shutdown

@@ -137,8 +137,28 @@ async function connectToServer(): Promise<void> {
 
   try {
     // Ensure server is running (auto-start if needed)
-    const serverReady = await serverManager.ensureRunning();
-    if (!serverReady) {
+    const result = await serverManager.ensureRunning();
+
+    if (result.noIndex) {
+      outputChannel.appendLine('No CodeRAG index found for this project.');
+      statusBar.update('noIndex');
+
+      // Show notification with "Run Index" button
+      const action = await vscode.window.showInformationMessage(
+        'No CodeRAG index found. Build the index to enable code search.',
+        'Run Index',
+      );
+
+      if (action === 'Run Index') {
+        await vscode.commands.executeCommand('coderag.index');
+        // After indexing, try to connect again
+        await connectToServer();
+      }
+
+      return;
+    }
+
+    if (!result.running) {
       outputChannel.appendLine('MCP server could not be started. Commands will work once server is available.');
       statusBar.update('disconnected');
       return;
