@@ -2,6 +2,7 @@ export type { ChunkMetadata, ChunkType, Chunk, ChunkWithEmbedding } from './chun
 export type {
   CodeRAGConfig,
   EmbeddingConfig,
+  OpenAICompatibleConfig,
   LLMConfig,
   IngestionConfig,
   SearchConfig,

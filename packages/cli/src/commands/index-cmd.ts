@@ -15,6 +15,7 @@ import {
   OllamaClient,
   NLEnricher,
   OllamaEmbeddingProvider,
+  OpenAICompatibleEmbeddingProvider,
   LanceDBStore,
   BM25Index,
   GraphBuilder,
@@ -32,8 +33,38 @@ import {
   type GraphNode,
   type ParsedFile,
   type CodeRAGConfig,
+  type EmbeddingConfig,
+  type EmbeddingProvider,
   type BacklogConfig,
 } from '@coderag/core';
+
+// ---------------------------------------------------------------------------
+// Embedding provider factory — dispatches based on config.embedding.provider
+// ---------------------------------------------------------------------------
+
+export function createEmbeddingProvider(embeddingConfig: EmbeddingConfig): EmbeddingProvider {
+  const provider = embeddingConfig.provider;
+
+  switch (provider) {
+    case 'openai-compatible': {
+      const compat = embeddingConfig.openaiCompatible;
+      return new OpenAICompatibleEmbeddingProvider({
+        baseUrl: compat?.baseUrl ?? 'http://localhost:1234/v1',
+        apiKey: compat?.apiKey,
+        model: embeddingConfig.model,
+        dimensions: embeddingConfig.dimensions,
+        maxBatchSize: compat?.maxBatchSize ?? 100,
+      });
+    }
+    case 'ollama':
+    case 'auto':
+    default:
+      return new OllamaEmbeddingProvider({
+        model: embeddingConfig.model,
+        dimensions: embeddingConfig.dimensions,
+      });
+  }
+}
 
 // ---------------------------------------------------------------------------
 // IndexLogger — dual output: ora spinner (interactive) + file log
@@ -451,10 +482,7 @@ async function indexSingleRepo(
   // Embed chunks
   await logger.setPhase('embed');
   await logger.info(`${prefix}Embedding ${enrichedChunks.length} chunks...`);
-  const embeddingProvider = new OllamaEmbeddingProvider({
-    model: config.embedding.model,
-    dimensions: config.embedding.dimensions,
-  });
+  const embeddingProvider = createEmbeddingProvider(config.embedding);
 
   const textsToEmbed = enrichedChunks.map(
     (c) => c.nlSummary ? `${c.nlSummary}\n\n${c.content}` : c.content,
@@ -755,10 +783,7 @@ async function indexBacklog(
 
   // Embed chunks
   await logger.info(`Backlog: embedding ${chunks.length} items...`);
-  const embeddingProvider = new OllamaEmbeddingProvider({
-    model: config.embedding.model,
-    dimensions: config.embedding.dimensions,
-  });
+  const embeddingProvider = createEmbeddingProvider(config.embedding);
 
   const textsToEmbed = chunks.map(
     (c) => c.nlSummary ? `${c.nlSummary}\n\n${c.content}` : c.content,

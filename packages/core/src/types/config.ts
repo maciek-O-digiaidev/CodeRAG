@@ -1,7 +1,14 @@
+export interface OpenAICompatibleConfig {
+  baseUrl: string;
+  apiKey?: string;
+  maxBatchSize: number;
+}
+
 export interface EmbeddingConfig {
   provider: string;
   model: string;
   dimensions: number;
+  openaiCompatible?: OpenAICompatibleConfig;
 }
 
 export interface LLMConfig {

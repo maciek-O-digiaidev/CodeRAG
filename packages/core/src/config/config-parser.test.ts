@@ -547,6 +547,143 @@ search:
   });
 });
 
+describe('loadConfig — openaiCompatible embedding config', () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'coderag-openai-'));
+  });
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('should load openaiCompatible config with camelCase keys', async () => {
+    const configContent = `
+version: "1"
+project:
+  name: openai-test
+embedding:
+  provider: openai-compatible
+  model: text-embedding-3-small
+  dimensions: 1536
+  openaiCompatible:
+    baseUrl: https://api.openai.com/v1
+    apiKey: sk-test-key
+    maxBatchSize: 50
+`;
+    writeFileSync(join(tempDir, '.coderag.yaml'), configContent);
+
+    const result = await loadConfig(tempDir);
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.embedding.provider).toBe('openai-compatible');
+      expect(result.value.embedding.openaiCompatible).toBeDefined();
+      expect(result.value.embedding.openaiCompatible!.baseUrl).toBe('https://api.openai.com/v1');
+      expect(result.value.embedding.openaiCompatible!.apiKey).toBe('sk-test-key');
+      expect(result.value.embedding.openaiCompatible!.maxBatchSize).toBe(50);
+    }
+  });
+
+  it('should load openaiCompatible config with snake_case YAML keys', async () => {
+    const configContent = `
+version: "1"
+project:
+  name: openai-snake
+embedding:
+  provider: openai-compatible
+  model: nomic-embed-text
+  dimensions: 768
+  openai_compatible:
+    base_url: http://localhost:1234/v1
+    api_key: lm-studio-key
+    max_batch_size: 200
+`;
+    writeFileSync(join(tempDir, '.coderag.yaml'), configContent);
+
+    const result = await loadConfig(tempDir);
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.embedding.openaiCompatible).toBeDefined();
+      expect(result.value.embedding.openaiCompatible!.baseUrl).toBe('http://localhost:1234/v1');
+      expect(result.value.embedding.openaiCompatible!.apiKey).toBe('lm-studio-key');
+      expect(result.value.embedding.openaiCompatible!.maxBatchSize).toBe(200);
+    }
+  });
+
+  it('should apply defaults for openaiCompatible when minimal config provided', async () => {
+    const configContent = `
+version: "1"
+project:
+  name: openai-defaults
+embedding:
+  provider: openai-compatible
+  model: nomic-embed-text
+  dimensions: 768
+  openaiCompatible:
+    baseUrl: http://localhost:11434/v1
+`;
+    writeFileSync(join(tempDir, '.coderag.yaml'), configContent);
+
+    const result = await loadConfig(tempDir);
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.embedding.openaiCompatible).toBeDefined();
+      expect(result.value.embedding.openaiCompatible!.baseUrl).toBe('http://localhost:11434/v1');
+      expect(result.value.embedding.openaiCompatible!.maxBatchSize).toBe(100);
+    }
+  });
+
+  it('should load config without openaiCompatible section (backwards compatible)', async () => {
+    const configContent = `
+version: "1"
+project:
+  name: no-openai
+embedding:
+  provider: ollama
+  model: nomic-embed-text
+  dimensions: 768
+`;
+    writeFileSync(join(tempDir, '.coderag.yaml'), configContent);
+
+    const result = await loadConfig(tempDir);
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.embedding.provider).toBe('ollama');
+      expect(result.value.embedding.openaiCompatible).toBeUndefined();
+    }
+  });
+
+  it('should return validation error for empty baseUrl in openaiCompatible', async () => {
+    const configContent = `
+version: "1"
+project:
+  name: bad-openai
+embedding:
+  provider: openai-compatible
+  model: nomic-embed-text
+  dimensions: 768
+  openaiCompatible:
+    baseUrl: ""
+    maxBatchSize: 100
+`;
+    writeFileSync(join(tempDir, '.coderag.yaml'), configContent);
+
+    const result = await loadConfig(tempDir);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(ConfigError);
+      expect(result.error.message).toContain('Config validation failed');
+      expect(result.error.message).toContain('baseUrl');
+    }
+  });
+});
+
 describe('interpolateEnvVars', () => {
   const ORIG_ENV = { ...process.env };
 

@@ -14,10 +14,17 @@ export class ConfigError extends Error {
 
 // --- Zod Schemas ---
 
+const openaiCompatibleConfigSchema = z.object({
+  baseUrl: z.string().min(1, 'OpenAI-compatible base URL must not be empty'),
+  apiKey: z.string().optional(),
+  maxBatchSize: z.number().int('maxBatchSize must be an integer').positive('maxBatchSize must be positive'),
+});
+
 const embeddingConfigSchema = z.object({
   provider: z.string().min(1, 'Embedding provider must not be empty'),
   model: z.string().min(1, 'Embedding model must not be empty'),
   dimensions: z.number().int('Dimensions must be an integer').positive('Dimensions must be positive'),
+  openaiCompatible: openaiCompatibleConfigSchema.optional(),
 });
 
 const llmConfigSchema = z.object({
@@ -191,6 +198,48 @@ function formatZodErrors(error: z.ZodError): string {
     .join('; ');
 }
 
+function normalizeEmbeddingConfig(
+  embeddingPartial: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  // Work with raw Record<string, unknown> since YAML keys may be snake_case
+  const defaults: Record<string, unknown> = { ...DEFAULT_CONFIG.embedding };
+  const merged: Record<string, unknown> = { ...defaults, ...embeddingPartial };
+
+  // Support snake_case key from YAML: openai_compatible -> openaiCompatible
+  const openaiCompat =
+    (merged['openaiCompatible'] as Record<string, unknown> | undefined) ??
+    (merged['openai_compatible'] as Record<string, unknown> | undefined);
+
+  // Remove the snake_case variant so only the camelCase one remains
+  delete merged['openai_compatible'];
+
+  if (openaiCompat) {
+    const compatDefaults: Record<string, unknown> = {
+      baseUrl: 'http://localhost:1234/v1',
+      maxBatchSize: 100,
+    };
+    const compat: Record<string, unknown> = { ...compatDefaults, ...openaiCompat };
+
+    // Normalize snake_case sub-keys: base_url, api_key, max_batch_size
+    if (compat['base_url'] !== undefined && compat['baseUrl'] === compatDefaults['baseUrl']) {
+      compat['baseUrl'] = compat['base_url'];
+    }
+    delete compat['base_url'];
+    if (compat['api_key'] !== undefined && compat['apiKey'] === undefined) {
+      compat['apiKey'] = compat['api_key'];
+    }
+    delete compat['api_key'];
+    if (compat['max_batch_size'] !== undefined && compat['maxBatchSize'] === compatDefaults['maxBatchSize']) {
+      compat['maxBatchSize'] = compat['max_batch_size'];
+    }
+    delete compat['max_batch_size'];
+
+    merged['openaiCompatible'] = compat;
+  }
+
+  return merged;
+}
+
 function applyDefaults(partial: Record<string, unknown>): Record<string, unknown> {
   return {
     version: (partial['version'] as string | undefined) ?? DEFAULT_CONFIG.version,
@@ -202,10 +251,9 @@ function applyDefaults(partial: Record<string, unknown>): Record<string, unknown
       ...DEFAULT_CONFIG.ingestion,
       ...(partial['ingestion'] as Record<string, unknown> | undefined),
     },
-    embedding: {
-      ...DEFAULT_CONFIG.embedding,
-      ...(partial['embedding'] as Record<string, unknown> | undefined),
-    },
+    embedding: normalizeEmbeddingConfig(
+      partial['embedding'] as Record<string, unknown> | undefined,
+    ),
     llm: {
       ...DEFAULT_CONFIG.llm,
       ...(partial['llm'] as Record<string, unknown> | undefined),
