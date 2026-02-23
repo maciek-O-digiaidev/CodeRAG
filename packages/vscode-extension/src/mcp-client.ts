@@ -141,18 +141,43 @@ export class McpClient {
 
   /**
    * Call the `coderag_search` MCP tool.
+   *
+   * The server returns snake_case fields wrapped in `{ results: [...] }`.
+   * We translate to the extension's camelCase SearchResultItem interface.
    */
   async search(query: string, topK = 10): Promise<readonly SearchResultItem[]> {
-    const response = await this.callTool('coderag_search', { query, topK });
-    return this.parseToolTextResult<readonly SearchResultItem[]>(response);
+    const response = await this.callTool('coderag_search', { query, top_k: topK });
+    const raw = this.parseToolTextResult<{ results: Array<Record<string, unknown>> }>(response);
+    return (raw.results ?? []).map((r) => ({
+      chunkId: String(r.chunk_id ?? r.chunkId ?? ''),
+      content: String(r.content ?? ''),
+      nlSummary: String(r.nl_summary ?? r.nlSummary ?? ''),
+      score: Number(r.score ?? 0),
+      filePath: String(r.file_path ?? r.filePath ?? ''),
+      startLine: Number(r.start_line ?? r.startLine ?? 0),
+      endLine: Number(r.end_line ?? r.endLine ?? 0),
+      language: String(r.language ?? ''),
+      chunkType: String(r.chunk_type ?? r.chunkType ?? ''),
+      name: String(r.name ?? ''),
+    }));
   }
 
   /**
    * Call the `coderag_status` MCP tool.
+   *
+   * The server returns snake_case fields. We translate to StatusInfo.
    */
   async getStatus(): Promise<StatusInfo> {
     const response = await this.callTool('coderag_status', {});
-    return this.parseToolTextResult<StatusInfo>(response);
+    const raw = this.parseToolTextResult<Record<string, unknown>>(response);
+    return {
+      totalChunks: Number(raw.total_chunks ?? raw.totalChunks ?? 0),
+      model: String(raw.model ?? 'unknown'),
+      dimensions: Number(raw.dimensions ?? 0),
+      languages: (raw.languages as StatusInfo['languages']) ?? 'auto',
+      storagePath: String(raw.storage_path ?? raw.storagePath ?? ''),
+      health: String(raw.health ?? 'unknown'),
+    };
   }
 
   /**
