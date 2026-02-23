@@ -162,6 +162,57 @@ async function clearEnrichmentCheckpoint(storagePath: string): Promise<void> {
 const ENRICHMENT_BATCH_SIZE = 100;
 
 /**
+ * Rebuild BM25 index from all documents in LanceDB.
+ * Used as a fallback when incremental update fails (e.g., corrupted index).
+ */
+async function rebuildBm25FromStore(
+  store: LanceDBStore,
+  logger: IndexLogger,
+  prefix: string,
+): Promise<BM25Index> {
+  const bm25 = new BM25Index();
+  try {
+    const internal = store as unknown as {
+      table: { query: () => { toArray: () => Promise<Array<{
+        id: string; content: string; nl_summary: string;
+        file_path: string; chunk_type: string; language: string;
+        metadata: string;
+      }>> } } | null;
+    };
+    const table = internal.table;
+    if (table) {
+      const allRows = await table.query().toArray();
+      const chunks: Chunk[] = allRows.map((row) => {
+        let parsedMeta: Record<string, unknown> = {};
+        try { parsedMeta = JSON.parse(row.metadata) as Record<string, unknown>; } catch { /* ignore */ }
+        return {
+          id: row.id,
+          content: row.content,
+          nlSummary: row.nl_summary,
+          filePath: row.file_path,
+          startLine: 0,
+          endLine: 0,
+          language: row.language,
+          metadata: {
+            chunkType: (row.chunk_type ?? 'function') as ChunkMetadata['chunkType'],
+            name: (parsedMeta['name'] as string) ?? '',
+            declarations: [],
+            imports: [],
+            exports: [],
+          },
+        };
+      });
+      bm25.addChunks(chunks);
+      await logger.info(`${prefix}Rebuilt BM25 from LanceDB: ${chunks.length} documents`);
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await logger.warn(`${prefix}BM25 rebuild from LanceDB failed: ${msg}`);
+  }
+  return bm25;
+}
+
+/**
  * Index a single repo directory using the full pipeline:
  * scan, parse, chunk, enrich, embed, store.
  *
@@ -439,20 +490,92 @@ async function indexSingleRepo(
     throw new Error(`Store failed: ${upsertResult.error.message}`);
   }
 
-  // Build BM25 index
-  await logger.info(`${prefix}Building BM25 index...`);
-  const bm25 = new BM25Index();
-  bm25.addChunks(enrichedChunks);
+  // Build / update BM25 index
   const bm25Path = join(storagePath, 'bm25-index.json');
+  let bm25: BM25Index;
+
+  if (options.full) {
+    // Full reindex: start fresh
+    await logger.info(`${prefix}Building BM25 index from scratch...`);
+    bm25 = new BM25Index();
+  } else {
+    // Incremental: load existing, remove stale chunks for re-indexed files
+    await logger.info(`${prefix}Updating BM25 index incrementally...`);
+    try {
+      const existingBm25 = await readFile(bm25Path, 'utf-8');
+      bm25 = BM25Index.deserialize(existingBm25);
+
+      // Remove old chunks that belong to the files being re-indexed
+      const staleChunkIds: string[] = [];
+      for (const file of filesToProcess) {
+        const fileState = indexState.getFileState(file.filePath);
+        if (fileState) {
+          staleChunkIds.push(...fileState.chunkIds);
+        }
+      }
+      if (staleChunkIds.length > 0) {
+        try {
+          bm25.removeChunks(staleChunkIds);
+        } catch {
+          // Some IDs may not exist (e.g., after a corrupted incremental run);
+          // fall back to rebuilding from scratch via LanceDB
+          await logger.warn(`${prefix}BM25 stale chunk removal failed, rebuilding from LanceDB...`);
+          bm25 = await rebuildBm25FromStore(store, logger, prefix);
+        }
+      }
+    } catch {
+      // No existing BM25 index, start fresh
+      bm25 = new BM25Index();
+    }
+  }
+
+  bm25.addChunks(enrichedChunks);
   await writeFile(bm25Path, bm25.serialize(), 'utf-8');
 
-  // Build dependency graph
+  // Build / update dependency graph
   await logger.info(`${prefix}Building dependency graph...`);
   const graphBuilder = new GraphBuilder(rootDir);
   const graphResult = graphBuilder.buildFromFiles(allParsedFiles);
   if (graphResult.isOk()) {
     const graphPath = join(storagePath, 'graph.json');
-    await writeFile(graphPath, JSON.stringify(graphResult.value.toJSON()), 'utf-8');
+    const newGraph = graphResult.value;
+
+    if (options.full) {
+      // Full reindex: write the new graph directly
+      await writeFile(graphPath, JSON.stringify(newGraph.toJSON()), 'utf-8');
+    } else {
+      // Incremental: merge new graph into existing
+      try {
+        const existingData = await readFile(graphPath, 'utf-8');
+        const existingGraph = DependencyGraph.fromJSON(
+          JSON.parse(existingData) as { nodes: GraphNode[]; edges: { source: string; target: string; type: 'imports' | 'extends' | 'implements' | 'calls' | 'references' }[] },
+        );
+
+        // Collect file paths being re-indexed to identify stale nodes
+        const reindexedFiles = new Set(filesToProcess.map((f) => f.filePath));
+        const existingNodes = existingGraph.getAllNodes();
+        const existingEdges = existingGraph.getAllEdges();
+
+        // Keep nodes NOT from re-indexed files, then add all new nodes
+        const keptNodes = existingNodes.filter((n) => !reindexedFiles.has(n.filePath));
+        const keptNodeIds = new Set(keptNodes.map((n) => n.id));
+        const keptEdges = existingEdges.filter(
+          (e) => keptNodeIds.has(e.source) && keptNodeIds.has(e.target),
+        );
+
+        // Rebuild merged graph
+        const merged = new DependencyGraph();
+        for (const node of keptNodes) merged.addNode(node);
+        for (const edge of keptEdges) merged.addEdge(edge);
+        for (const node of newGraph.getAllNodes()) merged.addNode(node);
+        for (const edge of newGraph.getAllEdges()) merged.addEdge(edge);
+
+        await writeFile(graphPath, JSON.stringify(merged.toJSON()), 'utf-8');
+      } catch {
+        // No existing graph, write new one
+        await writeFile(graphPath, JSON.stringify(newGraph.toJSON()), 'utf-8');
+      }
+    }
   }
 
   // Update index state
