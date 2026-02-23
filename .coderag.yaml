@@ -10,6 +10,9 @@ ingestion:
     - .git
     - coverage
     - .coderag
+    - .claude/worktrees
+    - nohup.out
+    - "*.vsix"
 embedding:
   provider: ollama
   model: nomic-embed-text

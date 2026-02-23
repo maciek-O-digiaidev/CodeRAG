@@ -1,0 +1,9 @@
+# Worktrees contain duplicate code from agent development
+.claude/worktrees/
+
+# Binary / non-code files
+*.vsix
+nohup.out
+*.docx
+*.pptx
+pnpm-lock.yaml
