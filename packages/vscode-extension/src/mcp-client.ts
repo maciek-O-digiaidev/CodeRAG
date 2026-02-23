@@ -27,6 +27,10 @@ export class McpClient {
   private nextId = 1;
   private connected = false;
   private abortController: AbortController | null = null;
+  private readonly pendingRequests = new Map<number, {
+    resolve: (value: JsonRpcResponse) => void;
+    reject: (reason: Error) => void;
+  }>();
 
   constructor(options: McpClientOptions = {}) {
     const port = options.port ?? DEFAULT_PORT;
@@ -49,9 +53,11 @@ export class McpClient {
 
     const sseUrl = `${this.baseUrl}/sse`;
 
+    // Use the instance abort controller for the SSE stream lifetime —
+    // NOT a timeout signal, which would kill the long-lived SSE connection.
     const response = await fetch(sseUrl, {
       headers: { Accept: 'text/event-stream' },
-      signal: AbortSignal.timeout(CONNECT_TIMEOUT_MS),
+      signal: this.abortController.signal,
     });
 
     if (!response.ok) {
@@ -126,6 +132,7 @@ export class McpClient {
   disconnect(): void {
     this.connected = false;
     this.messageEndpoint = null;
+    this.rejectAllPending('Client disconnected');
     if (this.abortController) {
       this.abortController.abort();
       this.abortController = null;
@@ -161,6 +168,10 @@ export class McpClient {
 
   /**
    * Send a tools/call JSON-RPC request to the MCP server.
+   *
+   * The MCP SSE protocol returns 202 Accepted for POST requests.
+   * The actual JSON-RPC response arrives via the SSE stream and is
+   * correlated by request ID.
    */
   private async callTool(
     toolName: string,
@@ -180,32 +191,38 @@ export class McpClient {
       },
     };
 
+    // Create a promise that will be resolved when the SSE stream
+    // delivers the response matching this request ID.
+    const responsePromise = new Promise<JsonRpcResponse>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(request.id as number);
+        reject(new Error(`MCP request timed out after ${REQUEST_TIMEOUT_MS}ms`));
+      }, REQUEST_TIMEOUT_MS);
+
+      this.pendingRequests.set(request.id as number, {
+        resolve: (value: JsonRpcResponse) => {
+          clearTimeout(timeout);
+          resolve(value);
+        },
+        reject: (reason: Error) => {
+          clearTimeout(timeout);
+          reject(reason);
+        },
+      });
+    });
+
     const response = await fetch(this.messageEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
     if (!response.ok) {
+      this.pendingRequests.delete(request.id as number);
       throw new Error(`MCP request failed: ${response.status} ${response.statusText}`);
     }
 
-    // The actual response comes via the SSE stream for MCP protocol,
-    // but the POST returns 202 Accepted. For simplicity in this MVP
-    // implementation, we read the POST response body if it contains
-    // JSON-RPC data, or return a synthetic ack.
-    const text = await response.text();
-    if (text.trim().length > 0) {
-      return JSON.parse(text) as JsonRpcResponse;
-    }
-
-    // Server accepted but response comes via SSE — return synthetic ack
-    return {
-      jsonrpc: '2.0',
-      id: request.id,
-      result: { content: [{ type: 'text', text: '{"status":"accepted"}' }] },
-    };
+    return responsePromise;
   }
 
   /** Parse the text content from an MCP tool response. */
@@ -227,24 +244,75 @@ export class McpClient {
     return JSON.parse(textContent.text) as T;
   }
 
-  /** Continue reading the SSE stream in the background (for keepalive). */
+  /**
+   * Read the SSE stream in the background, parsing `message` events
+   * and resolving pending request promises by JSON-RPC id.
+   */
   private consumeSseStream(
     reader: ReadableStreamDefaultReader<Uint8Array>,
     decoder: TextDecoder,
-    _initialBuffer: string,
+    initialBuffer: string,
   ): void {
+    let buffer = initialBuffer;
+
     const readLoop = (): void => {
-      reader.read().then(({ done }) => {
+      reader.read().then(({ value, done }) => {
         if (done || !this.connected) {
           this.connected = false;
+          this.rejectAllPending('SSE stream closed');
           return;
         }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+
+        // Keep the last (possibly incomplete) line in the buffer
+        buffer = lines.pop() ?? '';
+
+        for (const raw of lines) {
+          const line = raw.trim();
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim();
+            this.handleSseData(data);
+          }
+        }
+
         readLoop();
       }).catch(() => {
         this.connected = false;
+        this.rejectAllPending('SSE stream error');
       });
     };
 
     readLoop();
+  }
+
+  /** Try to parse an SSE data payload as a JSON-RPC response. */
+  private handleSseData(data: string): void {
+    // Skip non-JSON data (e.g. the initial endpoint URL)
+    if (!data.startsWith('{')) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(data) as JsonRpcResponse;
+      if (parsed.jsonrpc === '2.0' && parsed.id != null) {
+        const pending = this.pendingRequests.get(parsed.id as number);
+        if (pending) {
+          this.pendingRequests.delete(parsed.id as number);
+          pending.resolve(parsed);
+        }
+      }
+    } catch {
+      // Not valid JSON — ignore (keepalive pings, etc.)
+    }
+  }
+
+  /** Reject all pending requests (called on disconnect). */
+  private rejectAllPending(reason: string): void {
+    for (const [id, pending] of this.pendingRequests) {
+      pending.reject(new Error(reason));
+      this.pendingRequests.delete(id);
+    }
   }
 }
