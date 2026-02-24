@@ -6,13 +6,13 @@
   "type": "module",
   "license": "MIT",
   "author": "CodeRAG Contributors",
-  "homepage": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG",
+  "homepage": "https://github.com/maciek-O-digiaidev/CodeRAG",
   "bugs": {
-    "url": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG/issues"
+    "url": "https://github.com/maciek-O-digiaidev/CodeRAG/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG",
+    "url": "https://github.com/maciek-O-digiaidev/CodeRAG",
     "directory": "packages/viewer"
   },
   "engines": {

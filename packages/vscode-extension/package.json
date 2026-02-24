@@ -8,12 +8,12 @@
   "icon": "images/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG",
+    "url": "https://github.com/maciek-O-digiaidev/CodeRAG",
     "directory": "packages/vscode-extension"
   },
-  "homepage": "https://dev.azure.com/momc-pl/CodeRAG",
+  "homepage": "https://github.com/maciek-O-digiaidev/CodeRAG",
   "bugs": {
-    "url": "https://dev.azure.com/momc-pl/CodeRAG/_workitems"
+    "url": "https://github.com/maciek-O-digiaidev/CodeRAG/issues"
   },
   "engines": {
     "vscode": "^1.85.0"

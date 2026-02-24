@@ -1,17 +1,17 @@
 {
   "name": "@code-rag/mcp-server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for CodeRAG — exposes codebase search, context, and status tools via Model Context Protocol",
   "type": "module",
   "license": "MIT",
   "author": "CodeRAG Contributors",
-  "homepage": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG",
+  "homepage": "https://github.com/maciek-O-digiaidev/CodeRAG",
   "bugs": {
-    "url": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG/issues"
+    "url": "https://github.com/maciek-O-digiaidev/CodeRAG/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG",
+    "url": "https://github.com/maciek-O-digiaidev/CodeRAG",
     "directory": "packages/mcp-server"
   },
   "engines": {
