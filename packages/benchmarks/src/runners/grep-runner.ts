@@ -62,7 +62,7 @@ export async function runGrepSearch(
   try {
     const { stdout } = await execFileAsync(
       'grep',
-      ['-rn', '--include=*.ts', '--include=*.js', query, rootDir],
+      ['-rn', '--include=*.ts', '--include=*.js', '--exclude-dir=node_modules', '--exclude-dir=dist', '--exclude-dir=.coderag', query, rootDir],
       { maxBuffer: MAX_BUFFER },
     );
 

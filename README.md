@@ -168,6 +168,19 @@ Add to your Claude Desktop MCP config (`~/Library/Application Support/Claude/cla
 | Testing | Vitest (2,037 tests) |
 | Package manager | pnpm workspaces |
 
+## Benchmarks
+
+Evaluated on 55 curated queries against the CodeRAG codebase itself (easy/medium/hard, function lookups to cross-file reasoning). Grep uses keyword extraction as a baseline.
+
+| Metric | grep | CodeRAG | Improvement |
+|--------|------|---------|-------------|
+| **Precision@5** | 0.055 | 0.138 | 2.5x |
+| **Recall@10** | 0.485 | 0.636 | 1.3x |
+| **MRR** | 0.161 | 0.395 | 2.4x |
+| **nDCG@10** | 0.221 | 0.437 | 2.0x |
+
+Run `pnpm benchmark` to reproduce. See [`packages/benchmarks/`](packages/benchmarks/) for the full dataset and methodology.
+
 ## Documentation
 
 | Page | Description |
