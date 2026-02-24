@@ -6,6 +6,8 @@ import { registerSearchCommand } from './commands/search.js';
 import { registerServeCommand } from './commands/serve.js';
 import { registerStatusCommand } from './commands/status.js';
 import { registerViewerCommand } from './commands/viewer.js';
+import { registerWatchCommand } from './commands/watch-cmd.js';
+import { registerHooksCommand } from './commands/hooks-cmd.js';
 
 const program = new Command();
 program
@@ -19,5 +21,7 @@ registerSearchCommand(program);
 registerServeCommand(program);
 registerStatusCommand(program);
 registerViewerCommand(program);
+registerWatchCommand(program);
+registerHooksCommand(program);
 
 program.parse();

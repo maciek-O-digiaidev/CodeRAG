@@ -18,3 +18,6 @@ export type {
   RepoProcessor,
 } from './multi-repo-indexer.js';
 export { MultiRepoIndexer, MultiRepoIndexerError } from './multi-repo-indexer.js';
+
+export type { FileWatcherConfig, FileWatcherEvents } from './file-watcher.js';
+export { FileWatcher } from './file-watcher.js';

@@ -77,11 +77,13 @@ class IndexLogger {
   private progressPath: string;
   private phase = 'init';
   private counts: Record<string, number> = {};
+  private readonly quiet: boolean;
 
-  constructor(storagePath: string) {
+  constructor(storagePath: string, quiet = false) {
     this.spinner = ora();
     this.logPath = join(storagePath, 'index.log');
     this.progressPath = join(storagePath, 'index-progress.json');
+    this.quiet = quiet;
   }
 
   async init(): Promise<void> {
@@ -95,27 +97,27 @@ class IndexLogger {
   }
 
   start(text: string): void {
-    this.spinner.start(text);
+    if (!this.quiet) this.spinner.start(text);
     void this.log(text);
   }
 
   async info(text: string): Promise<void> {
-    this.spinner.text = text;
+    if (!this.quiet) this.spinner.text = text;
     await this.log(text);
   }
 
   async succeed(text: string): Promise<void> {
-    this.spinner.succeed(text);
+    if (!this.quiet) this.spinner.succeed(text);
     await this.log(`[OK] ${text}`);
   }
 
   async warn(text: string): Promise<void> {
-    this.spinner.warn(text);
+    if (!this.quiet) this.spinner.warn(text);
     await this.log(`[WARN] ${text}`);
   }
 
   async fail(text: string): Promise<void> {
-    this.spinner.fail(text);
+    if (!this.quiet) this.spinner.fail(text);
     await this.log(`[FAIL] ${text}`);
   }
 
@@ -1022,10 +1024,12 @@ export function registerIndexCommand(program: Command): void {
     .command('index')
     .description('Index the codebase: scan, parse, chunk, enrich, embed, and store')
     .option('--full', 'Force a complete re-index (ignore incremental state)')
-    .action(async (options: { full?: boolean }) => {
+    .option('--quiet', 'Suppress progress output (used by git hooks and background processes)')
+    .action(async (options: { full?: boolean; quiet?: boolean }) => {
+      const quiet = options.quiet === true;
       const startTime = Date.now();
       // Use a temporary spinner for config loading (logger needs storagePath from config)
-      const bootSpinner = ora('Loading configuration...').start();
+      const bootSpinner = quiet ? null : ora('Loading configuration...').start();
 
       try {
         const rootDir = process.cwd();
@@ -1033,9 +1037,11 @@ export function registerIndexCommand(program: Command): void {
         // Step 1: Load config
         const configResult = await loadConfig(rootDir);
         if (configResult.isErr()) {
-          bootSpinner.fail(configResult.error.message);
-          // eslint-disable-next-line no-console
-          console.error(chalk.red('Run "coderag init" first to create a configuration file.'));
+          bootSpinner?.fail(configResult.error.message);
+          if (!quiet) {
+            // eslint-disable-next-line no-console
+            console.error(chalk.red('Run "coderag init" first to create a configuration file.'));
+          }
           process.exit(1);
         }
         const config = configResult.value;
@@ -1043,14 +1049,14 @@ export function registerIndexCommand(program: Command): void {
 
         // Prevent path traversal outside project root
         if (!storagePath.startsWith(resolve(rootDir) + sep) && storagePath !== resolve(rootDir)) {
-          bootSpinner.fail('Storage path escapes project root');
+          bootSpinner?.fail('Storage path escapes project root');
           process.exit(1);
         }
 
-        bootSpinner.succeed('Configuration loaded');
+        bootSpinner?.succeed('Configuration loaded');
 
         // Create IndexLogger — writes to .coderag/index.log + progress JSON
-        const logger = new IndexLogger(storagePath);
+        const logger = new IndexLogger(storagePath, quiet);
         await logger.init();
 
         // Create embedding provider (with auto-start lifecycle if provider is 'auto')

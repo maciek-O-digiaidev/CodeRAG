@@ -78,6 +78,8 @@ export type {
   MultiRepoIndexOptions,
   RepoProcessor,
   IndexCheckResult,
+  FileWatcherConfig,
+  FileWatcherEvents,
 } from './indexer/index.js';
 export {
   IndexState,
@@ -89,6 +91,7 @@ export {
   MultiRepoIndexer,
   MultiRepoIndexerError,
   checkIndexExists,
+  FileWatcher,
 } from './indexer/index.js';
 
 export type {

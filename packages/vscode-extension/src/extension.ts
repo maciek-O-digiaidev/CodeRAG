@@ -11,6 +11,7 @@ import * as vscode from 'vscode';
 import { McpClient } from './mcp-client.js';
 import { StatusBarManager } from './status-bar.js';
 import { ServerManager } from './server-manager.js';
+import { WatcherManager } from './watcher-manager.js';
 import { ClaudeConfigManager } from './claude-config.js';
 import { registerSearchCommand } from './commands/search.js';
 import { registerIndexCommand } from './commands/index-cmd.js';
@@ -24,6 +25,7 @@ const DEFAULT_PORT = 3100;
 let statusBar: StatusBarManager | undefined;
 let mcpClient: McpClient | undefined;
 let serverManager: ServerManager | undefined;
+let watcherManager: WatcherManager | undefined;
 let outputChannel: vscode.OutputChannel | undefined;
 let claudeConfigManager: ClaudeConfigManager | undefined;
 
@@ -91,10 +93,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 export function deactivate(): void {
+  watcherManager?.stop();
   mcpClient?.disconnect();
   serverManager?.stop();
   statusBar?.dispose();
 
+  watcherManager = undefined;
   mcpClient = undefined;
   serverManager = undefined;
   statusBar = undefined;
@@ -197,9 +201,37 @@ async function connectToServer(): Promise<void> {
     } catch {
       statusBar.update('connected', 0);
     }
+
+    // Start file watcher alongside MCP server
+    startFileWatcher();
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     outputChannel.appendLine(`Connection failed: ${message}`);
     statusBar.update('error');
   }
+}
+
+/**
+ * Start the file watcher to auto-reindex on file changes.
+ * The watcher lifecycle is tied to the MCP server.
+ */
+function startFileWatcher(): void {
+  if (!serverManager || !mcpClient || !statusBar || !outputChannel) {
+    return;
+  }
+
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders?.length) {
+    return;
+  }
+
+  const rootPath = workspaceFolders[0]!.uri.fsPath;
+
+  watcherManager = new WatcherManager({
+    workspaceRoot: rootPath,
+    outputChannel,
+    statusBar,
+    mcpClient,
+  });
+  watcherManager.start();
 }
