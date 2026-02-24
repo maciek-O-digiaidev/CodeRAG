@@ -70,7 +70,4 @@ jobs:
         run: pnpm build
 
       - name: Publish packages with provenance
-        run: pnpm changeset publish --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
+        run: pnpm -r --filter '!./packages/viewer' --filter '!./packages/vscode-extension' --filter '!./packages/benchmarks' publish --access public --provenance --no-git-checks
