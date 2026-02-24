@@ -1,9 +1,10 @@
 /**
  * CodeRAG VS Code Extension — main entry point.
  *
- * Activates when a workspace contains `.coderag.yaml`.
- * Connects to the CodeRAG MCP server (auto-starts if needed),
- * registers commands, and shows a status bar item.
+ * Activates when a workspace contains `.coderag.yaml` or on the
+ * `coderag.configure` command. Connects to the CodeRAG MCP server
+ * (auto-starts if needed), registers commands, and shows a status bar item.
+ * On first activation in a workspace, shows a multi-step configuration dialog.
  */
 
 import * as vscode from 'vscode';
@@ -16,6 +17,7 @@ import { registerIndexCommand } from './commands/index-cmd.js';
 import { registerStatusCommand } from './commands/status.js';
 import { registerConfigureClaudeCommand } from './commands/configure-claude.js';
 import { registerSearchPanel } from './search-panel.js';
+import { showFirstRunDialog, registerConfigureCommand, isFirstRunCompleted } from './first-run-dialog.js';
 
 const DEFAULT_PORT = 3100;
 
@@ -60,7 +62,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   mcpClient = new McpClient({ port: DEFAULT_PORT });
 
   // Register commands (available even before server connects)
-  registerAllCommands(context);
+  registerAllCommands(context, rootPath);
+
+  // Show first-run dialog on initial activation
+  if (!isFirstRunCompleted(context)) {
+    outputChannel.appendLine('[first-run] First activation detected — showing setup dialog.');
+    const dialog = showFirstRunDialog(vscode, context, outputChannel, rootPath, DEFAULT_PORT);
+    if (dialog) {
+      dialog.onComplete((config) => {
+        outputChannel.appendLine(`[first-run] Setup complete. Provider: ${config.embeddingProvider}`);
+        if (config.startIndexing && mcpClient?.isConnected()) {
+          void mcpClient.triggerIndex();
+        }
+      });
+    }
+  }
 
   // Auto-configure Claude Code MCP settings (opt-in via setting)
   const autoConfigEnabled = vscode.workspace.getConfiguration('coderag').get<boolean>('autoConfigureClaude', false);
@@ -86,7 +102,7 @@ export function deactivate(): void {
   claudeConfigManager = undefined;
 }
 
-function registerAllCommands(context: vscode.ExtensionContext): void {
+function registerAllCommands(context: vscode.ExtensionContext, workspaceRoot?: string): void {
   if (!mcpClient || !statusBar || !outputChannel || !claudeConfigManager) {
     return;
   }
@@ -96,6 +112,11 @@ function registerAllCommands(context: vscode.ExtensionContext): void {
   registerStatusCommand(vscode, context, mcpClient, statusBar, outputChannel);
   registerConfigureClaudeCommand(vscode, context, claudeConfigManager, outputChannel);
   registerSearchPanel(vscode, context, mcpClient, outputChannel);
+
+  // Register the CodeRAG: Configure command (re-opens first-run dialog on demand)
+  if (workspaceRoot) {
+    registerConfigureCommand(vscode, context, outputChannel, workspaceRoot, DEFAULT_PORT);
+  }
 }
 
 /**

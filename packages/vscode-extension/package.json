@@ -25,7 +25,8 @@
     "mcp"
   ],
   "activationEvents": [
-    "workspaceContains:.coderag.yaml"
+    "workspaceContains:.coderag.yaml",
+    "onCommand:coderag.configure"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -73,6 +74,10 @@
       {
         "command": "coderag.configureClaude",
         "title": "CodeRAG: Configure Claude Code"
+      },
+      {
+        "command": "coderag.configure",
+        "title": "CodeRAG: Configure"
       }
     ]
   },
