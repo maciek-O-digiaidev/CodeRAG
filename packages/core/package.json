@@ -1,12 +1,21 @@
 {
   "name": "@coderag/core",
   "version": "0.1.0",
+  "description": "Core library for CodeRAG — intelligent codebase context engine with AST parsing, embeddings, and hybrid search",
   "type": "module",
   "license": "MIT",
+  "author": "CodeRAG Contributors",
+  "homepage": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG",
+  "bugs": {
+    "url": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG",
     "directory": "packages/core"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "keywords": [
     "coderag",
@@ -15,12 +24,15 @@
     "hybrid-search",
     "ast",
     "rag",
-    "mcp"
+    "mcp",
+    "tree-sitter",
+    "vector-search",
+    "bm25"
   ],
   "files": [
     "dist",
-    "README.md",
-    "LICENSE"
+    "LICENSE",
+    "README.md"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

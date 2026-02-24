@@ -1,5 +1,6 @@
 {
   "name": "coderag-vscode",
+  "private": true,
   "displayName": "CodeRAG",
   "description": "Intelligent codebase context engine for AI coding agents — VS Code integration",
   "version": "0.1.0",

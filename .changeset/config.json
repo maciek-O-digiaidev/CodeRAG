@@ -3,9 +3,11 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [],
-  "linked": [["@coderag/core", "@coderag/mcp-server", "@coderag/cli"]],
+  "linked": [
+    ["@coderag/core", "@coderag/mcp-server", "@coderag/cli", "@coderag/api-server"]
+  ],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@coderag/benchmarks"]
+  "ignore": ["@coderag/benchmarks", "coderag-vscode", "@coderag/viewer"]
 }

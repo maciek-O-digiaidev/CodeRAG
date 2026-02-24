@@ -1,24 +1,34 @@
 {
   "name": "@coderag/api-server",
   "version": "0.1.0",
+  "description": "REST API server for CodeRAG — Express-based server with authentication, rate limiting, and OpenAPI docs",
   "type": "module",
   "license": "MIT",
+  "author": "CodeRAG Contributors",
+  "homepage": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG",
+  "bugs": {
+    "url": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG",
     "directory": "packages/api-server"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "keywords": [
     "coderag",
     "api-server",
     "rest-api",
     "code-search",
-    "ai-coding"
+    "ai-coding",
+    "express"
   ],
   "files": [
     "dist",
-    "README.md",
-    "LICENSE"
+    "LICENSE",
+    "README.md"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

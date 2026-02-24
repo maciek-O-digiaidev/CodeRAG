@@ -2,18 +2,33 @@
   "name": "@coderag/viewer",
   "version": "0.1.0",
   "private": true,
+  "description": "Web-based viewer for CodeRAG — dashboard, chunk browser, search playground, and embedding explorer",
   "type": "module",
   "license": "MIT",
+  "author": "CodeRAG Contributors",
+  "homepage": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG",
+  "bugs": {
+    "url": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG",
     "directory": "packages/viewer"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "keywords": [
     "coderag",
     "viewer",
     "spa",
-    "code-visualization"
+    "code-visualization",
+    "dashboard"
+  ],
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
   ],
   "scripts": {
     "dev": "vite",
