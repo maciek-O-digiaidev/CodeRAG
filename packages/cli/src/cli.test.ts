@@ -56,13 +56,15 @@ describe('CLI program setup', () => {
     expect(program.commands).toHaveLength(6);
   });
 
-  it('init command should have --languages, --force, and --multi options', () => {
+  it('init command should have --languages, --force, --multi, --yes, and --default options', () => {
     const initCmd = program.commands.find((c) => c.name() === 'init');
     expect(initCmd).toBeDefined();
     const opts = initCmd!.options.map((o) => o.long);
     expect(opts).toContain('--languages');
     expect(opts).toContain('--force');
     expect(opts).toContain('--multi');
+    expect(opts).toContain('--yes');
+    expect(opts).toContain('--default');
   });
 
   it('index command should have --full option', () => {
@@ -223,19 +225,24 @@ describe('detectLanguages', () => {
 describe('init --multi', () => {
   let tempDir: string;
   let originalCwd: string;
+  let originalFetch: typeof globalThis.fetch;
 
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'coderag-multi-'));
     originalCwd = process.cwd();
     process.chdir(tempDir);
+    originalFetch = globalThis.fetch;
+    // Mock fetch to avoid Ollama check
+    globalThis.fetch = (() => Promise.reject(new Error('mocked'))) as unknown as typeof globalThis.fetch;
   });
 
   afterEach(async () => {
     process.chdir(originalCwd);
+    globalThis.fetch = originalFetch;
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  it('--multi flag generates config with repos array and comment', async () => {
+  it('--multi flag with --yes generates config with repos array and comment', async () => {
     const program = new Command();
     program.exitOverride();
     registerInitCommand(program);
@@ -246,7 +253,7 @@ describe('init --multi', () => {
     console.log = () => {};
     console.error = () => {};
     try {
-      await program.parseAsync(['node', 'coderag', 'init', '--multi']);
+      await program.parseAsync(['node', 'coderag', 'init', '--multi', '--yes']);
     } finally {
       console.log = origLog;
       console.error = origErr;

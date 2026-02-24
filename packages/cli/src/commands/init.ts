@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { readdir, writeFile, mkdir, access } from 'node:fs/promises';
+import { readdir, access } from 'node:fs/promises';
 import { join, extname } from 'node:path';
-import { stringify } from 'yaml';
+import { runWizard, runNonInteractive } from './init-wizard.js';
 
 /**
  * Maps file extensions to language names for auto-detection.
@@ -85,62 +85,12 @@ export async function detectLanguages(rootDir: string): Promise<string[]> {
   return [...found].sort();
 }
 
-/**
- * Build the default config object for .coderag.yaml.
- */
-function buildDefaultConfig(languages: string[], multi?: boolean): Record<string, unknown> {
-  const config: Record<string, unknown> = {
-    version: '1',
-    project: {
-      name: 'unnamed',
-      languages: languages.length > 0 ? languages : 'auto',
-    },
-    ingestion: {
-      maxTokensPerChunk: 512,
-      exclude: ['node_modules', 'dist', '.git', 'coverage'],
-    },
-    embedding: {
-      provider: 'auto',
-      model: 'nomic-embed-text',
-      dimensions: 768,
-    },
-    llm: {
-      provider: 'ollama',
-      model: 'qwen2.5-coder:7b',
-    },
-    search: {
-      topK: 10,
-      vectorWeight: 0.7,
-      bm25Weight: 0.3,
-    },
-    storage: {
-      path: '.coderag',
-    },
-  };
-
-  if (multi) {
-    config['repos'] = [];
-  }
-
-  return config;
-}
-
-/**
- * Check if Ollama is reachable at the default endpoint.
- */
-async function checkOllama(): Promise<{ ok: boolean; message: string }> {
-  const host = process.env['OLLAMA_HOST'] ?? 'http://localhost:11434';
-  try {
-    const response = await globalThis.fetch(`${host}/api/tags`, {
-      signal: AbortSignal.timeout(3000),
-    });
-    if (response.ok) {
-      return { ok: true, message: `Ollama is running at ${host}` };
-    }
-    return { ok: false, message: `Ollama returned status ${response.status}` };
-  } catch {
-    return { ok: false, message: `Ollama is not reachable at ${host}` };
-  }
+interface InitOptions {
+  languages?: string;
+  force?: boolean;
+  multi?: boolean;
+  yes?: boolean;
+  default?: boolean;
 }
 
 export function registerInitCommand(program: Command): void {
@@ -150,11 +100,13 @@ export function registerInitCommand(program: Command): void {
     .option('--languages <langs>', 'Comma-separated list of languages (overrides auto-detection)')
     .option('--force', 'Overwrite existing configuration file')
     .option('--multi', 'Generate multi-repo configuration with repos array')
-    .action(async (options: { languages?: string; force?: boolean; multi?: boolean }) => {
+    .option('--yes', 'Non-interactive mode with sensible defaults')
+    .option('--default', 'Non-interactive mode with sensible defaults (alias for --yes)')
+    .action(async (options: InitOptions) => {
       try {
         const rootDir = process.cwd();
 
-        // Step 0: Check if config already exists
+        // Check if config already exists
         const configPath = join(rootDir, '.coderag.yaml');
         if (!options.force) {
           try {
@@ -167,65 +119,16 @@ export function registerInitCommand(program: Command): void {
           }
         }
 
-        // Step 1: Detect or parse languages
-        let languages: string[];
-        if (options.languages) {
-          languages = options.languages.split(',').map((l) => l.trim()).filter((l) => l.length > 0);
-          // eslint-disable-next-line no-console
-          console.log(chalk.blue('Using specified languages:'), languages.join(', '));
+        const nonInteractive = options.yes === true || options.default === true;
+
+        if (nonInteractive) {
+          await runNonInteractive(rootDir, {
+            languages: options.languages,
+            multi: options.multi,
+          });
         } else {
-          // eslint-disable-next-line no-console
-          console.log(chalk.blue('Scanning for project languages...'));
-          languages = await detectLanguages(rootDir);
-          if (languages.length > 0) {
-            // eslint-disable-next-line no-console
-            console.log(chalk.green('Detected languages:'), languages.join(', '));
-          } else {
-            // eslint-disable-next-line no-console
-            console.log(chalk.yellow('No languages detected, using "auto"'));
-          }
+          await runWizard(rootDir);
         }
-
-        // Step 2: Write .coderag.yaml
-        const config = buildDefaultConfig(languages, options.multi);
-        let yamlContent = stringify(config);
-        if (options.multi) {
-          yamlContent += [
-            '# repos:',
-            '#   - path: /absolute/path/to/repo-a',
-            '#     name: repo-a',
-            '#     languages:',
-            '#       - typescript',
-            '#     exclude:',
-            '#       - dist',
-            '#   - path: /absolute/path/to/repo-b',
-            '',
-          ].join('\n');
-        }
-        await writeFile(configPath, yamlContent, 'utf-8');
-        // eslint-disable-next-line no-console
-        console.log(chalk.green('Created'), configPath);
-
-        // Step 3: Create .coderag/ storage directory
-        const storageDir = join(rootDir, '.coderag');
-        await mkdir(storageDir, { recursive: true });
-        // eslint-disable-next-line no-console
-        console.log(chalk.green('Created'), storageDir);
-
-        // Step 4: Check Ollama connectivity
-        const ollamaStatus = await checkOllama();
-        if (ollamaStatus.ok) {
-          // eslint-disable-next-line no-console
-          console.log(chalk.green('\u2714'), ollamaStatus.message);
-        } else {
-          // eslint-disable-next-line no-console
-          console.log(chalk.yellow('\u26A0'), ollamaStatus.message);
-        }
-
-        // eslint-disable-next-line no-console
-        console.log(chalk.green('\nCodeRAG initialized successfully!'));
-        // eslint-disable-next-line no-console
-        console.log(chalk.dim('Run "coderag index" to index your codebase.'));
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         // eslint-disable-next-line no-console
