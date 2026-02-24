@@ -60,8 +60,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
+
+      - name: Configure npm registry
+        run: npm config set registry https://registry.npmjs.org/
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -69,5 +71,21 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Publish packages with provenance
-        run: pnpm -r --filter '!./packages/viewer' --filter '!./packages/vscode-extension' --filter '!./packages/benchmarks' publish --access public --provenance --no-git-checks
+      - name: Debug npm version
+        run: npm --version
+
+      - name: Publish @code-rag/core
+        working-directory: packages/core
+        run: npm publish --provenance --access public
+
+      - name: Publish @code-rag/mcp-server
+        working-directory: packages/mcp-server
+        run: npm publish --provenance --access public
+
+      - name: Publish @code-rag/api-server
+        working-directory: packages/api-server
+        run: npm publish --provenance --access public
+
+      - name: Publish @code-rag/cli
+        working-directory: packages/cli
+        run: npm publish --provenance --access public
