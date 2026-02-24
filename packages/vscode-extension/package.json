@@ -1,20 +1,26 @@
 {
   "name": "coderag-vscode",
-  "private": true,
   "displayName": "CodeRAG",
-  "description": "Intelligent codebase context engine for AI coding agents — VS Code integration",
+  "description": "Intelligent codebase context engine for AI coding agents — semantic code search, RAG indexing, and MCP server integration directly in VS Code.",
   "version": "0.1.0",
   "publisher": "coderag",
   "license": "MIT",
+  "icon": "images/icon.png",
   "repository": {
     "type": "git",
     "url": "https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG",
     "directory": "packages/vscode-extension"
   },
+  "homepage": "https://dev.azure.com/momc-pl/CodeRAG",
+  "bugs": {
+    "url": "https://dev.azure.com/momc-pl/CodeRAG/_workitems"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
+    "Programming Languages",
+    "Machine Learning",
     "Other"
   ],
   "keywords": [
@@ -22,8 +28,18 @@
     "ai",
     "code-search",
     "rag",
-    "mcp"
+    "mcp",
+    "semantic-search",
+    "vector-database",
+    "code-context",
+    "ai-coding",
+    "model-context-protocol"
   ],
+  "galleryBanner": {
+    "color": "#1e1e2e",
+    "theme": "dark"
+  },
+  "preview": true,
   "activationEvents": [
     "workspaceContains:.coderag.yaml",
     "onCommand:coderag.configure"
@@ -86,12 +102,14 @@
     "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
     "clean": "rm -rf dist",
     "test": "vitest run",
-    "package": "vsce package"
+    "vscode:prepublish": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify",
+    "package": "vsce package --no-dependencies"
   },
   "dependencies": {},
   "devDependencies": {
     "@types/vscode": "^1.85.0",
     "@types/node": "^22.13.4",
+    "@vscode/vsce": "^3.2.2",
     "esbuild": "^0.24.2",
     "typescript": "^5.7.3",
     "vitest": "^3.2.4"

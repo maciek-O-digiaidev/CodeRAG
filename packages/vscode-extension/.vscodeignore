@@ -1,0 +1,48 @@
+# Source files (bundled into dist/)
+src/**
+
+# TypeScript config
+tsconfig.json
+
+# Test config
+vitest.config.ts
+
+# Build tools
+esbuild.config.*
+
+# Development files
+.eslintrc*
+.prettierrc*
+.editorconfig
+
+# Source maps (not needed in production)
+dist/**/*.map
+
+# Node modules (not needed — extension is bundled)
+node_modules/**
+
+# Test coverage
+coverage/**
+
+# Package manager files
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# Git
+.git/**
+.gitignore
+
+# CI/CD
+.github/**
+
+# Editor / IDE
+.vscode/**
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.vsix

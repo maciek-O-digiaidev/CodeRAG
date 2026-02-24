@@ -1,0 +1,55 @@
+name: Publish VS Code Extension
+
+on:
+  push:
+    tags:
+      - 'vscode-v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vscode-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and Publish to VS Code Marketplace
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build extension
+        run: pnpm --filter coderag-vscode run build
+
+      - name: Run tests
+        run: pnpm --filter coderag-vscode run test
+
+      - name: Package extension
+        run: pnpm --filter coderag-vscode run package
+
+      - name: Publish to VS Code Marketplace
+        run: pnpm --filter coderag-vscode exec vsce publish --no-dependencies
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coderag-vscode-${{ github.ref_name }}
+          path: packages/vscode-extension/*.vsix
+          retention-days: 90
