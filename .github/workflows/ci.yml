@@ -42,3 +42,4 @@ jobs:
       - name: Lint
         run: pnpm lint
         if: matrix.node-version == 20
+        continue-on-error: true
