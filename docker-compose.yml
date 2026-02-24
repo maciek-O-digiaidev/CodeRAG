@@ -1,7 +1,59 @@
-# Docker Compose for CodeRAG development dependencies
+# ============================================================================
+# Docker Compose for CodeRAG — full stack
+#
+# Usage:
+#   docker compose up                    # Core: coderag + ollama
+#   docker compose --profile viewer up   # Core + viewer SPA
+#   docker compose --profile qdrant up   # Core + Qdrant vector store
+#   docker compose up -d                 # Detached mode
+# ============================================================================
+
 services:
+  # --------------------------------------------------------------------------
+  # CodeRAG — MCP server + API server + CLI
+  # --------------------------------------------------------------------------
+  coderag:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coderag
+    ports:
+      - "3000:3000"   # API server
+      - "3001:3001"   # MCP server (SSE transport)
+    volumes:
+      # Source code to index (read-only)
+      - ${CODERAG_SOURCE_DIR:-.}:/workspace:ro
+      # Persistent data (LanceDB, BM25 index, graph)
+      - coderag-data:/data/.coderag
+    environment:
+      CODERAG_PORT: 3000
+      CODERAG_MCP_PORT: 3001
+      CODERAG_ROOT_DIR: /workspace
+      CODERAG_STORAGE_PATH: /data/.coderag
+      CODERAG_EMBEDDING_PROVIDER: ${CODERAG_EMBEDDING_PROVIDER:-ollama}
+      CODERAG_EMBEDDING_MODEL: ${CODERAG_EMBEDDING_MODEL:-nomic-embed-text}
+      OLLAMA_HOST: http://ollama:11434
+      NODE_ENV: production
+    depends_on:
+      ollama:
+        condition: service_healthy
+    networks:
+      - coderag-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    restart: unless-stopped
+    # Default command: start the API server (override for other commands)
+    command: ["serve", "--port", "3000"]
+
+  # --------------------------------------------------------------------------
+  # Ollama — local LLM / embedding model server
+  # --------------------------------------------------------------------------
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.5
     container_name: coderag-ollama
     ports:
       - "11434:11434"
@@ -15,13 +67,41 @@ services:
     #         - driver: nvidia
     #           count: all
     #           capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - coderag-net
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Optional: Qdrant vector store (alternative to LanceDB)
+  # --------------------------------------------------------------------------
+  # Viewer — CodeRAG visualization SPA (optional profile)
+  # --------------------------------------------------------------------------
+  viewer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coderag-viewer
+    profiles:
+      - viewer  # Only starts with: docker compose --profile viewer up
+    ports:
+      - "5173:5173"
+    environment:
+      CODERAG_VIEWER_PORT: 5173
+      CODERAG_API_URL: http://coderag:3000
+      NODE_ENV: production
+    depends_on:
+      coderag:
+        condition: service_healthy
+    networks:
+      - coderag-net
+    command: ["viewer", "--port", "5173"]
+
+  # --------------------------------------------------------------------------
+  # Qdrant — alternative vector store (optional profile)
+  # --------------------------------------------------------------------------
   qdrant:
     image: qdrant/qdrant:latest
     container_name: coderag-qdrant
@@ -33,8 +113,15 @@ services:
     volumes:
       - qdrant-data:/qdrant/storage
     environment:
-      QDRANT__SERVICE__GRPC_PORT: 6334
+      QDRANT__SERVICE__GRPC_PORT: "6334"
+    networks:
+      - coderag-net
+
+networks:
+  coderag-net:
+    driver: bridge
 
 volumes:
+  coderag-data:
   ollama-data:
   qdrant-data:

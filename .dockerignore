@@ -1,0 +1,56 @@
+# =============================================================================
+# .dockerignore — Exclude files from Docker build context
+# =============================================================================
+
+# Dependencies (installed inside container)
+node_modules/
+**/node_modules/
+
+# Build output (rebuilt inside container)
+**/dist/
+
+# Git metadata
+.git/
+.gitignore
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Claude / AI agent configuration
+.claude/
+.mcp.json
+
+# Documentation (not needed in image)
+docs/
+*.md
+!packages/*/README.md
+
+# Test files (not needed in production image)
+**/*.test.ts
+**/*.spec.ts
+**/vitest.config.ts
+**/__tests__/
+**/coverage/
+
+# CodeRAG data (mounted as volume)
+.coderag/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files (may contain secrets)
+.env
+.env.*
+
+# CI/CD
+.github/
+
+# Misc
+nohup.out
+*.vsix
+*.tgz
