@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { writeFile, readFile, mkdir, appendFile, unlink } from 'node:fs/promises';
-import { join, resolve, sep } from 'node:path';
+import { basename, join, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import {
@@ -23,7 +23,6 @@ import {
   DependencyGraph,
   scanForABReferences,
   IndexState,
-  MultiRepoIndexer,
   AzureDevOpsProvider,
   JiraProvider,
   ClickUpProvider,
@@ -1065,7 +1064,7 @@ export function registerIndexCommand(program: Command): void {
         try {
           // Multi-repo path: if repos are configured, index each independently
           if (config.repos && config.repos.length > 0) {
-            await indexMultiRepo(config, storagePath, options, logger, startTime);
+            await indexMultiRepo(config, storagePath, options, logger, startTime, managed.provider);
             return;
           }
 
@@ -1175,6 +1174,7 @@ async function indexMultiRepo(
   options: { full?: boolean },
   logger: IndexLogger,
   startTime: number,
+  embeddingProvider?: EmbeddingProvider,
 ): Promise<void> {
   const repos = config.repos!;
 
@@ -1185,43 +1185,52 @@ async function indexMultiRepo(
   // eslint-disable-next-line no-console
   console.log('');
 
-  const multiRepoIndexer = new MultiRepoIndexer(repos, storagePath);
-
   let totalFiles = 0;
   let totalChunks = 0;
   let totalErrors = 0;
 
   logger.start('Starting multi-repo indexing...');
-  const result = await multiRepoIndexer.indexAll({
-    full: options.full,
-    onProgress: (repoName, status) => {
-      void logger.info(`[${repoName}] ${status}`);
-    },
-  });
 
-  if (result.isErr()) {
-    await logger.fail(`Multi-repo indexing failed: ${result.error.message}`);
-    process.exit(1);
-  }
+  for (const repo of repos) {
+    const repoName = repo.name ?? basename(repo.path);
+    const repoPath = resolve(repo.path);
+    const repoStoragePath = join(storagePath, repoName);
 
-  // Per-repo summary
-  for (const repoResult of result.value.repoResults) {
-    totalFiles += repoResult.filesProcessed;
-    totalChunks += repoResult.chunksCreated;
+    await mkdir(repoStoragePath, { recursive: true });
 
-    if (repoResult.errors.length > 0) {
-      totalErrors += repoResult.errors.length;
-      await logger.fail(`[${repoResult.repoName}] Failed`);
-      for (const error of repoResult.errors) {
-        // eslint-disable-next-line no-console
-        console.log(`    ${chalk.gray('→')} ${chalk.red(error)}`);
-      }
-    } else if (repoResult.filesProcessed === 0) {
-      await logger.succeed(`[${repoResult.repoName}] Up to date`);
-    } else {
-      await logger.succeed(
-        `[${repoResult.repoName}] ${repoResult.filesProcessed} file(s) processed`,
+    try {
+      const result = await indexSingleRepo(
+        repoPath,
+        repoStoragePath,
+        config,
+        options,
+        logger,
+        repoName,
+        embeddingProvider,
       );
+
+      totalFiles += result.filesProcessed;
+      totalChunks += result.chunksCreated;
+
+      if (result.filesProcessed === 0 && result.chunksCreated === 0 && result.parseErrors === 0) {
+        await logger.succeed(`[${repoName}] Up to date`);
+      } else {
+        await logger.succeed(
+          `[${repoName}] ${result.filesProcessed} file(s), ${result.chunksCreated} chunks`,
+        );
+      }
+
+      if (result.parseErrors > 0) {
+        totalErrors += result.parseErrors;
+        for (const detail of result.parseErrorDetails.slice(0, 3)) {
+          // eslint-disable-next-line no-console
+          console.log(`    ${chalk.gray('→')} ${detail.file}: ${chalk.yellow(detail.reason)}`);
+        }
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      totalErrors++;
+      await logger.fail(`[${repoName}] ${message}`);
     }
   }
 
