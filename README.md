@@ -2,11 +2,12 @@
 
 **Intelligent codebase context engine for AI coding agents.**
 
+[![CI](https://github.com/maciek-O-digiaidev/CodeRAG/actions/workflows/ci.yml/badge.svg)](https://github.com/maciek-O-digiaidev/CodeRAG/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@code-rag/core?label=npm&color=CB3837&logo=npm)](https://www.npmjs.com/package/@code-rag/core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-339933?logo=node.js)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/Tests-1%2C670%20passing-brightgreen)](packages/)
-[![pnpm](https://img.shields.io/badge/pnpm-%3E%3D9-F69220?logo=pnpm)](https://pnpm.io/)
+[![Tests](https://img.shields.io/badge/Tests-2%2C037%20passing-brightgreen)](packages/)
 
 CodeRAG creates a semantic vector database (RAG) from your source code, documentation, and project backlog, then exposes it as [MCP](https://modelcontextprotocol.io/) tools that give AI agents deep understanding of your entire codebase.
 
@@ -164,7 +165,7 @@ Add to your Claude Desktop MCP config (`~/Library/Application Support/Claude/cla
 | NL enrichment | Ollama (qwen2.5-coder, llama3.2) |
 | MCP | @modelcontextprotocol/sdk |
 | CLI | Commander.js |
-| Testing | Vitest (1,670 tests) |
+| Testing | Vitest (2,037 tests) |
 | Package manager | pnpm workspaces |
 
 ## Documentation
@@ -181,7 +182,7 @@ See the [`docs/`](docs/) directory for additional documentation.
 
 ```bash
 # Clone and install
-git clone https://dev.azure.com/momc-pl/CodeRAG/_git/CodeRAG
+git clone https://github.com/maciek-O-digiaidev/CodeRAG.git
 cd CodeRAG
 pnpm install
 

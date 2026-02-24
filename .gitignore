@@ -28,13 +28,16 @@ Thumbs.db
 # Coverage
 coverage/
 
-# Local config (contains machine-specific paths/settings)
+# Claude Code (agent configs, local settings, worktrees)
+.claude/
 .mcp.json
-.claude/settings.local.json
-.claude/settings.json
-.claude/worktrees/
-.claude/agent-memory/
-.claude/projects/
+
+# Internal documents (not for public repo)
+CodeRAG_Koncepcja_Produktu.docx
+CodeRAG_Pitch_Deck.pptx
+CodeRAG_Backlog_i_Prompty.md
+ADO_Import_Instrukcja.md
+azure-pipelines.yml
 
 # Obsidian
 docs/.obsidian/
