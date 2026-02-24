@@ -1,4 +1,4 @@
-# @coderag/core
+# @code-rag/core
 
 Core library for CodeRAG -- intelligent codebase context engine for AI coding agents.
 
@@ -7,7 +7,7 @@ Includes ingestion pipeline (Tree-sitter AST), embedding providers, vector stora
 ## Installation
 
 ```bash
-npm install @coderag/core
+npm install @code-rag/core
 ```
 
 ## Documentation

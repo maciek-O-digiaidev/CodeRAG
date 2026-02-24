@@ -99,7 +99,7 @@ Built the API server for team deployments. Express REST API with OpenAPI spec, a
 
 **Key modules**: `ApiServer`, `RBACManager`, `OIDCProvider`, `SAMLProvider`, `S3StorageProvider`, `AzureBlobProvider`, `GCSProvider`, `DashboardDataCollector`
 
-**New package**: `@coderag/api-server`
+**New package**: `@code-rag/api-server`
 
 ### Sprint 8 -- CodeRAG Viewer (50 SP)
 
@@ -107,7 +107,7 @@ Created a web-based visualization tool for exploring indexed codebases. REST API
 
 **Key modules**: `ViewerAPI`, `Dashboard`, `ChunkBrowser`, `SearchPlayground`, `DependencyGraphView`, `UMAPProjection`
 
-**New package**: `@coderag/viewer`
+**New package**: `@code-rag/viewer`
 
 ## Final Statistics
 

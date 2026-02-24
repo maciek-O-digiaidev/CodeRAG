@@ -45,7 +45,7 @@ interface Parser {
 
 | Class                | Package        | Description                                          |
 | -------------------- | -------------- | ---------------------------------------------------- |
-| `TreeSitterParser`   | `@coderag/core`| Tree-sitter WASM parser supporting TS, JS, Python, Go, Rust, Java, C# |
+| `TreeSitterParser`   | `@code-rag/core`| Tree-sitter WASM parser supporting TS, JS, Python, Go, Rust, Java, C# |
 
 ---
 
@@ -72,7 +72,7 @@ interface Chunker {
 
 | Class          | Package         | Description                                        |
 | -------------- | --------------- | -------------------------------------------------- |
-| `ASTChunker`   | `@coderag/core` | AST-aware chunker respecting function/class boundaries |
+| `ASTChunker`   | `@code-rag/core` | AST-aware chunker respecting function/class boundaries |
 
 ---
 
@@ -102,7 +102,7 @@ interface EmbeddingProvider {
 
 | Class                      | Package         | Description                                    |
 | -------------------------- | --------------- | ---------------------------------------------- |
-| `OllamaEmbeddingProvider`  | `@coderag/core` | Local embedding via Ollama (nomic-embed-text)  |
+| `OllamaEmbeddingProvider`  | `@code-rag/core` | Local embedding via Ollama (nomic-embed-text)  |
 
 > [!note]
 > The `EmbeddingConfig.provider` field in `.coderag.yaml` supports `"ollama"`, `"voyage"`, and `"openai"` as provider names. Currently `OllamaEmbeddingProvider` is the primary implementation for local-first operation.
@@ -151,8 +151,8 @@ interface VectorStore {
 
 | Class           | Package         | Description                                   |
 | --------------- | --------------- | --------------------------------------------- |
-| `LanceDBStore`  | `@coderag/core` | Embedded LanceDB (default, zero-infra)        |
-| `QdrantStore`   | `@coderag/core` | Qdrant vector database (remote or local)      |
+| `LanceDBStore`  | `@code-rag/core` | Embedded LanceDB (default, zero-infra)        |
+| `QdrantStore`   | `@code-rag/core` | Qdrant vector database (remote or local)      |
 
 ---
 
@@ -179,7 +179,7 @@ interface LLMProvider {
 
 | Class             | Package         | Description                                 |
 | ----------------- | --------------- | ------------------------------------------- |
-| `OllamaProvider`  | `@coderag/core` | Local LLM via Ollama (qwen2.5-coder, llama3.2) |
+| `OllamaProvider`  | `@code-rag/core` | Local LLM via Ollama (qwen2.5-coder, llama3.2) |
 
 ---
 
@@ -209,7 +209,7 @@ interface ReRanker {
 
 | Class                  | Package         | Description                           |
 | ---------------------- | --------------- | ------------------------------------- |
-| `CrossEncoderReRanker` | `@coderag/core` | Cross-encoder re-ranker via Ollama    |
+| `CrossEncoderReRanker` | `@code-rag/core` | Cross-encoder re-ranker via Ollama    |
 
 ---
 
@@ -250,9 +250,9 @@ interface BacklogProvider {
 
 | Class                  | Package         | Provider        | Description                              |
 | ---------------------- | --------------- | --------------- | ---------------------------------------- |
-| `AzureDevOpsProvider`  | `@coderag/core` | Azure DevOps    | ADO REST API with WIQL queries           |
-| `JiraProvider`         | `@coderag/core` | Jira            | Jira REST API with JQL queries           |
-| `ClickUpProvider`      | `@coderag/core` | ClickUp         | ClickUp API v2                           |
+| `AzureDevOpsProvider`  | `@code-rag/core` | Azure DevOps    | ADO REST API with WIQL queries           |
+| `JiraProvider`         | `@code-rag/core` | Jira            | Jira REST API with JQL queries           |
+| `ClickUpProvider`      | `@code-rag/core` | ClickUp         | ClickUp API v2                           |
 
 > [!example]
 > Configuration in `.coderag.yaml`:
@@ -298,8 +298,8 @@ interface AuthProvider {
 
 | Class            | Package         | Protocol | Description                                   |
 | ---------------- | --------------- | -------- | --------------------------------------------- |
-| `OIDCProvider`   | `@coderag/core` | OIDC     | OpenID Connect with JWKS validation (zero external deps) |
-| `SAMLProvider`   | `@coderag/core` | SAML 2.0 | SAML assertion parsing with XML signature validation     |
+| `OIDCProvider`   | `@code-rag/core` | OIDC     | OpenID Connect with JWKS validation (zero external deps) |
+| `SAMLProvider`   | `@code-rag/core` | SAML 2.0 | SAML assertion parsing with XML signature validation     |
 
 > [!note]
 > Both auth providers are implemented with zero external dependencies -- JWKS fetching, JWT decoding, XML parsing, and signature verification are all done with Node.js built-in `crypto` module.
@@ -364,9 +364,9 @@ interface CloudStorageProvider {
 
 | Class                    | Package         | Provider     | Description                                    |
 | ------------------------ | --------------- | ------------ | ---------------------------------------------- |
-| `S3StorageProvider`      | `@coderag/core` | AWS S3       | S3 + S3-compatible (MinIO) with AWS Sig V4     |
-| `AzureBlobProvider`      | `@coderag/core` | Azure Blob   | Azure Blob Storage with SharedKey auth         |
-| `GCSStorageProvider`     | `@coderag/core` | Google Cloud | GCS with service account JWT auth              |
+| `S3StorageProvider`      | `@code-rag/core` | AWS S3       | S3 + S3-compatible (MinIO) with AWS Sig V4     |
+| `AzureBlobProvider`      | `@code-rag/core` | Azure Blob   | Azure Blob Storage with SharedKey auth         |
+| `GCSStorageProvider`     | `@code-rag/core` | Google Cloud | GCS with service account JWT auth              |
 
 > [!note]
 > All three cloud storage providers are implemented with zero external SDK dependencies. They use Node.js built-in `crypto` and `https` modules for authentication and HTTP requests.
@@ -443,8 +443,8 @@ interface DocsProvider {
 
 | Class                | Package         | Provider     | Description                                        |
 | -------------------- | --------------- | ------------ | -------------------------------------------------- |
-| `ConfluenceProvider` | `@coderag/core` | Confluence   | REST API v2 with Basic/OAuth auth, XHTML-to-text   |
-| `SharePointProvider` | `@coderag/core` | SharePoint   | MS Graph API with OAuth2 client credentials, .docx/.pdf extraction |
+| `ConfluenceProvider` | `@code-rag/core` | Confluence   | REST API v2 with Basic/OAuth auth, XHTML-to-text   |
+| `SharePointProvider` | `@code-rag/core` | SharePoint   | MS Graph API with OAuth2 client credentials, .docx/.pdf extraction |
 
 > [!warning]
 > The `SharePointProvider` uses a lightweight zero-dependency text extractor for `.docx` and `.pdf` files. It handles common cases but may miss content in complex documents with compressed streams or CMap-encoded PDFs.
@@ -480,7 +480,7 @@ interface ReadonlyGraph {
 
 | Class              | Package         | Description                                     |
 | ------------------ | --------------- | ----------------------------------------------- |
-| `DependencyGraph`  | `@coderag/core` | Full mutable graph with BFS traversal, serialization |
+| `DependencyGraph`  | `@code-rag/core` | Full mutable graph with BFS traversal, serialization |
 
 > [!tip]
 > The `ReadonlyGraph` interface enables testing with mock graphs and prevents the retrieval pipeline from mutating the graph during context expansion.

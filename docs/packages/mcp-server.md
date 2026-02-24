@@ -5,18 +5,18 @@ tags:
   - server
   - ai-agents
 aliases:
-  - "@coderag/mcp-server"
+  - "@code-rag/mcp-server"
   - mcp-server-package
   - MCP
 ---
 
-# @coderag/mcp-server
+# @code-rag/mcp-server
 
 The MCP (Model Context Protocol) server that exposes CodeRAG's search, context, and status capabilities as tools that AI coding agents can invoke.
 
-**Package**: `@coderag/mcp-server`
+**Package**: `@code-rag/mcp-server`
 **Version**: 0.1.0
-**Dependencies**: `@coderag/core`, `@modelcontextprotocol/sdk`, `zod`
+**Dependencies**: `@code-rag/core`, `@modelcontextprotocol/sdk`, `zod`
 
 ## What is MCP?
 
@@ -27,7 +27,7 @@ MCP (Model Context Protocol) is an open standard that lets AI agents discover an
 The main entry point is the `CodeRAGServer` class:
 
 ```typescript
-import { CodeRAGServer } from '@coderag/mcp-server';
+import { CodeRAGServer } from '@code-rag/mcp-server';
 
 const server = new CodeRAGServer({ rootDir: '/path/to/project' });
 await server.initialize();
@@ -103,7 +103,7 @@ Add to `claude_desktop_config.json`:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["@coderag/cli", "serve"],
+      "args": ["@code-rag/cli", "serve"],
       "cwd": "/path/to/your/project"
     }
   }
@@ -119,7 +119,7 @@ Add to `.claude/settings.json` in your project root:
   "mcpServers": {
     "coderag": {
       "command": "npx",
-      "args": ["@coderag/cli", "serve"],
+      "args": ["@code-rag/cli", "serve"],
       "cwd": "."
     }
   }

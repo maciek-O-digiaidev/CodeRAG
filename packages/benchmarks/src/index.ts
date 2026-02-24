@@ -1,4 +1,4 @@
-// @coderag/benchmarks — benchmark suite for CodeRAG search quality and performance
+// @code-rag/benchmarks — benchmark suite for CodeRAG search quality and performance
 export const BENCHMARKS_VERSION = '0.1.0';
 
 // Types

@@ -6,8 +6,8 @@ import type {
   ContextExpander,
   SearchResult,
   ExpandedContext,
-} from '@coderag/core';
-import { EmbedError } from '@coderag/core';
+} from '@code-rag/core';
+import { EmbedError } from '@code-rag/core';
 
 // --- Helpers ---
 

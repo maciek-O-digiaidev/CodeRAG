@@ -21,10 +21,10 @@ const ROOT = resolve(__dirname, '..');
 
 /** @type {Array<{ name: string; dir: string; maxSizeKB: number }>} */
 const PUBLISHABLE_PACKAGES = [
-  { name: '@coderag/core', dir: 'packages/core', maxSizeKB: 500 },
-  { name: '@coderag/cli', dir: 'packages/cli', maxSizeKB: 200 },
-  { name: '@coderag/mcp-server', dir: 'packages/mcp-server', maxSizeKB: 200 },
-  { name: '@coderag/api-server', dir: 'packages/api-server', maxSizeKB: 200 },
+  { name: '@code-rag/core', dir: 'packages/core', maxSizeKB: 500 },
+  { name: '@code-rag/cli', dir: 'packages/cli', maxSizeKB: 200 },
+  { name: '@code-rag/mcp-server', dir: 'packages/mcp-server', maxSizeKB: 200 },
+  { name: '@code-rag/api-server', dir: 'packages/api-server', maxSizeKB: 200 },
 ];
 
 const REQUIRED_FIELDS = [
@@ -92,7 +92,7 @@ function validatePackageJson(pkgDir, pkgName) {
     logError(`${pkgName}: package is marked as private`);
   }
 
-  if (pkgName === '@coderag/cli') {
+  if (pkgName === '@code-rag/cli') {
     if (!pkgJson.bin || !pkgJson.bin.coderag) {
       logError(`${pkgName}: missing bin.coderag entry`);
     } else {

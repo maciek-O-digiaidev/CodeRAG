@@ -6,7 +6,7 @@ import { Router, type Request, type Response } from 'express';
 import { createAuthMiddleware, requireAdmin, type ApiKeyEntry } from '../middleware/auth.js';
 import type { DashboardDataCollector } from './data-collector.js';
 import type { IndexTriggerCallback } from '../routes/index-trigger.js';
-import type { CodeRAGConfig } from '@coderag/core';
+import type { CodeRAGConfig } from '@code-rag/core';
 import { renderDashboardPage } from './templates.js';
 import type { FlashMessage } from './types.js';
 

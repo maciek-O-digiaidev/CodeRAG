@@ -291,18 +291,18 @@ Utwórz .github/workflows/ci.yml:
 
 5. PACKAGE.JSON
 packages/core:
-  - name: @coderag/core
+  - name: @code-rag/core
   - dependencies: web-tree-sitter, vectordb (lancedb), minisearch, neverthrow, yaml
   - devDependencies: vitest, @types/node
 
 packages/cli:
   - name: coderag
   - bin: { coderag: ./dist/index.js }
-  - dependencies: commander, chalk, ora, @coderag/core
+  - dependencies: commander, chalk, ora, @code-rag/core
 
 packages/mcp-server:
-  - name: @coderag/mcp-server
-  - dependencies: @modelcontextprotocol/sdk, @coderag/core
+  - name: @code-rag/mcp-server
+  - dependencies: @modelcontextprotocol/sdk, @code-rag/core
 
 6. TYPES
 W packages/core/src/types/ utwórz:

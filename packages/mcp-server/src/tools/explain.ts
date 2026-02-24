@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { HybridSearch, ContextExpander, SearchResult } from '@coderag/core';
+import type { HybridSearch, ContextExpander, SearchResult } from '@code-rag/core';
 
 export const explainInputSchema = z.object({
   file_path: z.string().min(1, 'file_path must not be empty').refine(

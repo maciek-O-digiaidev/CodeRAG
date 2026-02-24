@@ -9,7 +9,7 @@ import {
   BM25Index,
   HybridSearch,
   type SearchResult,
-} from '@coderag/core';
+} from '@code-rag/core';
 
 /**
  * Format a single search result for terminal display.

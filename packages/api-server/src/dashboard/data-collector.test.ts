@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ok, err } from 'neverthrow';
-import { StoreError } from '@coderag/core';
-import type { LanceDBStore, CodeRAGConfig } from '@coderag/core';
+import { StoreError } from '@code-rag/core';
+import type { LanceDBStore, CodeRAGConfig } from '@code-rag/core';
 import type { ApiKeyEntry } from '../middleware/auth.js';
 import { DashboardDataCollector, type DashboardDataCollectorDeps } from './data-collector.js';
 

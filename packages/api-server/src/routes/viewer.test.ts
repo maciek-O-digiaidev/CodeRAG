@@ -8,8 +8,8 @@ import type {
   HybridSearch,
   DependencyGraph,
   SearchResult,
-} from '@coderag/core';
-import { EmbedError } from '@coderag/core';
+} from '@code-rag/core';
+import { EmbedError } from '@code-rag/core';
 
 // --- Mock LanceDB row shape ---
 

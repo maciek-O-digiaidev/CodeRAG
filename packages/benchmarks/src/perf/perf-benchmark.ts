@@ -4,7 +4,7 @@
  * Measures query latency and indexing throughput.
  */
 
-import type { HybridSearch } from '@coderag/core';
+import type { HybridSearch } from '@code-rag/core';
 import { measureTime, measureMemory, computePercentiles } from './measure.js';
 
 export interface LatencyResult {

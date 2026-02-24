@@ -1,11 +1,11 @@
-# @coderag/mcp-server
+# @code-rag/mcp-server
 
 MCP server for CodeRAG -- exposes codebase search, context, explain, and status tools via the Model Context Protocol (stdio and SSE transports).
 
 ## Installation
 
 ```bash
-npm install @coderag/mcp-server
+npm install @code-rag/mcp-server
 ```
 
 ## Tools

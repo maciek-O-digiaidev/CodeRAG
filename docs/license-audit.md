@@ -34,13 +34,13 @@ All `package.json` files contain `"license": "MIT"` (valid SPDX identifier):
 | Package | license field |
 |---------|---------------|
 | `coderag` (root) | `MIT` |
-| `@coderag/core` | `MIT` |
-| `@coderag/cli` | `MIT` |
-| `@coderag/mcp-server` | `MIT` |
-| `coderag-vscode` | `MIT` |
-| `@coderag/api-server` | `MIT` |
-| `@coderag/viewer` | `MIT` |
-| `@coderag/benchmarks` | `MIT` |
+| `@code-rag/core` | `MIT` |
+| `@code-rag/cli` | `MIT` |
+| `@code-rag/mcp-server` | `MIT` |
+| `code-rag-vscode` | `MIT` |
+| `@code-rag/api-server` | `MIT` |
+| `@code-rag/viewer` | `MIT` |
+| `@code-rag/benchmarks` | `MIT` |
 
 ## Production Dependency Licenses
 

@@ -4,7 +4,7 @@ import { resolve, sep } from 'node:path';
 import {
   loadConfig,
   LanceDBStore,
-} from '@coderag/core';
+} from '@code-rag/core';
 
 /**
  * Status information about the CodeRAG index.

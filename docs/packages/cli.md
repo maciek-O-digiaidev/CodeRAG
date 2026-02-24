@@ -4,18 +4,18 @@ tags:
   - cli
   - commands
 aliases:
-  - "@coderag/cli"
+  - "@code-rag/cli"
   - cli-package
   - coderag-command
 ---
 
-# @coderag/cli
+# @code-rag/cli
 
 The command-line interface for CodeRAG. Provides 6 commands to initialize, index, search, serve, inspect, and visualize your codebase. Built with Commander.js, styled with Chalk, and animated with Ora spinners.
 
-**Package**: `@coderag/cli`
+**Package**: `@code-rag/cli`
 **Binary**: `coderag`
-**Dependencies**: `@coderag/core`, `@coderag/mcp-server`, `@coderag/api-server`, `commander`, `chalk`, `ora`, `yaml`
+**Dependencies**: `@code-rag/core`, `@code-rag/mcp-server`, `@code-rag/api-server`, `commander`, `chalk`, `ora`, `yaml`
 
 ---
 
@@ -228,7 +228,7 @@ coderag viewer [options]
 
 **What it does:**
 
-1. Locates the pre-built viewer SPA (`@coderag/viewer` dist)
+1. Locates the pre-built viewer SPA (`@code-rag/viewer` dist)
 2. Starts an HTTP server that serves the SPA static files
 3. Initializes the API server and proxies `/api/*` requests to it
 4. Falls back to `index.html` for client-side hash routing
@@ -245,7 +245,7 @@ coderag viewer --port 8080 --no-open
 ```
 
 > [!warning]
-> The viewer must be built first: `pnpm --filter @coderag/viewer build`
+> The viewer must be built first: `pnpm --filter @code-rag/viewer build`
 
 ---
 

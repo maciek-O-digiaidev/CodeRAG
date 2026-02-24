@@ -26,7 +26,7 @@ importers:
 
   packages/api-server:
     dependencies:
-      '@coderag/core':
+      '@code-rag/core':
         specifier: workspace:*
         version: link:../core
       express:
@@ -63,7 +63,7 @@ importers:
 
   packages/benchmarks:
     dependencies:
-      '@coderag/core':
+      '@code-rag/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -85,13 +85,13 @@ importers:
 
   packages/cli:
     dependencies:
-      '@coderag/api-server':
+      '@code-rag/api-server':
         specifier: workspace:*
         version: link:../api-server
-      '@coderag/core':
+      '@code-rag/core':
         specifier: workspace:*
         version: link:../core
-      '@coderag/mcp-server':
+      '@code-rag/mcp-server':
         specifier: workspace:*
         version: link:../mcp-server
       '@inquirer/prompts':
@@ -174,7 +174,7 @@ importers:
 
   packages/mcp-server:
     dependencies:
-      '@coderag/core':
+      '@code-rag/core':
         specifier: workspace:*
         version: link:../core
       '@modelcontextprotocol/sdk':
@@ -210,7 +210,7 @@ importers:
         version: 5.8.3
       vite:
         specifier: ^6.3.5
-        version: 6.4.1(@types/node@22.19.11)(tsx@4.21.0)
+        version: 6.4.1(@types/node@22.19.11)(yaml@2.8.2)
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(jsdom@28.1.0)

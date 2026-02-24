@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ok, err } from 'neverthrow';
 import { handleBacklog, backlogInputSchema } from './backlog.js';
-import type { BacklogProvider, BacklogItem } from '@coderag/core';
-import { BacklogError } from '@coderag/core';
+import type { BacklogProvider, BacklogItem } from '@code-rag/core';
+import { BacklogError } from '@code-rag/core';
 
 // --- Helpers ---
 

@@ -7,7 +7,7 @@ import {
   loadConfig,
   createIgnoreFilter,
   FileWatcher,
-} from '@coderag/core';
+} from '@code-rag/core';
 
 /**
  * Register the `coderag watch` CLI command.

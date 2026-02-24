@@ -1,5 +1,5 @@
 {
-  "name": "coderag-vscode",
+  "name": "code-rag-vscode",
   "displayName": "CodeRAG",
   "description": "Intelligent codebase context engine for AI coding agents — semantic code search, RAG indexing, and MCP server integration directly in VS Code.",
   "version": "0.1.0",

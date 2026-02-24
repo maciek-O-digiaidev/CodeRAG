@@ -4,11 +4,11 @@ tags:
   - core
   - library
 aliases:
-  - "@coderag/core"
+  - "@code-rag/core"
   - core-package
 ---
 
-# @coderag/core
+# @code-rag/core
 
 The shared core library that powers every other CodeRAG package. It contains the full ingestion pipeline, embedding and storage providers, retrieval engine, dependency graph, authentication, cloud storage, backlog integrations, and documentation parsers.
 

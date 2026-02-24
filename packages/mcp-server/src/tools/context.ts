@@ -3,7 +3,7 @@ import {
   TokenBudgetOptimizer,
   type HybridSearch,
   type ContextExpander,
-} from '@coderag/core';
+} from '@code-rag/core';
 
 export const contextInputSchema = z.object({
   file_path: z.string().min(1, 'file_path must not be empty').refine(

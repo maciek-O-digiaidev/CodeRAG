@@ -5,23 +5,23 @@ tags:
   - spa
   - visualization
 aliases:
-  - "@coderag/viewer"
+  - "@code-rag/viewer"
   - viewer-package
   - CodeRAG Viewer
 ---
 
-# @coderag/viewer
+# @code-rag/viewer
 
 A lightweight single-page application for visually exploring a CodeRAG index. Built with vanilla TypeScript and DOM APIs (no framework), bundled with Vite, and designed to run alongside the API server.
 
-**Package**: `@coderag/viewer` (private)
+**Package**: `@code-rag/viewer` (private)
 **Build**: `vite` + `tsc`
 **Dev dependencies**: `vite`, `jsdom` (for testing), `vitest`
 **Runtime dependencies**: none (zero-dependency SPA)
 
 ## Architecture
 
-The viewer is a pure client-side SPA that communicates with the `@coderag/api-server` REST endpoints. It is served either by `coderag viewer` (which proxies API requests) or can be deployed as static files behind any web server that proxies `/api/` to the API server.
+The viewer is a pure client-side SPA that communicates with the `@code-rag/api-server` REST endpoints. It is served either by `coderag viewer` (which proxies API requests) or can be deployed as static files behind any web server that proxies `/api/` to the API server.
 
 ```mermaid
 graph LR
@@ -118,13 +118,13 @@ All methods throw `ApiError` (with `status` and `statusText`) on non-200 respons
 
 ```bash
 # Build the SPA
-pnpm --filter @coderag/viewer build
+pnpm --filter @code-rag/viewer build
 
 # Launch via CLI (includes API proxy)
 coderag viewer
 
 # Or use Vite dev server (needs separate API server)
-pnpm --filter @coderag/viewer dev
+pnpm --filter @code-rag/viewer dev
 ```
 
 ## See Also

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import type { CloudStorageProvider } from '@coderag/core';
-import { StorageError } from '@coderag/core';
+import type { CloudStorageProvider } from '@code-rag/core';
+import { StorageError } from '@code-rag/core';
 
 // ---------------------------------------------------------------------------
 // Schemas

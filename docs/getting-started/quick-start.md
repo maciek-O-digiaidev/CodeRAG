@@ -245,7 +245,7 @@ The viewer opens automatically in your default browser.
 > [!note]
 > The viewer requires a built viewer package. If you see an error about the viewer not being built, run:
 > ```bash
-> pnpm --filter @coderag/viewer build
+> pnpm --filter @code-rag/viewer build
 > ```
 
 ## Check Index Status

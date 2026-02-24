@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { HybridSearch, SearchResult, ReRanker } from '@coderag/core';
+import type { HybridSearch, SearchResult, ReRanker } from '@code-rag/core';
 
 export const docsInputSchema = z.object({
   query: z.string().min(1, 'query must not be empty'),

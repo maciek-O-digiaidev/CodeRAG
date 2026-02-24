@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ok, err } from 'neverthrow';
 import { handleDocs, docsInputSchema } from './docs.js';
-import type { HybridSearch, SearchResult, ReRanker } from '@coderag/core';
-import { EmbedError } from '@coderag/core';
+import type { HybridSearch, SearchResult, ReRanker } from '@code-rag/core';
+import { EmbedError } from '@code-rag/core';
 
 // --- Helpers ---
 

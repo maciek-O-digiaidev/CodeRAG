@@ -1,5 +1,5 @@
 {
-  "name": "@coderag/core",
+  "name": "@code-rag/core",
   "version": "0.1.0",
   "description": "Core library for CodeRAG — intelligent codebase context engine with AST parsing, embeddings, and hybrid search",
   "type": "module",

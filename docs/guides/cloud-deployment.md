@@ -14,7 +14,7 @@ aliases:
 
 # Cloud Deployment
 
-CodeRAG includes a full-featured API server (`@coderag/api-server`) for team deployments. It wraps all CodeRAG functionality behind a REST API with authentication, rate limiting, RBAC, and a built-in admin dashboard.
+CodeRAG includes a full-featured API server (`@code-rag/api-server`) for team deployments. It wraps all CodeRAG functionality behind a REST API with authentication, rate limiting, RBAC, and a built-in admin dashboard.
 
 ## Quick Start
 

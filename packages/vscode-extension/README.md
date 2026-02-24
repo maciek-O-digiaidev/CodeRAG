@@ -41,7 +41,7 @@ Trigger indexing directly from VS Code:
 ## Requirements
 
 - **Node.js** >= 20
-- **CodeRAG CLI** installed (`npm install -g @coderag/cli`)
+- **CodeRAG CLI** installed (`npm install -g @code-rag/cli`)
 - A `.coderag.yaml` configuration file in your workspace root
 - For local embeddings: [Ollama](https://ollama.ai/) running with the `nomic-embed-text` model
 

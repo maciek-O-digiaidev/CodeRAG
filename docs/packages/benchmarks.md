@@ -5,17 +5,17 @@ tags:
   - quality
   - metrics
 aliases:
-  - "@coderag/benchmarks"
+  - "@code-rag/benchmarks"
   - benchmarks-package
   - search-quality
 ---
 
-# @coderag/benchmarks
+# @code-rag/benchmarks
 
 A benchmark suite for measuring CodeRAG search quality against a grep baseline. Uses curated query datasets with expected results and computes standard information retrieval metrics.
 
-**Package**: `@coderag/benchmarks` (private)
-**Dependencies**: `@coderag/core`
+**Package**: `@code-rag/benchmarks` (private)
+**Dependencies**: `@code-rag/core`
 **Dev dependencies**: `tsx`, `vitest`
 
 ## Purpose
@@ -75,7 +75,7 @@ Datasets are stored in the `datasets/` directory (e.g., `datasets/coderag-querie
 
 ### CodeRAG Runner (`runners/coderag-runner.ts`)
 
-Uses `HybridSearch` from `@coderag/core` to run queries:
+Uses `HybridSearch` from `@code-rag/core` to run queries:
 
 - Accepts a pre-configured `HybridSearch` instance
 - Runs the query with configurable `topK`
@@ -127,7 +127,7 @@ The `perf/` directory provides utilities for measuring runtime and resource usag
 
 ```bash
 # Run with default dataset
-pnpm --filter @coderag/benchmarks benchmark
+pnpm --filter @code-rag/benchmarks benchmark
 
 # Run with a custom dataset
 node --import tsx packages/benchmarks/src/run-benchmark.ts path/to/dataset.json

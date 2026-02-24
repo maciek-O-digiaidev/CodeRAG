@@ -73,12 +73,12 @@ flowchart LR
 
 | Package | NPM | Description |
 |---------|-----|-------------|
-| [[core]] | `@coderag/core` | Shared library — ingestion, embedding, retrieval, auth |
-| [[cli]] | `@coderag/cli` | CLI tool — `coderag init/index/search/serve/status/viewer` |
-| [[mcp-server]] | `@coderag/mcp-server` | MCP server — stdio + SSE transport |
-| [[api-server]] | `@coderag/api-server` | Express REST API — team/cloud deployment |
-| [[viewer]] | `@coderag/viewer` | Vite SPA — dashboard, search, graph, UMAP |
-| [[vscode-extension]] | `coderag-vscode` | VS Code integration — search panel, auto-config |
+| [[core]] | `@code-rag/core` | Shared library — ingestion, embedding, retrieval, auth |
+| [[cli]] | `@code-rag/cli` | CLI tool — `coderag init/index/search/serve/status/viewer` |
+| [[mcp-server]] | `@code-rag/mcp-server` | MCP server — stdio + SSE transport |
+| [[api-server]] | `@code-rag/api-server` | Express REST API — team/cloud deployment |
+| [[viewer]] | `@code-rag/viewer` | Vite SPA — dashboard, search, graph, UMAP |
+| [[vscode-extension]] | `code-rag-vscode` | VS Code integration — search panel, auto-config |
 | [[benchmarks]] | — | Benchmark suite — precision, recall, MRR |
 
 ## API Reference

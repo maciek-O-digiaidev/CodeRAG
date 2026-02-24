@@ -4,10 +4,10 @@
   "commit": false,
   "fixed": [],
   "linked": [
-    ["@coderag/core", "@coderag/mcp-server", "@coderag/cli", "@coderag/api-server"]
+    ["@code-rag/core", "@code-rag/mcp-server", "@code-rag/cli", "@code-rag/api-server"]
   ],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@coderag/benchmarks", "coderag-vscode", "@coderag/viewer"]
+  "ignore": ["@code-rag/benchmarks", "code-rag-vscode", "@code-rag/viewer"]
 }

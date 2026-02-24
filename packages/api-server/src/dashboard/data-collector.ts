@@ -3,7 +3,7 @@
  * user info, and usage statistics from in-memory counters.
  */
 
-import type { LanceDBStore, CodeRAGConfig } from '@coderag/core';
+import type { LanceDBStore, CodeRAGConfig } from '@code-rag/core';
 import type { ApiKeyEntry } from '../middleware/auth.js';
 import type {
   IndexOverview,

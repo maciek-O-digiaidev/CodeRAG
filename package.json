@@ -13,7 +13,7 @@
     "test": "pnpm -r run test",
     "lint": "eslint .",
     "clean": "pnpm -r run clean",
-    "benchmark": "pnpm -r --filter @coderag/benchmarks run benchmark",
+    "benchmark": "pnpm -r --filter @code-rag/benchmarks run benchmark",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm build && pnpm test && changeset publish",

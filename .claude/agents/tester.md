@@ -23,7 +23,7 @@ You are the QA Engineer for CodeRAG.
 
 ## Workflow
 1. Read the user story and its acceptance criteria
-2. Run tests: `pnpm test` (full suite) or `pnpm --filter @coderag/core test` (core only)
+2. Run tests: `pnpm test` (full suite) or `pnpm --filter @code-rag/core test` (core only)
 3. Check coverage: `pnpm test -- --coverage`
 4. Review test files for completeness
 5. Verify each acceptance criterion is covered by a test

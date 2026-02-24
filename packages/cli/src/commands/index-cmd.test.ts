@@ -4,7 +4,7 @@ import {
   OllamaEmbeddingProvider,
   OpenAICompatibleEmbeddingProvider,
   type EmbeddingConfig,
-} from '@coderag/core';
+} from '@code-rag/core';
 
 const defaultLifecycleFields = {
   autoStart: true,

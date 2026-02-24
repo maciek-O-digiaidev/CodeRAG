@@ -66,13 +66,13 @@ CodeRAG is a **pnpm workspace monorepo** with 7 packages. The dependency graph f
 
 ```mermaid
 graph TD
-    core["@coderag/core<br/><i>packages/core</i>"]
-    cli["@coderag/cli<br/><i>packages/cli</i>"]
-    mcp["@coderag/mcp-server<br/><i>packages/mcp-server</i>"]
-    api["@coderag/api-server<br/><i>packages/api-server</i>"]
-    viewer["@coderag/viewer<br/><i>packages/viewer</i>"]
-    vscode["coderag-vscode<br/><i>packages/vscode-extension</i>"]
-    bench["@coderag/benchmarks<br/><i>packages/benchmarks</i>"]
+    core["@code-rag/core<br/><i>packages/core</i>"]
+    cli["@code-rag/cli<br/><i>packages/cli</i>"]
+    mcp["@code-rag/mcp-server<br/><i>packages/mcp-server</i>"]
+    api["@code-rag/api-server<br/><i>packages/api-server</i>"]
+    viewer["@code-rag/viewer<br/><i>packages/viewer</i>"]
+    vscode["code-rag-vscode<br/><i>packages/vscode-extension</i>"]
+    bench["@code-rag/benchmarks<br/><i>packages/benchmarks</i>"]
 
     cli --> core
     mcp --> core
@@ -92,13 +92,13 @@ graph TD
 
 | Package | Purpose | Key Dependencies |
 |---------|---------|-----------------|
-| **@coderag/core** | Ingestion, embedding, retrieval, graph, backlog | neverthrow, web-tree-sitter, @lancedb/lancedb, minisearch |
-| **@coderag/cli** | CLI commands (init, index, search, serve, status, viewer) | @coderag/core, @coderag/mcp-server, commander |
-| **@coderag/mcp-server** | MCP tools (coderag_search, coderag_context, etc.) | @coderag/core, @modelcontextprotocol/sdk |
-| **@coderag/api-server** | REST API with auth, RBAC, team features | @coderag/core, express |
-| **@coderag/viewer** | Web-based dashboard and visualization | @coderag/core, vite |
-| **coderag-vscode** | VS Code extension with search panel | VS Code API, MCP client |
-| **@coderag/benchmarks** | Performance and quality benchmarks | @coderag/core |
+| **@code-rag/core** | Ingestion, embedding, retrieval, graph, backlog | neverthrow, web-tree-sitter, @lancedb/lancedb, minisearch |
+| **@code-rag/cli** | CLI commands (init, index, search, serve, status, viewer) | @code-rag/core, @code-rag/mcp-server, commander |
+| **@code-rag/mcp-server** | MCP tools (coderag_search, coderag_context, etc.) | @code-rag/core, @modelcontextprotocol/sdk |
+| **@code-rag/api-server** | REST API with auth, RBAC, team features | @code-rag/core, express |
+| **@code-rag/viewer** | Web-based dashboard and visualization | @code-rag/core, vite |
+| **code-rag-vscode** | VS Code extension with search panel | VS Code API, MCP client |
+| **@code-rag/benchmarks** | Performance and quality benchmarks | @code-rag/core |
 
 **Build order**: `core` must build first, then all other packages can build in parallel. The CLI depends on both `core` and `mcp-server`.
 

@@ -65,7 +65,7 @@ The simplest way to get started. Requires Node.js >= 20.
 
 ```bash
 # Install the CLI globally
-npm install -g @coderag/cli
+npm install -g @code-rag/cli
 
 # Verify installation
 coderag --version
@@ -83,7 +83,7 @@ coderag search "your query"
 ### Updating
 
 ```bash
-npm update -g @coderag/cli
+npm update -g @code-rag/cli
 ```
 
 ---

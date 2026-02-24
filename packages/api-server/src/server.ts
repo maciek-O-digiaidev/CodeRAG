@@ -14,7 +14,7 @@ import {
   type SearchResult,
   type GraphNode,
   type GraphEdge,
-} from '@coderag/core';
+} from '@code-rag/core';
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { parseApiKeys, createAuthMiddleware, type ApiKeyEntry, type AuthenticatedRequest } from './middleware/auth.js';

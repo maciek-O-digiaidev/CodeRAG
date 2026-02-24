@@ -5,23 +5,23 @@ tags:
   - rest
   - cloud
 aliases:
-  - "@coderag/api-server"
+  - "@code-rag/api-server"
   - api-server-package
   - REST API
 ---
 
-# @coderag/api-server
+# @code-rag/api-server
 
 An Express-based REST API server that provides authenticated HTTP access to CodeRAG's search, context, indexing, and team collaboration features. Designed for cloud deployments and multi-user teams.
 
-**Package**: `@coderag/api-server`
+**Package**: `@code-rag/api-server`
 **Version**: 0.1.0
-**Dependencies**: `@coderag/core`, `express`, `zod`
+**Dependencies**: `@code-rag/core`, `express`, `zod`
 
 ## ApiServer Class
 
 ```typescript
-import { ApiServer } from '@coderag/api-server';
+import { ApiServer } from '@code-rag/api-server';
 
 const server = new ApiServer({
   rootDir: '/path/to/project',
@@ -137,7 +137,7 @@ The API server can be containerized. The `package.json` includes a `start` scrip
 node dist/index.js
 
 # Or via npm
-pnpm --filter @coderag/api-server start
+pnpm --filter @code-rag/api-server start
 ```
 
 A typical Docker setup would:
@@ -152,7 +152,7 @@ A typical Docker setup would:
 The `getApp()` method exposes the Express app for testing with supertest:
 
 ```typescript
-import { ApiServer } from '@coderag/api-server';
+import { ApiServer } from '@code-rag/api-server';
 import request from 'supertest';
 
 const server = new ApiServer({ rootDir: '/tmp/test', port: 0 });

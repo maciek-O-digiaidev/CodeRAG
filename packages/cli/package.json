@@ -1,5 +1,5 @@
 {
-  "name": "@coderag/cli",
+  "name": "@code-rag/cli",
   "version": "0.1.0",
   "description": "CLI tool for CodeRAG — init, index, search, serve, and status commands for codebase context engine",
   "type": "module",
@@ -48,9 +48,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@coderag/api-server": "workspace:*",
-    "@coderag/core": "workspace:*",
-    "@coderag/mcp-server": "workspace:*",
+    "@code-rag/api-server": "workspace:*",
+    "@code-rag/core": "workspace:*",
+    "@code-rag/mcp-server": "workspace:*",
     "@inquirer/prompts": "^8.3.0",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",

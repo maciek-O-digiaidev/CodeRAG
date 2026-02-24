@@ -1,5 +1,5 @@
 {
-  "name": "@coderag/api-server",
+  "name": "@code-rag/api-server",
   "version": "0.1.0",
   "description": "REST API server for CodeRAG — Express-based server with authentication, rate limiting, and OpenAPI docs",
   "type": "module",
@@ -45,7 +45,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@coderag/core": "workspace:*",
+    "@code-rag/core": "workspace:*",
     "express": "^4.21.2",
     "zod": "^4.3.6"
   },

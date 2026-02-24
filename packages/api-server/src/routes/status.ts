@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { LanceDBStore, CodeRAGConfig } from '@coderag/core';
+import type { LanceDBStore, CodeRAGConfig } from '@code-rag/core';
 
 export interface StatusResponse {
   total_chunks: number;

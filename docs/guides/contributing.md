@@ -179,7 +179,7 @@ All configuration flows through `.coderag.yaml`. No hardcoded values for anythin
 
 - **Vitest** is the test runner
 - Tests are **co-located** with source files as `*.test.ts`
-- Coverage target: **80%+** on `@coderag/core`
+- Coverage target: **80%+** on `@code-rag/core`
 
 ### Test Structure
 
@@ -210,7 +210,7 @@ describe('parseConfig', () => {
 pnpm test
 
 # Run tests for a specific package
-pnpm --filter @coderag/core test
+pnpm --filter @code-rag/core test
 
 # Run with coverage
 pnpm test -- --coverage

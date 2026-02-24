@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { CodeRAGServer, NO_INDEX_MESSAGE } from '@coderag/mcp-server';
+import { CodeRAGServer, NO_INDEX_MESSAGE } from '@code-rag/mcp-server';
 
 export function registerServeCommand(program: Command): void {
   program

@@ -20,7 +20,7 @@ COPY packages/core/ packages/core/
 COPY packages/api-server/ packages/api-server/
 
 # Build packages (core first, then api-server)
-RUN pnpm --filter @coderag/core build && pnpm --filter @coderag/api-server build
+RUN pnpm --filter @code-rag/core build && pnpm --filter @code-rag/api-server build
 
 # Stage 2: Production runtime
 FROM node:20-alpine AS runtime

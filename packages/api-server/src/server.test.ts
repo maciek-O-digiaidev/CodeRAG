@@ -12,8 +12,8 @@ import type {
   CodeRAGConfig,
   SearchResult,
   ExpandedContext,
-} from '@coderag/core';
-import { EmbedError, StoreError } from '@coderag/core';
+} from '@code-rag/core';
+import { EmbedError, StoreError } from '@code-rag/core';
 import express from 'express';
 
 // --- Helpers ---

@@ -6,7 +6,7 @@
  * the status bar to show indexing progress.
  *
  * This is a lightweight wrapper that shells out to the CLI watcher process,
- * keeping the extension dependency-free from @coderag/core.
+ * keeping the extension dependency-free from @code-rag/core.
  */
 
 import { spawn, type ChildProcess } from 'node:child_process';

@@ -178,7 +178,7 @@ To add a new embedding provider, implement the `EmbeddingProvider` interface:
 
 ```typescript
 import { ok, err, type Result } from 'neverthrow';
-import { EmbedError, type EmbeddingProvider } from '@coderag/core';
+import { EmbedError, type EmbeddingProvider } from '@code-rag/core';
 
 export class MyCustomProvider implements EmbeddingProvider {
   readonly dimensions = 512;

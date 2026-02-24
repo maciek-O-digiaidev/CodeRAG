@@ -22,7 +22,7 @@ import {
   type GraphEdge,
   type BacklogProvider,
   type IndexCheckResult,
-} from '@coderag/core';
+} from '@code-rag/core';
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { createServer, type Server as HttpServer, type IncomingMessage, type ServerResponse } from 'node:http';

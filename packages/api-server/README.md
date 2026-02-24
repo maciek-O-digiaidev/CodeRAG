@@ -1,11 +1,11 @@
-# @coderag/api-server
+# @code-rag/api-server
 
 REST API server for CodeRAG -- Express-based server with authentication (OIDC/SAML), rate limiting, RBAC, team collaboration, and OpenAPI documentation.
 
 ## Installation
 
 ```bash
-npm install @coderag/api-server
+npm install @code-rag/api-server
 ```
 
 ## Features

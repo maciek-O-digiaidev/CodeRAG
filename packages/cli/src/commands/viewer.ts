@@ -111,7 +111,7 @@ export async function viewerCommand(options: ViewerOptions): Promise<void> {
     console.error(
       chalk.red('[coderag]'),
       'Viewer not built. Run',
-      chalk.cyan('pnpm --filter @coderag/viewer build'),
+      chalk.cyan('pnpm --filter @code-rag/viewer build'),
       'first.',
     );
     process.exit(1);
@@ -125,7 +125,7 @@ export async function viewerCommand(options: ViewerOptions): Promise<void> {
   type HttpHandler = (req: IncomingMessage, res: ServerResponse) => void;
   let apiHandler: HttpHandler | null = null;
   try {
-    const { ApiServer } = await import('@coderag/api-server');
+    const { ApiServer } = await import('@code-rag/api-server');
     const rootDir = process.cwd();
     const apiServer = new ApiServer({ rootDir, port: port + 1 });
     await apiServer.initialize();

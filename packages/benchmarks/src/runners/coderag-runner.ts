@@ -1,11 +1,11 @@
 /**
  * CodeRAG search runner for benchmark comparison.
  *
- * Uses HybridSearch from @coderag/core to search and returns
+ * Uses HybridSearch from @code-rag/core to search and returns
  * results with file paths and scores.
  */
 
-import type { HybridSearch, SearchResult } from '@coderag/core';
+import type { HybridSearch, SearchResult } from '@code-rag/core';
 
 export interface CodeRAGResult {
   filePaths: string[];

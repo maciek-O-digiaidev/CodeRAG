@@ -12,7 +12,7 @@ aliases:
 
 # Type Definitions
 
-This page documents all public TypeScript types exported from the `@coderag/core` package. These types are used across the MCP server, REST API, CLI, and viewer.
+This page documents all public TypeScript types exported from the `@code-rag/core` package. These types are used across the MCP server, REST API, CLI, and viewer.
 
 > [!note]
 > All types are defined with TypeScript strict mode. The project uses the `Result<T, E>` pattern from `neverthrow` for error handling instead of thrown exceptions.

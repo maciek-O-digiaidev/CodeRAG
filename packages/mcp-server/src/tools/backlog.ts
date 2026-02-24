@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { BacklogProvider, BacklogItem, BacklogItemType } from '@coderag/core';
+import type { BacklogProvider, BacklogItem, BacklogItemType } from '@code-rag/core';
 
 const backlogItemTypes: [BacklogItemType, ...BacklogItemType[]] = [
   'epic',

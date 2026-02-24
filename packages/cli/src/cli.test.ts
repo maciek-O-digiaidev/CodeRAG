@@ -9,7 +9,7 @@ import { registerViewerCommand } from './commands/viewer.js';
 import { detectLanguages } from './commands/init.js';
 import { formatSearchResult } from './commands/search.js';
 import { formatStatus, formatStatusJSON, type StatusInfo } from './commands/status.js';
-import type { SearchResult } from '@coderag/core';
+import type { SearchResult } from '@code-rag/core';
 import { mkdtemp, writeFile, readFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';

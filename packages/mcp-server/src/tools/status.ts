@@ -1,4 +1,4 @@
-import type { LanceDBStore, CodeRAGConfig } from '@coderag/core';
+import type { LanceDBStore, CodeRAGConfig } from '@code-rag/core';
 
 export interface StatusResult {
   total_chunks: number;

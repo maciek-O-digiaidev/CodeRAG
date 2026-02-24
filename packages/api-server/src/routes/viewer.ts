@@ -7,7 +7,7 @@ import type {
   DependencyGraph,
   GraphNode,
   GraphEdge,
-} from '@coderag/core';
+} from '@code-rag/core';
 
 // --- Zod schemas for query parameter validation ---
 

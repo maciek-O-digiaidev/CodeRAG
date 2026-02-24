@@ -11,8 +11,8 @@ import type {
   SearchResult,
   ExpandedContext,
   ReRanker,
-} from '@coderag/core';
-import { EmbedError, StoreError, ReRankerError } from '@coderag/core';
+} from '@code-rag/core';
+import { EmbedError, StoreError, ReRankerError } from '@code-rag/core';
 
 // --- Helpers ---
 

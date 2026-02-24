@@ -1,11 +1,11 @@
-# @coderag/cli
+# @code-rag/cli
 
 CLI tool for CodeRAG -- init, index, search, serve, and status commands for the intelligent codebase context engine.
 
 ## Installation
 
 ```bash
-npm install -g @coderag/cli
+npm install -g @code-rag/cli
 ```
 
 ## Usage

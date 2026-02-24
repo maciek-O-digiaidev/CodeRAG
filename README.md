@@ -77,7 +77,7 @@ flowchart LR
 
 ```bash
 # 1. Install
-npm install -g @coderag/cli
+npm install -g @code-rag/cli
 
 # 2. Initialize in your project directory
 coderag init
@@ -121,13 +121,13 @@ Add to your Claude Desktop MCP config (`~/Library/Application Support/Claude/cla
 
 | Package | npm | Description |
 |---------|-----|-------------|
-| [`@coderag/core`](packages/core/) | `@coderag/core` | Core library -- ingestion, embedding, retrieval, auth |
-| [`@coderag/cli`](packages/cli/) | `@coderag/cli` | CLI tool -- `coderag init/index/search/serve/status/viewer` |
-| [`@coderag/mcp-server`](packages/mcp-server/) | `@coderag/mcp-server` | MCP server -- stdio + SSE transport |
-| [`@coderag/api-server`](packages/api-server/) | `@coderag/api-server` | Express REST API -- team/cloud deployment |
-| [`@coderag/viewer`](packages/viewer/) | (private) | Vite SPA -- dashboard, search, graph, UMAP |
-| [`coderag-vscode`](packages/vscode-extension/) | (private) | VS Code extension -- search panel, auto-config |
-| [`@coderag/benchmarks`](packages/benchmarks/) | (private) | Benchmark suite -- precision, recall, MRR |
+| [`@code-rag/core`](packages/core/) | `@code-rag/core` | Core library -- ingestion, embedding, retrieval, auth |
+| [`@code-rag/cli`](packages/cli/) | `@code-rag/cli` | CLI tool -- `coderag init/index/search/serve/status/viewer` |
+| [`@code-rag/mcp-server`](packages/mcp-server/) | `@code-rag/mcp-server` | MCP server -- stdio + SSE transport |
+| [`@code-rag/api-server`](packages/api-server/) | `@code-rag/api-server` | Express REST API -- team/cloud deployment |
+| [`@code-rag/viewer`](packages/viewer/) | (private) | Vite SPA -- dashboard, search, graph, UMAP |
+| [`code-rag-vscode`](packages/vscode-extension/) | (private) | VS Code extension -- search panel, auto-config |
+| [`@code-rag/benchmarks`](packages/benchmarks/) | (private) | Benchmark suite -- precision, recall, MRR |
 
 ## CLI Commands
 

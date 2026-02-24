@@ -5,7 +5,7 @@ tags:
   - extension
   - ide
 aliases:
-  - coderag-vscode
+  - code-rag-vscode
   - vscode-extension-package
   - VS Code Extension
 ---
@@ -14,7 +14,7 @@ aliases:
 
 A VS Code extension that integrates CodeRAG directly into the editor. It auto-starts the MCP server, connects via SSE, provides search commands, a sidebar webview, and auto-configures Claude Code for MCP access.
 
-**Package**: `coderag-vscode`
+**Package**: `code-rag-vscode`
 **Publisher**: `coderag`
 **Engine**: VS Code ^1.85.0
 **Build**: esbuild (bundled CJS)

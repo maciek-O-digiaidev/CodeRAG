@@ -37,7 +37,7 @@ import {
   type EmbeddingConfig,
   type EmbeddingProvider,
   type BacklogConfig,
-} from '@coderag/core';
+} from '@code-rag/core';
 
 // ---------------------------------------------------------------------------
 // Simple embedding provider factory — dispatches based on provider name

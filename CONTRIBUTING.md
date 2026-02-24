@@ -103,7 +103,7 @@ pnpm build
 pnpm test
 
 # Run tests for a specific package
-pnpm --filter @coderag/core test
+pnpm --filter @code-rag/core test
 
 # Run with coverage
 pnpm test -- --coverage
@@ -305,7 +305,7 @@ const config = result.value; // Typed as Config
 
 - **Vitest** is the test runner
 - Tests are **co-located** with source files as `*.test.ts`
-- Coverage target: **80%+** on `@coderag/core`
+- Coverage target: **80%+** on `@code-rag/core`
 
 ### Test Structure
 
@@ -336,7 +336,7 @@ describe('parseConfig', () => {
 pnpm test
 
 # Run tests for a specific package
-pnpm --filter @coderag/core test
+pnpm --filter @code-rag/core test
 
 # Run with coverage report
 pnpm test -- --coverage
@@ -345,7 +345,7 @@ pnpm test -- --coverage
 pnpm test -- packages/core/src/embedding/ollama-embedding-provider.test.ts
 
 # Watch mode during development
-pnpm --filter @coderag/core test -- --watch
+pnpm --filter @code-rag/core test -- --watch
 ```
 
 ### Mocking
