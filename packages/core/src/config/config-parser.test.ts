@@ -88,9 +88,12 @@ project:
       expect(result.value.project.name).toBe('minimal-project');
       expect(result.value.project.languages).toBe('auto');
       expect(result.value.ingestion.maxTokensPerChunk).toBe(512);
-      expect(result.value.embedding.provider).toBe('ollama');
+      expect(result.value.embedding.provider).toBe('auto');
       expect(result.value.embedding.model).toBe('nomic-embed-text');
       expect(result.value.embedding.dimensions).toBe(768);
+      expect(result.value.embedding.autoStart).toBe(true);
+      expect(result.value.embedding.autoStop).toBe(false);
+      expect(result.value.embedding.docker).toEqual({ image: 'ollama/ollama', gpu: 'auto' });
       expect(result.value.llm.provider).toBe('ollama');
       expect(result.value.search.topK).toBe(10);
       expect(result.value.storage.path).toBe('.coderag');

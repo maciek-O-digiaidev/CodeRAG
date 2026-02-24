@@ -2,6 +2,17 @@ export { OllamaEmbeddingProvider } from './ollama-embedding-provider.js';
 export type { OllamaEmbeddingConfig } from './ollama-embedding-provider.js';
 export { OpenAICompatibleEmbeddingProvider } from './openai-compatible-embedding-provider.js';
 export type { OpenAICompatibleEmbeddingConfig } from './openai-compatible-embedding-provider.js';
+export { ModelLifecycleManager, ModelLifecycleError } from './model-lifecycle-manager.js';
+export type {
+  ModelLifecycleConfig,
+  BackendInfo,
+  BackendType,
+  GpuMode,
+  DockerConfig,
+  ProgressCallback,
+  ProcessExecutor,
+  FetchFn,
+} from './model-lifecycle-manager.js';
 export { LanceDBStore } from './lancedb-store.js';
 export { QdrantVectorStore } from './qdrant-store.js';
 export type { QdrantConfig } from './qdrant-store.js';

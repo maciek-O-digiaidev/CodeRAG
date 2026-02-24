@@ -6,6 +6,7 @@ export type {
   CodeRAGConfig,
   EmbeddingConfig,
   OpenAICompatibleConfig,
+  EmbeddingDockerConfig,
   LLMConfig,
   IngestionConfig,
   SearchConfig,
@@ -90,10 +91,24 @@ export {
   checkIndexExists,
 } from './indexer/index.js';
 
-export type { OllamaEmbeddingConfig, OpenAICompatibleEmbeddingConfig, QdrantConfig } from './embedding/index.js';
+export type {
+  OllamaEmbeddingConfig,
+  OpenAICompatibleEmbeddingConfig,
+  QdrantConfig,
+  ModelLifecycleConfig,
+  BackendInfo,
+  BackendType,
+  GpuMode,
+  DockerConfig,
+  ProgressCallback,
+  ProcessExecutor,
+  FetchFn,
+} from './embedding/index.js';
 export {
   OllamaEmbeddingProvider,
   OpenAICompatibleEmbeddingProvider,
+  ModelLifecycleManager,
+  ModelLifecycleError,
   LanceDBStore,
   QdrantVectorStore,
   BM25Index,

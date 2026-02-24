@@ -4,11 +4,19 @@ export interface OpenAICompatibleConfig {
   maxBatchSize: number;
 }
 
+export interface EmbeddingDockerConfig {
+  image: string;
+  gpu: 'auto' | 'nvidia' | 'none';
+}
+
 export interface EmbeddingConfig {
   provider: string;
   model: string;
   dimensions: number;
   openaiCompatible?: OpenAICompatibleConfig;
+  autoStart: boolean;
+  autoStop: boolean;
+  docker: EmbeddingDockerConfig;
 }
 
 export interface LLMConfig {

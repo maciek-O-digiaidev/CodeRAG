@@ -16,6 +16,7 @@ import {
   NLEnricher,
   OllamaEmbeddingProvider,
   OpenAICompatibleEmbeddingProvider,
+  ModelLifecycleManager,
   LanceDBStore,
   BM25Index,
   GraphBuilder,
@@ -39,10 +40,11 @@ import {
 } from '@coderag/core';
 
 // ---------------------------------------------------------------------------
-// Embedding provider factory — dispatches based on config.embedding.provider
+// Simple embedding provider factory — dispatches based on provider name
+// (Used for non-lifecycle providers like openai-compatible and direct ollama)
 // ---------------------------------------------------------------------------
 
-export function createEmbeddingProvider(embeddingConfig: EmbeddingConfig): EmbeddingProvider {
+export function createSimpleEmbeddingProvider(embeddingConfig: EmbeddingConfig): EmbeddingProvider {
   const provider = embeddingConfig.provider;
 
   switch (provider) {
@@ -57,7 +59,6 @@ export function createEmbeddingProvider(embeddingConfig: EmbeddingConfig): Embed
       });
     }
     case 'ollama':
-    case 'auto':
     default:
       return new OllamaEmbeddingProvider({
         model: embeddingConfig.model,
@@ -192,6 +193,96 @@ async function clearEnrichmentCheckpoint(storagePath: string): Promise<void> {
 
 const ENRICHMENT_BATCH_SIZE = 100;
 
+// ---------------------------------------------------------------------------
+// Embedding provider factory with auto-start lifecycle
+// ---------------------------------------------------------------------------
+
+interface ManagedEmbeddingProvider {
+  provider: EmbeddingProvider;
+  lifecycleManager: ModelLifecycleManager | null;
+}
+
+async function createManagedEmbeddingProvider(
+  config: CodeRAGConfig,
+  logger: IndexLogger,
+): Promise<ManagedEmbeddingProvider> {
+  const embeddingConfig = config.embedding;
+  const providerName = embeddingConfig.provider;
+
+  if (providerName === 'openai-compatible') {
+    // OpenAI-compatible provider — no lifecycle management needed
+    return {
+      provider: createSimpleEmbeddingProvider(embeddingConfig),
+      lifecycleManager: null,
+    };
+  }
+
+  if (providerName === 'ollama') {
+    // Direct Ollama — no lifecycle management
+    return {
+      provider: new OllamaEmbeddingProvider({
+        model: embeddingConfig.model,
+        dimensions: embeddingConfig.dimensions,
+      }),
+      lifecycleManager: null,
+    };
+  }
+
+  if (providerName === 'auto') {
+    // Auto provider: detect/start backend, pull model, then create Ollama provider
+    const manager = new ModelLifecycleManager({
+      model: embeddingConfig.model,
+      autoStart: embeddingConfig.autoStart,
+      autoStop: embeddingConfig.autoStop,
+      docker: embeddingConfig.docker,
+    });
+
+    await logger.info('Auto-detecting embedding backend...');
+
+    const backendResult = await manager.ensureRunning();
+    if (backendResult.isErr()) {
+      await logger.fail(backendResult.error.message);
+      throw backendResult.error;
+    }
+    const backend = backendResult.value;
+    await logger.info(`Embedding backend: ${backend.type}${backend.managedByUs ? ' (auto-started)' : ' (already running)'}`);
+
+    // Ensure model is available
+    await logger.info(`Checking model "${embeddingConfig.model}"...`);
+    const modelResult = await manager.ensureModel(embeddingConfig.model, (status, completed, total) => {
+      if (total > 0) {
+        const pct = Math.round((completed / total) * 100);
+        void logger.info(`Pulling model: ${status} ${pct}%`);
+      } else {
+        void logger.info(`Pulling model: ${status}`);
+      }
+    });
+    if (modelResult.isErr()) {
+      await logger.fail(modelResult.error.message);
+      throw modelResult.error;
+    }
+    await logger.info(`Model "${embeddingConfig.model}" is ready`);
+
+    return {
+      provider: new OllamaEmbeddingProvider({
+        baseUrl: backend.baseUrl,
+        model: embeddingConfig.model,
+        dimensions: embeddingConfig.dimensions,
+      }),
+      lifecycleManager: manager,
+    };
+  }
+
+  // Fallback: treat as direct Ollama (backward compat)
+  return {
+    provider: new OllamaEmbeddingProvider({
+      model: embeddingConfig.model,
+      dimensions: embeddingConfig.dimensions,
+    }),
+    lifecycleManager: null,
+  };
+}
+
 /**
  * Rebuild BM25 index from all documents in LanceDB.
  * Used as a fallback when incremental update fails (e.g., corrupted index).
@@ -256,6 +347,7 @@ async function indexSingleRepo(
   options: { full?: boolean },
   logger: IndexLogger,
   repoLabel?: string,
+  embeddingProvider?: EmbeddingProvider,
 ): Promise<{ filesProcessed: number; chunksCreated: number; parseErrors: number; skippedFiles: number; parseErrorDetails: Array<{ file: string; reason: string }> }> {
   const prefix = repoLabel ? `[${repoLabel}] ` : '';
 
@@ -482,12 +574,12 @@ async function indexSingleRepo(
   // Embed chunks
   await logger.setPhase('embed');
   await logger.info(`${prefix}Embedding ${enrichedChunks.length} chunks...`);
-  const embeddingProvider = createEmbeddingProvider(config.embedding);
+  const resolvedEmbeddingProvider = embeddingProvider ?? createSimpleEmbeddingProvider(config.embedding);
 
   const textsToEmbed = enrichedChunks.map(
     (c) => c.nlSummary ? `${c.nlSummary}\n\n${c.content}` : c.content,
   );
-  const embedResult = await embeddingProvider.embed(textsToEmbed);
+  const embedResult = await resolvedEmbeddingProvider.embed(textsToEmbed);
   if (embedResult.isErr()) {
     throw new Error(`Embedding failed: ${embedResult.error.message}`);
   }
@@ -723,6 +815,7 @@ async function indexBacklog(
   config: CodeRAGConfig,
   options: { full?: boolean },
   logger: IndexLogger,
+  embeddingProvider?: EmbeddingProvider,
 ): Promise<BacklogIndexResult> {
   // Create provider
   const provider = createBacklogProvider(backlogConfig);
@@ -783,12 +876,12 @@ async function indexBacklog(
 
   // Embed chunks
   await logger.info(`Backlog: embedding ${chunks.length} items...`);
-  const embeddingProvider = createEmbeddingProvider(config.embedding);
+  const resolvedEmbeddingProvider = embeddingProvider ?? createSimpleEmbeddingProvider(config.embedding);
 
   const textsToEmbed = chunks.map(
     (c) => c.nlSummary ? `${c.nlSummary}\n\n${c.content}` : c.content,
   );
-  const embedResult = await embeddingProvider.embed(textsToEmbed);
+  const embedResult = await resolvedEmbeddingProvider.embed(textsToEmbed);
   if (embedResult.isErr()) {
     return { itemsFetched: items.length, itemsIndexed: 0, skipped, error: `Backlog embedding failed: ${embedResult.error.message}` };
   }
@@ -960,46 +1053,50 @@ export function registerIndexCommand(program: Command): void {
         const logger = new IndexLogger(storagePath);
         await logger.init();
 
-        // Multi-repo path: if repos are configured, index each independently
-        if (config.repos && config.repos.length > 0) {
-          await indexMultiRepo(config, storagePath, options, logger, startTime);
-          return;
-        }
+        // Create embedding provider (with auto-start lifecycle if provider is 'auto')
+        const managed = await createManagedEmbeddingProvider(config, logger);
 
-        // Single-repo path
-        logger.start('Starting indexing...');
-        const result = await indexSingleRepo(rootDir, storagePath, config, options, logger);
+        try {
+          // Multi-repo path: if repos are configured, index each independently
+          if (config.repos && config.repos.length > 0) {
+            await indexMultiRepo(config, storagePath, options, logger, startTime);
+            return;
+          }
 
-        if (result.filesProcessed === 0 && result.chunksCreated === 0 && result.parseErrors === 0) {
-          await logger.succeed('No changes detected, index is up to date.');
-          return;
-        }
+          // Single-repo path
+          logger.start('Starting indexing...');
+          const result = await indexSingleRepo(rootDir, storagePath, config, options, logger, undefined, managed.provider);
 
-        if (result.chunksCreated === 0 && result.parseErrors > 0) {
-          await logger.warn('No chunks produced. Nothing to index.');
-          // eslint-disable-next-line no-console
-          console.log(chalk.yellow(`  ${result.parseErrors} file(s) failed to parse:`));
-          for (const detail of result.parseErrorDetails.slice(0, 5)) {
+          if (result.filesProcessed === 0 && result.chunksCreated === 0 && result.parseErrors === 0) {
+            await logger.succeed('No changes detected, index is up to date.');
+            return;
+          }
+
+          if (result.chunksCreated === 0 && result.parseErrors > 0) {
+            await logger.warn('No chunks produced. Nothing to index.');
             // eslint-disable-next-line no-console
-            console.log(`    ${chalk.gray('→')} ${detail.file}: ${chalk.yellow(detail.reason)}`);
+            console.log(chalk.yellow(`  ${result.parseErrors} file(s) failed to parse:`));
+            for (const detail of result.parseErrorDetails.slice(0, 5)) {
+              // eslint-disable-next-line no-console
+              console.log(`    ${chalk.gray('→')} ${detail.file}: ${chalk.yellow(detail.reason)}`);
+            }
+            if (result.parseErrorDetails.length > 5) {
+              // eslint-disable-next-line no-console
+              console.log(`    ${chalk.gray(`… and ${result.parseErrorDetails.length - 5} more`)}`);
+            }
+            return;
           }
-          if (result.parseErrorDetails.length > 5) {
-            // eslint-disable-next-line no-console
-            console.log(`    ${chalk.gray(`… and ${result.parseErrorDetails.length - 5} more`)}`);
-          }
-          return;
-        }
 
-        // Backlog indexing (if configured)
-        let backlogResult: BacklogIndexResult | null = null;
-        if (config.backlog) {
-          try {
-            backlogResult = await indexBacklog(config.backlog, storagePath, config, options, logger);
-          } catch (backlogError: unknown) {
-            const msg = backlogError instanceof Error ? backlogError.message : String(backlogError);
-            backlogResult = { itemsFetched: 0, itemsIndexed: 0, skipped: 0, error: msg };
+          // Backlog indexing (if configured)
+          let backlogResult: BacklogIndexResult | null = null;
+          if (config.backlog) {
+            try {
+              backlogResult = await indexBacklog(config.backlog, storagePath, config, options, logger, managed.provider);
+            } catch (backlogError: unknown) {
+              const msg = backlogError instanceof Error ? backlogError.message : String(backlogError);
+              backlogResult = { itemsFetched: 0, itemsIndexed: 0, skipped: 0, error: msg };
+            }
           }
-        }
 
         // Summary
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -1045,6 +1142,14 @@ export function registerIndexCommand(program: Command): void {
         console.log(`  Time elapsed:    ${chalk.cyan(elapsed + 's')}`);
         // eslint-disable-next-line no-console
         console.log(`  Log file:        ${chalk.gray(join(storagePath, 'index.log'))}`);
+        } finally {
+          // Auto-stop backend if configured
+          if (managed.lifecycleManager && config.embedding.autoStop) {
+            await logger.info('Stopping embedding backend (auto_stop enabled)...');
+            await managed.lifecycleManager.stop();
+            await logger.info('Embedding backend stopped.');
+          }
+        }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         // eslint-disable-next-line no-console

@@ -1,35 +1,30 @@
 import { describe, it, expect } from 'vitest';
-import { createEmbeddingProvider } from './index-cmd.js';
+import { createSimpleEmbeddingProvider } from './index-cmd.js';
 import {
   OllamaEmbeddingProvider,
   OpenAICompatibleEmbeddingProvider,
   type EmbeddingConfig,
 } from '@coderag/core';
 
-describe('createEmbeddingProvider', () => {
+const defaultLifecycleFields = {
+  autoStart: true,
+  autoStop: false,
+  docker: { image: 'ollama/ollama' as const, gpu: 'auto' as const },
+};
+
+describe('createSimpleEmbeddingProvider', () => {
   it('should return OllamaEmbeddingProvider for provider "ollama"', () => {
     const config: EmbeddingConfig = {
       provider: 'ollama',
       model: 'nomic-embed-text',
       dimensions: 768,
+      ...defaultLifecycleFields,
     };
 
-    const provider = createEmbeddingProvider(config);
+    const provider = createSimpleEmbeddingProvider(config);
 
     expect(provider).toBeInstanceOf(OllamaEmbeddingProvider);
     expect(provider.dimensions).toBe(768);
-  });
-
-  it('should return OllamaEmbeddingProvider for provider "auto"', () => {
-    const config: EmbeddingConfig = {
-      provider: 'auto',
-      model: 'nomic-embed-text',
-      dimensions: 768,
-    };
-
-    const provider = createEmbeddingProvider(config);
-
-    expect(provider).toBeInstanceOf(OllamaEmbeddingProvider);
   });
 
   it('should return OllamaEmbeddingProvider for unknown provider (backwards compatible)', () => {
@@ -37,9 +32,10 @@ describe('createEmbeddingProvider', () => {
       provider: 'unknown-provider',
       model: 'nomic-embed-text',
       dimensions: 768,
+      ...defaultLifecycleFields,
     };
 
-    const provider = createEmbeddingProvider(config);
+    const provider = createSimpleEmbeddingProvider(config);
 
     expect(provider).toBeInstanceOf(OllamaEmbeddingProvider);
   });
@@ -49,13 +45,14 @@ describe('createEmbeddingProvider', () => {
       provider: 'openai-compatible',
       model: 'nomic-embed-text',
       dimensions: 768,
+      ...defaultLifecycleFields,
       openaiCompatible: {
         baseUrl: 'http://localhost:1234/v1',
         maxBatchSize: 50,
       },
     };
 
-    const provider = createEmbeddingProvider(config);
+    const provider = createSimpleEmbeddingProvider(config);
 
     expect(provider).toBeInstanceOf(OpenAICompatibleEmbeddingProvider);
     expect(provider.dimensions).toBe(768);
@@ -66,9 +63,10 @@ describe('createEmbeddingProvider', () => {
       provider: 'openai-compatible',
       model: 'text-embedding-3-small',
       dimensions: 1536,
+      ...defaultLifecycleFields,
     };
 
-    const provider = createEmbeddingProvider(config);
+    const provider = createSimpleEmbeddingProvider(config);
 
     expect(provider).toBeInstanceOf(OpenAICompatibleEmbeddingProvider);
     expect(provider.dimensions).toBe(1536);
@@ -79,6 +77,7 @@ describe('createEmbeddingProvider', () => {
       provider: 'openai-compatible',
       model: 'text-embedding-3-small',
       dimensions: 1536,
+      ...defaultLifecycleFields,
       openaiCompatible: {
         baseUrl: 'https://api.openai.com/v1',
         apiKey: 'sk-test-key',
@@ -86,7 +85,7 @@ describe('createEmbeddingProvider', () => {
       },
     };
 
-    const provider = createEmbeddingProvider(config);
+    const provider = createSimpleEmbeddingProvider(config);
 
     expect(provider).toBeInstanceOf(OpenAICompatibleEmbeddingProvider);
     expect(provider.dimensions).toBe(1536);

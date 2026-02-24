@@ -100,7 +100,7 @@ function buildDefaultConfig(languages: string[], multi?: boolean): Record<string
       exclude: ['node_modules', 'dist', '.git', 'coverage'],
     },
     embedding: {
-      provider: 'ollama',
+      provider: 'auto',
       model: 'nomic-embed-text',
       dimensions: 768,
     },

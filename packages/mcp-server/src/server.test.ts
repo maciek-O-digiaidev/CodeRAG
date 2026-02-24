@@ -55,7 +55,7 @@ function makeConfig(overrides: Partial<CodeRAGConfig> = {}): CodeRAGConfig {
     version: '1',
     project: { name: 'test-project', languages: ['typescript'] },
     ingestion: { maxTokensPerChunk: 512, exclude: [] },
-    embedding: { provider: 'ollama', model: 'nomic-embed-text', dimensions: 768 },
+    embedding: { provider: 'ollama', model: 'nomic-embed-text', dimensions: 768, autoStart: true, autoStop: false, docker: { image: 'ollama/ollama', gpu: 'auto' } },
     llm: { provider: 'ollama', model: 'qwen2.5-coder:7b' },
     search: { topK: 10, vectorWeight: 0.7, bm25Weight: 0.3 },
     storage: { path: '.coderag' },

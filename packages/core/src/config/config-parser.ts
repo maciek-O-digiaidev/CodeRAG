@@ -20,11 +20,19 @@ const openaiCompatibleConfigSchema = z.object({
   maxBatchSize: z.number().int('maxBatchSize must be an integer').positive('maxBatchSize must be positive'),
 });
 
+const embeddingDockerConfigSchema = z.object({
+  image: z.string().min(1).default('ollama/ollama'),
+  gpu: z.enum(['auto', 'nvidia', 'none']).default('auto'),
+});
+
 const embeddingConfigSchema = z.object({
   provider: z.string().min(1, 'Embedding provider must not be empty'),
   model: z.string().min(1, 'Embedding model must not be empty'),
   dimensions: z.number().int('Dimensions must be an integer').positive('Dimensions must be positive'),
   openaiCompatible: openaiCompatibleConfigSchema.optional(),
+  autoStart: z.boolean().default(true),
+  autoStop: z.boolean().default(false),
+  docker: embeddingDockerConfigSchema.default({ image: 'ollama/ollama', gpu: 'auto' }),
 });
 
 const llmConfigSchema = z.object({
@@ -105,9 +113,12 @@ const DEFAULT_CONFIG: CodeRAGConfig = {
     exclude: ['node_modules', 'dist', '.git', 'coverage'],
   },
   embedding: {
-    provider: 'ollama',
+    provider: 'auto',
     model: 'nomic-embed-text',
     dimensions: 768,
+    autoStart: true,
+    autoStop: false,
+    docker: { image: 'ollama/ollama', gpu: 'auto' },
   },
   llm: {
     provider: 'ollama',

@@ -3,6 +3,7 @@ export type {
   CodeRAGConfig,
   EmbeddingConfig,
   OpenAICompatibleConfig,
+  EmbeddingDockerConfig,
   LLMConfig,
   IngestionConfig,
   SearchConfig,
