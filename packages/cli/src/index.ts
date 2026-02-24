@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import { createRequire } from 'node:module';
 import { registerInitCommand } from './commands/init.js';
 import { registerIndexCommand } from './commands/index-cmd.js';
 import { registerSearchCommand } from './commands/search.js';
@@ -9,11 +10,14 @@ import { registerViewerCommand } from './commands/viewer.js';
 import { registerWatchCommand } from './commands/watch-cmd.js';
 import { registerHooksCommand } from './commands/hooks-cmd.js';
 
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json') as { version: string };
+
 const program = new Command();
 program
   .name('coderag')
   .description('CodeRAG — intelligent codebase context engine for AI coding agents')
-  .version('0.1.0');
+  .version(pkg.version);
 
 registerInitCommand(program);
 registerIndexCommand(program);

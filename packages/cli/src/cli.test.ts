@@ -39,7 +39,7 @@ describe('CLI program setup', () => {
   });
 
   it('should create program with correct version', () => {
-    expect(program.version()).toBe('0.1.0');
+    expect(program.version()).toMatch(/^\d+\.\d+\.\d+/);
   });
 
   it('should register all 6 commands', () => {
