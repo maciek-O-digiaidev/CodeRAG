@@ -74,16 +74,24 @@ jobs:
 
       - name: Publish @code-rag/core
         working-directory: packages/core
-        run: npm publish --provenance --access public
+        run: |
+          TARBALL=$(pnpm pack | tail -1)
+          npm publish "$TARBALL" --provenance --access public
 
       - name: Publish @code-rag/mcp-server
         working-directory: packages/mcp-server
-        run: npm publish --provenance --access public
+        run: |
+          TARBALL=$(pnpm pack | tail -1)
+          npm publish "$TARBALL" --provenance --access public
 
       - name: Publish @code-rag/api-server
         working-directory: packages/api-server
-        run: npm publish --provenance --access public
+        run: |
+          TARBALL=$(pnpm pack | tail -1)
+          npm publish "$TARBALL" --provenance --access public
 
       - name: Publish @code-rag/cli
         working-directory: packages/cli
-        run: npm publish --provenance --access public
+        run: |
+          TARBALL=$(pnpm pack | tail -1)
+          npm publish "$TARBALL" --provenance --access public
