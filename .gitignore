@@ -27,3 +27,20 @@ Thumbs.db
 
 # Coverage
 coverage/
+
+# Local config (contains machine-specific paths/settings)
+.mcp.json
+.claude/settings.local.json
+.claude/settings.json
+.claude/worktrees/
+.claude/agent-memory/
+.claude/projects/
+
+# Obsidian
+docs/.obsidian/
+
+# VS Code extension packages
+*.vsix
+
+# Misc
+nohup.out
