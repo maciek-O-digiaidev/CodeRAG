@@ -92,7 +92,7 @@ async function main(): Promise<void> {
   const config = configResult.value;
   const embeddingProvider = new OllamaEmbeddingProvider({
     model: config.embedding?.model ?? 'nomic-embed-text',
-    baseUrl: config.embedding?.ollamaUrl ?? 'http://localhost:11434',
+    baseUrl: 'http://localhost:11434',
   });
   const storageDir = resolve(rootDir, config.storage?.path ?? '.coderag');
   const dimensions = config.embedding?.dimensions ?? 768;
