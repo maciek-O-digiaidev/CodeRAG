@@ -37,8 +37,7 @@ All metrics are implemented as pure functions in `metrics.ts`:
 
 Metrics are computed at K=5 and K=10 for precision and recall.
 
-> [!note]
-> Precision@K uses the standard IR definition where the denominator is always K, penalizing runners that return fewer than K results.
+> **Note: > Precision@K uses the standard IR definition where the denominator is always K, penalizing runners that return fewer than K results.**
 
 ## Dataset Schema
 
@@ -154,5 +153,5 @@ Date: 2026-02-23
 
 ## See Also
 
-- [[hybrid-search]] -- the search algorithm being benchmarked
-- [[core]] -- the core library providing search functionality
+- [Hybrid Search](../architecture/hybrid-search.md) -- the search algorithm being benchmarked
+- [Core](core.md) -- the core library providing search functionality

@@ -90,8 +90,7 @@ ingestion:
     - __pycache__
 ```
 
-> [!tip]
-> CodeRAG also respects your `.gitignore` file. The `exclude` list is applied on top of `.gitignore` rules.
+> **Tip: > CodeRAG also respects your `.gitignore` file. The `exclude` list is applied on top of `.gitignore` rules.**
 
 ---
 
@@ -112,8 +111,7 @@ embedding:
   dimensions: 768
 ```
 
-> [!warning]
-> If you change the embedding model or dimensions after indexing, you must re-index with `coderag index --full`. Mixing embeddings from different models in the same index produces incorrect search results.
+> **Warning: > If you change the embedding model or dimensions after indexing, you must re-index with `coderag index --full`. Mixing embeddings from different models in the same index produces incorrect search results.**
 
 ---
 
@@ -132,8 +130,7 @@ llm:
   model: "qwen2.5-coder:7b"
 ```
 
-> [!note]
-> NL enrichment is the most time-consuming step during indexing. If indexing is too slow, you can use a smaller model like `qwen2.5-coder:1.5b` at the cost of lower summary quality. Subsequent incremental runs only process changed files.
+> **Note: > NL enrichment is the most time-consuming step during indexing. If indexing is too slow, you can use a smaller model like `qwen2.5-coder:1.5b` at the cost of lower summary quality. Subsequent incremental runs only process changed files.**
 
 ---
 
@@ -154,8 +151,7 @@ search:
   bm25Weight: 0.3
 ```
 
-> [!tip]
-> For codebases with highly specific identifiers (e.g., internal APIs), increase `bm25Weight` to give keyword matches more influence. For natural-language queries ("how does X work?"), the default semantic-heavy weighting works best.
+> **Tip: > For codebases with highly specific identifiers (e.g., internal APIs), increase `bm25Weight` to give keyword matches more influence. For natural-language queries ("how does X work?"), the default semantic-heavy weighting works best.**
 
 ---
 
@@ -189,8 +185,7 @@ storage:
     collectionName: my-project
 ```
 
-> [!note]
-> LanceDB is the recommended default. It stores data locally in the `.coderag/` directory with zero setup. Use Qdrant only if you need a shared vector store across teams or already have a Qdrant deployment.
+> **Note: > LanceDB is the recommended default. It stores data locally in the `.coderag/` directory with zero setup. Use Qdrant only if you need a shared vector store across teams or already have a Qdrant deployment.**
 
 ---
 
@@ -211,8 +206,7 @@ reranker:
   topN: 20
 ```
 
-> [!tip]
-> Re-ranking improves precision but adds latency. Enable it when search quality matters more than speed, such as in MCP server mode where agents benefit from higher-quality context.
+> **Tip: > Re-ranking improves precision but adds latency. Enable it when search quality matters more than speed, such as in MCP server mode where agents benefit from higher-quality context.**
 
 ---
 
@@ -243,8 +237,7 @@ repos:
       - typescript
 ```
 
-> [!note]
-> Initialize with `coderag init --multi` to generate a config scaffold with the `repos` section pre-populated with commented-out examples.
+> **Note: > Initialize with `coderag init --multi` to generate a config scaffold with the `repos` section pre-populated with commented-out examples.**
 
 ---
 
@@ -410,8 +403,8 @@ All sections are **merged with defaults** before validation, so you only need to
 
 ## Related Pages
 
-- [[installation]] --- Prerequisites and setup
-- [[quick-start]] --- Get up and running in five minutes
-- [[embedding-providers]] --- Detailed guide on switching embedding providers
-- [[multi-repo]] --- Multi-repository indexing setup
-- [[backlog-integration]] --- Connecting Jira, ADO, and ClickUp
+- [Installation](../installation.md) --- Prerequisites and setup
+- [Quick Start](quick-start.md) --- Get up and running in five minutes
+- [Embedding Providers](../guides/embedding-providers.md) --- Detailed guide on switching embedding providers
+- [Multi Repo](../guides/multi-repo.md) --- Multi-repository indexing setup
+- [Backlog Integration](../guides/backlog-integration.md) --- Connecting Jira, ADO, and ClickUp

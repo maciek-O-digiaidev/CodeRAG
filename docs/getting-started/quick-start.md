@@ -11,7 +11,7 @@ aliases:
 
 # Quick Start
 
-This guide takes you from zero to searching your codebase in five steps. Make sure you have completed the [[installation]] steps first.
+This guide takes you from zero to searching your codebase in five steps. Make sure you have completed the [Installation](../installation.md) steps first.
 
 ## Overview
 
@@ -60,8 +60,7 @@ Run "coderag index" to index your codebase.
 | `--force` | Overwrite an existing `.coderag.yaml` |
 | `--multi` | Generate a multi-repo configuration with a `repos` array |
 
-> [!tip]
-> If you want to index multiple repositories together, use `coderag init --multi` to generate the multi-repo config scaffold. See [[configuration]] for details.
+> **Tip: > If you want to index multiple repositories together, use `coderag init --multi` to generate the multi-repo config scaffold. See [Configuration](../configuration.md) for details.**
 
 ## Step 2: Index Your Codebase
 
@@ -107,8 +106,7 @@ Summary:
 |------|-------------|
 | `--full` | Force a complete re-index, ignoring incremental state |
 
-> [!note]
-> Subsequent runs of `coderag index` are **incremental** --- only changed files are re-processed. Use `--full` if you want to rebuild the entire index from scratch.
+> **Note: > Subsequent runs of `coderag index` are **incremental** --- only changed files are re-processed. Use `--full` if you want to rebuild the entire index from scratch.**
 
 ## Step 3: Search Your Codebase
 
@@ -191,8 +189,7 @@ coderag serve --port 3000
 | `coderag_docs` | Search indexed documentation |
 | `coderag_backlog` | Query project backlog items |
 
-> [!tip]
-> **stdio transport** is the default and is used when an AI agent spawns the MCP server as a subprocess. Use **SSE transport** with `--port` when you want to connect from a remote client or share the server across multiple agents.
+> **Tip: > **stdio transport** is the default and is used when an AI agent spawns the MCP server as a subprocess. Use **SSE transport** with `--port` when you want to connect from a remote client or share the server across multiple agents.**
 
 ### Connecting to Claude Desktop
 
@@ -242,8 +239,7 @@ The viewer opens automatically in your default browser.
 - **Dependency Graph** --- Interactive graph of code dependencies
 - **Embedding Explorer** --- UMAP 2D/3D projection of embedding space
 
-> [!note]
-> The viewer requires a built viewer package. If you see an error about the viewer not being built, run:
+> **Note: > The viewer requires a built viewer package. If you see an error about the viewer not being built, run:**
 > ```bash
 > pnpm --filter @code-rag/viewer build
 > ```
@@ -299,7 +295,7 @@ flowchart TD
 
 ## Next Steps
 
-- [[configuration]] --- Fine-tune `.coderag.yaml` for your project
-- [[cli]] --- Full CLI command reference
-- [[embedding-providers]] --- Switch between Ollama, Voyage, and OpenAI embeddings
-- [[multi-repo]] --- Index and search across multiple repositories
+- [Configuration](../configuration.md) --- Fine-tune `.coderag.yaml` for your project
+- [CLI](../packages/cli.md) --- Full CLI command reference
+- [Embedding Providers](../guides/embedding-providers.md) --- Switch between Ollama, Voyage, and OpenAI embeddings
+- [Multi Repo](../guides/multi-repo.md) --- Index and search across multiple repositories

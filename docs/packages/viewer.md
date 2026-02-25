@@ -92,8 +92,7 @@ A scatter plot visualization of embedding vectors projected to 2D/3D using UMAP:
 - Points are interactive: hover to see chunk details
 - Configurable limit on number of embedding points to load
 
-> [!tip]
-> The UMAP implementation runs entirely in the browser. For large codebases (10,000+ chunks), consider limiting the number of embeddings loaded to keep the visualization responsive.
+> **Tip: > The UMAP implementation runs entirely in the browser. For large codebases (10,000+ chunks), consider limiting the number of embeddings loaded to keep the visualization responsive.**
 
 ## Theme Toggle
 
@@ -129,5 +128,5 @@ pnpm --filter @code-rag/viewer dev
 
 ## See Also
 
-- [[api-server]] -- the REST API that powers the viewer
-- [[cli]] -- the `coderag viewer` command
+- [API Server](api-server.md) -- the REST API that powers the viewer
+- [CLI](cli.md) -- the `coderag viewer` command

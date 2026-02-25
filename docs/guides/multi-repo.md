@@ -79,8 +79,7 @@ Each repo entry uses the `RepoConfig` interface:
 | `languages` | `string[]` | No | Override auto-detected languages |
 | `exclude` | `string[]` | No | Additional patterns to exclude (on top of global excludes) |
 
-> [!tip]
-> If you omit the `name` field, CodeRAG derives it from the last segment of `path`. For example, `/home/dev/repos/backend-api` becomes `backend-api`.
+> **Tip: > If you omit the `name` field, CodeRAG derives it from the last segment of `path`. For example, `/home/dev/repos/backend-api` becomes `backend-api`.**
 
 ## How MultiRepoIndexer Works
 
@@ -110,8 +109,7 @@ Key behaviors:
 - **Full reindex** -- pass `{ full: true }` to ignore saved state and reprocess everything.
 - **Progress reporting** -- an optional `onProgress` callback receives `(repoName, status)` messages for each stage.
 
-> [!note]
-> The `MultiRepoIndexer` accepts a `RepoProcessor` callback that plugs in the parse/chunk/embed/store pipeline. This allows the CLI and other consumers to customize the processing pipeline per repo.
+> **Note: > The `MultiRepoIndexer` accepts a `RepoProcessor` callback that plugs in the parse/chunk/embed/store pipeline. This allows the CLI and other consumers to customize the processing pipeline per repo.**
 
 ## CrossRepoResolver
 
@@ -150,8 +148,7 @@ The `mergeGraphs()` method combines per-repo dependency graphs into a unified gr
 - Cross-repo edges connect representative nodes between repos
 - Placeholder nodes are created for repos without a dependency graph
 
-> [!example]
-> If `frontend` depends on `shared-lib` via npm, the merged graph will contain an `imports` edge from `frontend::root` to `shared-lib::root`.
+> **Example: > If `frontend` depends on `shared-lib` via npm, the merged graph will contain an `imports` edge from `frontend::root` to `shared-lib::root`.**
 
 ## Storage Layout
 
@@ -212,11 +209,10 @@ coderag search "authentication middleware"
 coderag serve
 ```
 
-> [!warning]
-> When switching from single-repo to multi-repo mode (or vice versa), run a full reindex with `coderag index --full` to ensure consistent state.
+> **Warning: > When switching from single-repo to multi-repo mode (or vice versa), run a full reindex with `coderag index --full` to ensure consistent state.**
 
 ## See Also
 
-- [[configuration]] -- full `.coderag.yaml` reference
-- [[dependency-graph]] -- how the dependency graph works
-- [[core]] -- core library architecture
+- [Configuration](../configuration.md) -- full `.coderag.yaml` reference
+- [Dependency Graph](../architecture/dependency-graph.md) -- how the dependency graph works
+- [Core](../packages/core.md) -- core library architecture

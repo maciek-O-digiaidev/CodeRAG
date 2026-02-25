@@ -14,8 +14,7 @@ aliases:
 
 This page documents all public TypeScript types exported from the `@code-rag/core` package. These types are used across the MCP server, REST API, CLI, and viewer.
 
-> [!note]
-> All types are defined with TypeScript strict mode. The project uses the `Result<T, E>` pattern from `neverthrow` for error handling instead of thrown exceptions.
+> **Note: > All types are defined with TypeScript strict mode. The project uses the `Result<T, E>` pattern from `neverthrow` for error handling instead of thrown exceptions.**
 
 ---
 
@@ -629,8 +628,7 @@ class StorageError extends Error {
 }
 ```
 
-> [!tip]
-> All error types extend `Error` and set a descriptive `name` property. They are used as the `E` type in `Result<T, E>` return types throughout the codebase, ensuring errors are always handled explicitly.
+> **Tip: > All error types extend `Error` and set a descriptive `name` property. They are used as the `E` type in `Result<T, E>` return types throughout the codebase, ensuring errors are always handled explicitly.**
 
 ---
 
@@ -705,7 +703,7 @@ interface AuditEntry {
 
 ## See Also
 
-- [[interfaces]] -- Provider interfaces that use these types
-- [[core]] -- Core package documentation
-- [[mcp-tools]] -- MCP tools that return these types
-- [[rest-api]] -- REST API that returns these types
+- [Interfaces](interfaces.md) -- Provider interfaces that use these types
+- [Core](../packages/core.md) -- Core package documentation
+- [MCP Tools](mcp-tools.md) -- MCP tools that return these types
+- [REST API](rest-api.md) -- REST API that returns these types

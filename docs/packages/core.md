@@ -67,12 +67,12 @@ graph TD
     L --> M[TokenBudgetOptimizer]
 ```
 
-> [!tip] Provider Pattern
+> **Tip: Provider Pattern**
 > All external dependencies are behind interfaces (`EmbeddingProvider`, `VectorStore`, `LLMProvider`, `BacklogProvider`, `CloudStorageProvider`, `AuthProvider`). Swap implementations by providing a different concrete class.
 
 ## See Also
 
-- [[interfaces]] -- full list of provider interfaces
-- [[types]] -- shared TypeScript type definitions
-- [[ingestion-pipeline]] -- detailed ingestion flow
-- [[retrieval-pipeline]] -- detailed retrieval flow
+- [Interfaces](../api-reference/interfaces.md) -- full list of provider interfaces
+- [Types](../api-reference/types.md) -- shared TypeScript type definitions
+- [Ingestion Pipeline](../architecture/ingestion-pipeline.md) -- detailed ingestion flow
+- [Retrieval Pipeline](../architecture/retrieval-pipeline.md) -- detailed retrieval flow

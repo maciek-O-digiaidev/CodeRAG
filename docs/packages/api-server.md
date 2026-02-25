@@ -114,8 +114,7 @@ Clients authenticate using either:
 
 Keys ending with `-admin` suffix receive admin privileges, which grant access to the dashboard and index trigger endpoints.
 
-> [!warning]
-> If `CODERAG_API_KEYS` is not set, the server starts without authentication. This is acceptable for local development but should never be used in production.
+> **Warning: > If `CODERAG_API_KEYS` is not set, the server starts without authentication. This is acceptable for local development but should never be used in production.**
 
 ## Rate Limiting
 
@@ -164,5 +163,5 @@ expect(res.status).toBe(200);
 
 ## See Also
 
-- [[rest-api]] -- full endpoint reference with request/response schemas
-- [[cloud-deployment]] -- deployment guide for production environments
+- [REST API](../api-reference/rest-api.md) -- full endpoint reference with request/response schemas
+- [Cloud Deployment](../guides/cloud-deployment.md) -- deployment guide for production environments

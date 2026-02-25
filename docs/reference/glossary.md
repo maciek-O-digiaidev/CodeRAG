@@ -17,88 +17,88 @@ Alphabetical reference of key terms used throughout CodeRAG documentation and so
 
 ### AST (Abstract Syntax Tree)
 
-A tree representation of the syntactic structure of source code. CodeRAG uses [Tree-sitter](https://tree-sitter.github.io/) to parse code into ASTs, enabling semantically meaningful chunking rather than arbitrary line splits. See [[design-decisions]].
+A tree representation of the syntactic structure of source code. CodeRAG uses [Tree-sitter](https://tree-sitter.github.io/) to parse code into ASTs, enabling semantically meaningful chunking rather than arbitrary line splits. See [Design Decisions](../architecture/design-decisions.md).
 
 ### BM25
 
-A probabilistic ranking function used for keyword-based full-text search. CodeRAG implements BM25 via MiniSearch as the keyword component of [[hybrid-search]]. BM25 excels at exact term matching, complementing vector search for identifiers and error messages. See [[core]].
+A probabilistic ranking function used for keyword-based full-text search. CodeRAG implements BM25 via MiniSearch as the keyword component of [Hybrid Search](../architecture/hybrid-search.md). BM25 excels at exact term matching, complementing vector search for identifiers and error messages. See [Core](../packages/core.md).
 
 ### Chunk / ChunkType
 
-A discrete unit of code or documentation extracted during ingestion. Chunks are the atomic units that get embedded and stored in the vector database. Chunk types include `function`, `class`, `method`, `interface`, `module`, `import`, and `comment`. Chunks are created by the AST-based chunker. See [[design-decisions]].
+A discrete unit of code or documentation extracted during ingestion. Chunks are the atomic units that get embedded and stored in the vector database. Chunk types include `function`, `class`, `method`, `interface`, `module`, `import`, and `comment`. Chunks are created by the AST-based chunker. See [Design Decisions](../architecture/design-decisions.md).
 
 ### Cross-Encoder
 
-A neural network architecture that scores the relevance of a query-document pair jointly (as opposed to bi-encoders that encode query and document independently). CodeRAG uses a `CrossEncoderReRanker` to re-score top search results for improved precision. See [[core]].
+A neural network architecture that scores the relevance of a query-document pair jointly (as opposed to bi-encoders that encode query and document independently). CodeRAG uses a `CrossEncoderReRanker` to re-score top search results for improved precision. See [Core](../packages/core.md).
 
 ### Dependency Graph
 
-A directed graph tracking relationships between code chunks: imports, exports, function calls, class inheritance, and test associations. CodeRAG uses the graph for context expansion -- after finding relevant chunks, it traverses the graph to include related code (tests, interfaces, callers). See [[dependency-graph]], [[multi-repo]].
+A directed graph tracking relationships between code chunks: imports, exports, function calls, class inheritance, and test associations. CodeRAG uses the graph for context expansion -- after finding relevant chunks, it traverses the graph to include related code (tests, interfaces, callers). See [Dependency Graph](../architecture/dependency-graph.md), [Multi Repo](../guides/multi-repo.md).
 
 ### Embedding / Embedding Provider
 
-A dense vector representation of text in high-dimensional space, where semantically similar content maps to nearby points. An `EmbeddingProvider` is the interface for generating these vectors. CodeRAG supports Ollama (local), Voyage Code, and OpenAI as providers. See [[embedding-providers]], [[interfaces]].
+A dense vector representation of text in high-dimensional space, where semantically similar content maps to nearby points. An `EmbeddingProvider` is the interface for generating these vectors. CodeRAG supports Ollama (local), Voyage Code, and OpenAI as providers. See [Embedding Providers](../guides/embedding-providers.md), [Interfaces](../api-reference/interfaces.md).
 
 ### Hybrid Search
 
-A search strategy that combines vector (semantic) search with BM25 (keyword) search using Reciprocal Rank Fusion (RRF). This approach leverages the strengths of both methods: semantic understanding from vectors and exact matching from keywords. See [[design-decisions]], [[core]].
+A search strategy that combines vector (semantic) search with BM25 (keyword) search using Reciprocal Rank Fusion (RRF). This approach leverages the strengths of both methods: semantic understanding from vectors and exact matching from keywords. See [Design Decisions](../architecture/design-decisions.md), [Core](../packages/core.md).
 
 ### Incremental Indexing
 
-The ability to update the index by processing only files that have changed since the last indexing run. CodeRAG tracks file content hashes in an `IndexState` and skips unchanged files, making re-indexing fast after small changes. See [[multi-repo]].
+The ability to update the index by processing only files that have changed since the last indexing run. CodeRAG tracks file content hashes in an `IndexState` and skips unchanged files, making re-indexing fast after small changes. See [Multi Repo](../guides/multi-repo.md).
 
 ### LanceDB
 
-An embedded, columnar vector database used as CodeRAG's default vector store. LanceDB requires zero infrastructure (no separate server process) and stores data as local files, aligning with CodeRAG's local-first design. See [[core]], [[design-decisions]].
+An embedded, columnar vector database used as CodeRAG's default vector store. LanceDB requires zero infrastructure (no separate server process) and stores data as local files, aligning with CodeRAG's local-first design. See [Core](../packages/core.md), [Design Decisions](../architecture/design-decisions.md).
 
 ### MCP (Model Context Protocol)
 
-An open protocol for connecting AI models to external data sources and tools. CodeRAG exposes its functionality as MCP tools (`coderag_search`, `coderag_context`, `coderag_status`, `coderag_explain`, `coderag_docs`, `coderag_backlog`) that AI coding agents can call. See [[mcp-tools]].
+An open protocol for connecting AI models to external data sources and tools. CodeRAG exposes its functionality as MCP tools (`coderag_search`, `coderag_context`, `coderag_status`, `coderag_explain`, `coderag_docs`, `coderag_backlog`) that AI coding agents can call. See [MCP Tools](../api-reference/mcp-tools.md).
 
 ### MiniSearch
 
-A lightweight, zero-dependency full-text search library used to implement BM25 keyword search in CodeRAG. MiniSearch indexes chunk content and supports boolean queries, prefix matching, and fuzzy search. See [[core]].
+A lightweight, zero-dependency full-text search library used to implement BM25 keyword search in CodeRAG. MiniSearch indexes chunk content and supports boolean queries, prefix matching, and fuzzy search. See [Core](../packages/core.md).
 
 ### NL Enrichment
 
-The process of translating code into natural language descriptions before creating embeddings. For example, a function signature gets a description like "Authenticates a user by validating their JWT token and returning the user profile." This technique, proven by Greptile to yield 10x improvement in retrieval quality, bridges the vocabulary gap between code and natural language queries. See [[design-decisions]].
+The process of translating code into natural language descriptions before creating embeddings. For example, a function signature gets a description like "Authenticates a user by validating their JWT token and returning the user profile." This technique, proven by Greptile to yield 10x improvement in retrieval quality, bridges the vocabulary gap between code and natural language queries. See [Design Decisions](../architecture/design-decisions.md).
 
 ### Ollama
 
-A local inference server for running LLMs and embedding models on your own hardware. CodeRAG uses Ollama for both NL enrichment (via qwen2.5-coder or llama3.2) and local embeddings (via nomic-embed-text). See [[embedding-providers]].
+A local inference server for running LLMs and embedding models on your own hardware. CodeRAG uses Ollama for both NL enrichment (via qwen2.5-coder or llama3.2) and local embeddings (via nomic-embed-text). See [Embedding Providers](../guides/embedding-providers.md).
 
 ### Provider Pattern
 
-An architectural pattern where all external dependencies are accessed through interfaces. This enables easy testing with mocks, swapping implementations without changing consumers, and clear dependency boundaries. Key interfaces include `EmbeddingProvider`, `VectorStore`, `BacklogProvider`, `AuthProvider`, and `ReRanker`. See [[interfaces]], [[contributing]].
+An architectural pattern where all external dependencies are accessed through interfaces. This enables easy testing with mocks, swapping implementations without changing consumers, and clear dependency boundaries. Key interfaces include `EmbeddingProvider`, `VectorStore`, `BacklogProvider`, `AuthProvider`, and `ReRanker`. See [Interfaces](../api-reference/interfaces.md), [Contributing](../guides/contributing.md).
 
 ### Qdrant
 
-An open-source vector database supported as an alternative to LanceDB. Qdrant runs as a separate server and is suitable for larger deployments or when you need features like distributed search. Configure it via the `storage.provider: qdrant` option. See [[configuration]].
+An open-source vector database supported as an alternative to LanceDB. Qdrant runs as a separate server and is suitable for larger deployments or when you need features like distributed search. Configure it via the `storage.provider: qdrant` option. See [Configuration](../configuration.md).
 
 ### RAG (Retrieval-Augmented Generation)
 
-A technique that enhances AI model responses by first retrieving relevant context from a knowledge base, then providing that context to the model alongside the user's query. CodeRAG builds and maintains the retrieval side of this pipeline specifically for codebases. See [[overview]].
+A technique that enhances AI model responses by first retrieving relevant context from a knowledge base, then providing that context to the model alongside the user's query. CodeRAG builds and maintains the retrieval side of this pipeline specifically for codebases. See [Overview](../architecture/overview.md).
 
 ### Reciprocal Rank Fusion (RRF)
 
-A method for combining ranked lists from multiple search systems into a single unified ranking. CodeRAG uses RRF to merge results from vector search and BM25 keyword search, with configurable weights (`vectorWeight` and `bm25Weight`). See [[design-decisions]], [[core]].
+A method for combining ranked lists from multiple search systems into a single unified ranking. CodeRAG uses RRF to merge results from vector search and BM25 keyword search, with configurable weights (`vectorWeight` and `bm25Weight`). See [Design Decisions](../architecture/design-decisions.md), [Core](../packages/core.md).
 
 ### Result Pattern (neverthrow)
 
-An error handling pattern using `Result<T, E>` types instead of throwing exceptions. A `Result` is either `ok(value)` or `err(error)`, forcing callers to handle both cases explicitly. CodeRAG uses the [neverthrow](https://github.com/supermacro/neverthrow) library for this pattern throughout the codebase. See [[contributing]].
+An error handling pattern using `Result<T, E>` types instead of throwing exceptions. A `Result` is either `ok(value)` or `err(error)`, forcing callers to handle both cases explicitly. CodeRAG uses the [neverthrow](https://github.com/supermacro/neverthrow) library for this pattern throughout the codebase. See [Contributing](../guides/contributing.md).
 
 ### Token Budget
 
-The maximum number of tokens available for context in an AI agent's prompt. CodeRAG's `TokenBudgetOptimizer` assembles retrieved chunks within this budget, prioritizing by relevance score and deduplicating overlapping content. See [[core]].
+The maximum number of tokens available for context in an AI agent's prompt. CodeRAG's `TokenBudgetOptimizer` assembles retrieved chunks within this budget, prioritizing by relevance score and deduplicating overlapping content. See [Core](../packages/core.md).
 
 ### Tree-sitter
 
-A parser generator tool and incremental parsing library that produces concrete syntax trees for source code. CodeRAG uses Tree-sitter's WASM bindings to parse code into ASTs, enabling language-aware chunking that respects function, class, and module boundaries. See [[design-decisions]].
+A parser generator tool and incremental parsing library that produces concrete syntax trees for source code. CodeRAG uses Tree-sitter's WASM bindings to parse code into ASTs, enabling language-aware chunking that respects function, class, and module boundaries. See [Design Decisions](../architecture/design-decisions.md).
 
 ### UMAP
 
-Uniform Manifold Approximation and Projection -- a dimensionality reduction technique used to visualize high-dimensional embeddings in 2D or 3D space. CodeRAG's Viewer includes a UMAP scatter plot showing how code chunks cluster by semantic similarity. Implemented in pure TypeScript with zero external dependencies. See [[overview]].
+Uniform Manifold Approximation and Projection -- a dimensionality reduction technique used to visualize high-dimensional embeddings in 2D or 3D space. CodeRAG's Viewer includes a UMAP scatter plot showing how code chunks cluster by semantic similarity. Implemented in pure TypeScript with zero external dependencies. See [Overview](../architecture/overview.md).
 
 ### Vector Store
 
-An interface for persisting and querying vector embeddings. Supports operations: `upsert` (add/update vectors), `query` (find nearest neighbors), `delete` (remove vectors), and `count` (total vectors stored). Implementations include LanceDB (default, embedded) and Qdrant (external server). See [[interfaces]], [[configuration]].
+An interface for persisting and querying vector embeddings. Supports operations: `upsert` (add/update vectors), `query` (find nearest neighbors), `delete` (remove vectors), and `count` (total vectors stored). Implementations include LanceDB (default, embedded) and Qdrant (external server). See [Interfaces](../api-reference/interfaces.md), [Configuration](../configuration.md).

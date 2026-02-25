@@ -75,7 +75,7 @@ interface ParsedFile {
 | **Supported languages** | TypeScript, JavaScript, Python, Go, Rust, Java, C#, and more |
 | **Name extraction** | Walks top-level AST children, tries `name`, `declaration`, `declarator` field strategies |
 
-> [!info] WASM Bindings
+> **Info: WASM Bindings**
 > Tree-sitter runs in WASM via `web-tree-sitter`. The runtime must be initialized with `await TSParser.init()` before parsing. Language grammars are loaded lazily per-language.
 
 ## Stage 3: AST-Based Chunking
@@ -112,8 +112,8 @@ flowchart LR
 | `import_block` | `import ...` preamble |
 | `doc` | Documentation chunks |
 
-> [!warning] Why Not Line-Based Chunking?
-> Arbitrary line splits break semantic boundaries. A 100-line function split at line 50 produces two meaningless fragments. AST-based chunking preserves complete declarations, making each chunk a self-contained unit of meaning. See [[design-decisions#AST-Based Chunking]].
+> **Warning: Why Not Line-Based Chunking?**
+> Arbitrary line splits break semantic boundaries. A 100-line function split at line 50 produces two meaningless fragments. AST-based chunking preserves complete declarations, making each chunk a self-contained unit of meaning. See [Design Decisions](design-decisions.md#ast-based-chunking).
 
 **Token estimation** uses `content.length / 4` as a fast approximation (no tokenizer dependency).
 
@@ -137,8 +137,8 @@ class NLEnricher {
 | **Concurrency** | Configurable batch concurrency (default 3) |
 | **Error handling** | Enrichment failures are non-fatal; chunk keeps empty `nlSummary` |
 
-> [!tip] Why Enrich Before Embedding?
-> Embedding models trained on natural language perform significantly better when given NL descriptions rather than raw code. Greptile's research showed a **10x improvement** in retrieval quality with NL enrichment. The `nlSummary` field is embedded alongside the code content. See [[design-decisions#NL Enrichment]].
+> **Tip: Why Enrich Before Embedding?**
+> Embedding models trained on natural language perform significantly better when given NL descriptions rather than raw code. Greptile's research showed a **10x improvement** in retrieval quality with NL enrichment. The `nlSummary` field is embedded alongside the code content. See [Design Decisions](design-decisions.md#nl-enrichment).
 
 ## Stage 5: Embedding & Storage
 
@@ -157,7 +157,7 @@ The `EmbeddingProvider` interface abstracts the embedding backend:
 
 ## Stage 6: Dependency Graph Construction
 
-In parallel with chunking, the `GraphBuilder` constructs a [[dependency-graph]] from parsed files:
+In parallel with chunking, the `GraphBuilder` constructs a [Dependency Graph](dependency-graph.md) from parsed files:
 
 1. Each file becomes a `GraphNode` (id, filePath, symbols, type)
 2. The `ImportResolver` extracts import statements via regex (ES6, Python, Go, CommonJS)
@@ -206,7 +206,7 @@ interface IndexerResult {
 }
 ```
 
-> [!note] Only changed files are re-parsed, re-chunked, re-enriched, and re-embedded. Unchanged files keep their existing index entries, making subsequent indexing runs proportional to the size of the change rather than the entire codebase.
+> **Note: Only changed files are re-parsed, re-chunked, re-enriched, and re-embedded. Unchanged files keep their existing index entries, making subsequent indexing runs proportional to the size of the change rather than the entire codebase.**
 
 ## Error Handling
 
@@ -218,12 +218,12 @@ All pipeline stages use the `Result<T, E>` pattern from `neverthrow`:
 - `EmbedError` -- embedding generation failures
 - `IndexerError` -- file scanning or state management failures
 
-> [!warning] Enrichment errors are intentionally non-fatal. If Ollama is unavailable, chunks proceed with an empty `nlSummary`. The embedding will have lower quality but the index remains functional.
+> **Warning: Enrichment errors are intentionally non-fatal. If Ollama is unavailable, chunks proceed with an empty `nlSummary`. The embedding will have lower quality but the index remains functional.**
 
 ## Related Pages
 
-- [[overview]] -- System architecture overview
-- [[dependency-graph]] -- Graph construction and traversal
-- [[hybrid-search]] -- How stored chunks are searched
-- [[retrieval-pipeline]] -- Full retrieval flow
-- [[design-decisions]] -- ADR for AST chunking and NL enrichment
+- [Overview](overview.md) -- System architecture overview
+- [Dependency Graph](dependency-graph.md) -- Graph construction and traversal
+- [Hybrid Search](hybrid-search.md) -- How stored chunks are searched
+- [Retrieval Pipeline](retrieval-pipeline.md) -- Full retrieval flow
+- [Design Decisions](design-decisions.md) -- ADR for AST chunking and NL enrichment

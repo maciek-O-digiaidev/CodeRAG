@@ -62,8 +62,7 @@ embedding:
 
 The `OllamaEmbeddingProvider` automatically batches large inputs into groups of 50 texts per API call to avoid overwhelming the local server.
 
-> [!tip]
-> For codebases with many languages, `nomic-embed-text` provides excellent multilingual embedding quality. For pure code embedding, consider `codellama` variants if available in Ollama.
+> **Tip: > For codebases with many languages, `nomic-embed-text` provides excellent multilingual embedding quality. For pure code embedding, consider `codellama` variants if available in Ollama.**
 
 ### Voyage Code (API)
 
@@ -123,8 +122,7 @@ embedding:
 | **Offline** | Yes | No | No |
 | **Setup** | Install Ollama + model | API key only | API key only |
 
-> [!note]
-> The "Code quality" rating reflects general performance on code retrieval benchmarks. Voyage Code's `voyage-code-3` model is purpose-built for code and typically outperforms general-purpose models on code search tasks.
+> **Note: > The "Code quality" rating reflects general performance on code retrieval benchmarks. Voyage Code's `voyage-code-3` model is purpose-built for code and typically outperforms general-purpose models on code search tasks.**
 
 ## Configuration in .coderag.yaml
 
@@ -147,8 +145,7 @@ interface EmbeddingConfig {
 }
 ```
 
-> [!warning]
-> The `dimensions` value must match the model's actual output dimensions. Mismatched dimensions will cause indexing or search failures.
+> **Warning: > The `dimensions` value must match the model's actual output dimensions. Mismatched dimensions will cause indexing or search failures.**
 
 ## Switching Providers
 
@@ -169,8 +166,7 @@ rm -rf .coderag/
 coderag index --full
 ```
 
-> [!warning]
-> Deleting `.coderag/` removes all indexed data including dependency graphs and BM25 indices. This is intentional -- a provider switch requires rebuilding everything from scratch.
+> **Warning: > Deleting `.coderag/` removes all indexed data including dependency graphs and BM25 indices. This is intentional -- a provider switch requires rebuilding everything from scratch.**
 
 ## Adding a Custom Provider
 
@@ -204,6 +200,6 @@ Key requirements:
 
 ## See Also
 
-- [[configuration]] -- full `.coderag.yaml` reference
-- [[interfaces]] -- all provider interfaces
-- [[design-decisions]] -- why NL enrichment happens before embedding
+- [Configuration](../configuration.md) -- full `.coderag.yaml` reference
+- [Interfaces](../api-reference/interfaces.md) -- all provider interfaces
+- [Design Decisions](../architecture/design-decisions.md) -- why NL enrichment happens before embedding

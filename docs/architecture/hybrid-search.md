@@ -19,7 +19,7 @@ CodeRAG combines two complementary search strategies -- vector (semantic) simila
 
 ## Why Hybrid?
 
-> [!info] The Semantic vs Keyword Trade-off
+> **Info: The Semantic vs Keyword Trade-off**
 > **Vector search** excels at finding semantically similar code even when the exact terms differ ("authentication handler" matches `loginController`), but struggles with exact identifiers and rare tokens.
 >
 > **BM25 keyword search** excels at finding exact identifier matches (`TreeSitterParser`, `parseGoMod`), but cannot understand paraphrases or conceptual similarity.
@@ -71,7 +71,7 @@ The embedding provider is configurable:
 | Voyage AI | voyage-code-3 | 1024 | No |
 | OpenAI | text-embedding-3-small | 1536 | No |
 
-> [!tip] Embeddings are computed over both the code content and the NL summary (`nlSummary`), which significantly improves semantic matching. See [[design-decisions#NL Enrichment]].
+> **Tip: Embeddings are computed over both the code content and the NL summary (`nlSummary`), which significantly improves semantic matching. See [Design Decisions](design-decisions.md#nl-enrichment).**
 
 ## BM25 Search Flow
 
@@ -106,7 +106,7 @@ class BM25Index {
 }
 ```
 
-> [!note] The BM25 index is fully in-memory and serializable. It is persisted alongside the vector store and restored on startup to avoid re-indexing.
+> **Note: The BM25 index is fully in-memory and serializable. It is persisted alongside the vector store and restored on startup to avoid re-indexing.**
 
 ## Reciprocal Rank Fusion (RRF)
 
@@ -160,7 +160,7 @@ Documents found by both methods get boosted, which is exactly the desired behavi
 
 ### Why RRF Over Score Normalization?
 
-> [!warning] Score normalization pitfalls
+> **Warning: Score normalization pitfalls**
 > Normalizing scores (e.g., min-max scaling) is fragile because:
 > - Vector cosine scores cluster tightly (e.g., 0.78-0.85) while BM25 scores can vary wildly
 > - Score distributions change per query
@@ -206,7 +206,7 @@ The implementation:
 | Memory | LanceDB file-backed | In-memory index | Negligible |
 | Scaling | Sub-linear (ANN index) | Linear with corpus | Linear with result count |
 
-> [!tip] BM25 is nearly free compared to vector search. The bottleneck is always the embedding step. For low-latency scenarios, consider caching query embeddings.
+> **Tip: BM25 is nearly free compared to vector search. The bottleneck is always the embedding step. For low-latency scenarios, consider caching query embeddings.**
 
 ## Configuration
 
@@ -232,7 +232,7 @@ interface SearchOptions {
 
 ## Related Pages
 
-- [[overview]] -- System architecture overview
-- [[retrieval-pipeline]] -- Full retrieval flow using hybrid search
-- [[ingestion-pipeline]] -- How chunks are indexed into vector store and BM25
-- [[design-decisions]] -- ADR for hybrid search over pure vector
+- [Overview](overview.md) -- System architecture overview
+- [Retrieval Pipeline](retrieval-pipeline.md) -- Full retrieval flow using hybrid search
+- [Ingestion Pipeline](ingestion-pipeline.md) -- How chunks are indexed into vector store and BM25
+- [Design Decisions](design-decisions.md) -- ADR for hybrid search over pure vector

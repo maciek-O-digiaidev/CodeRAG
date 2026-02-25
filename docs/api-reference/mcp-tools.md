@@ -12,10 +12,9 @@ aliases:
 
 # MCP Tools Reference
 
-CodeRAG exposes 6 tools via the [[mcp-server]] using the Model Context Protocol (MCP). These tools give AI coding agents deep, semantic access to the codebase, documentation, and project backlog.
+CodeRAG exposes 6 tools via the [MCP Server](../packages/mcp-server.md) using the Model Context Protocol (MCP). These tools give AI coding agents deep, semantic access to the codebase, documentation, and project backlog.
 
-> [!tip]
-> All MCP tools return JSON wrapped in `{ content: [{ type: "text", text: "<json>" }] }` per the MCP specification. The examples below show only the inner JSON payload.
+> **Tip: > All MCP tools return JSON wrapped in `{ content: [{ type: "text", text: "<json>" }] }` per the MCP specification. The examples below show only the inner JSON payload.**
 
 ---
 
@@ -33,8 +32,7 @@ Performs hybrid semantic + keyword search across the indexed codebase. Combines 
 | `chunk_type` | `string` | No       | --      | Filter by chunk type (e.g., `function`, `class`)  |
 | `top_k`      | `number` | No       | `10`    | Number of results to return (1--100)              |
 
-> [!warning]
-> The `file_path` parameter must not contain path traversal sequences (`..`).
+> **Warning: > The `file_path` parameter must not contain path traversal sequences (`..`).**
 
 ### Output Format
 
@@ -78,8 +76,7 @@ Performs hybrid semantic + keyword search across the indexed codebase. Combines 
 }
 ```
 
-> [!tip]
-> Use `chunk_type` filter to narrow results. For example, use `"interface"` to find only interface definitions, or `"function"` to find standalone functions.
+> **Tip: > Use `chunk_type` filter to narrow results. For example, use `"interface"` to find only interface definitions, or `"function"` to find standalone functions.**
 
 ---
 
@@ -130,8 +127,7 @@ Assembles rich context for a specific file by searching for matching chunks, exp
 }
 ```
 
-> [!note]
-> The context output uses XML-delimited sections (`<primary_results>`, `<related_context>`) for structured consumption by AI agents.
+> **Note: > The context output uses XML-delimited sections (`<primary_results>`, `<related_context>`) for structured consumption by AI agents.**
 
 ---
 
@@ -147,8 +143,7 @@ Explains a code symbol or file by finding matching chunks and returning their na
 | `name`         | `string`                     | At least one of `file_path`/`name` | --           | Symbol name to explain (function, class)   |
 | `detail_level` | `"brief"` \| `"detailed"`   | No                                 | `"detailed"` | Level of detail in the explanation         |
 
-> [!warning]
-> At least one of `file_path` or `name` must be provided. If both are given, `name` takes precedence.
+> **Warning: > At least one of `file_path` or `name` must be provided. If both are given, `name` takes precedence.**
 
 ### Output Format
 
@@ -232,8 +227,7 @@ This tool takes no parameters.
 }
 ```
 
-> [!note]
-> Health states: `ok` means the index has chunks and is queryable; `degraded` means the store is connected but empty or erroring; `not_initialized` means the store has not been set up yet.
+> **Note: > Health states: `ok` means the index has chunks and is queryable; `degraded` means the store is connected but empty or erroring; `not_initialized` means the store has not been set up yet.**
 
 ---
 
@@ -372,8 +366,7 @@ Searches indexed documentation (Markdown files, Confluence pages) with semantic 
 }
 ```
 
-> [!tip]
-> Source detection is based on file path: `.md`/`.mdx` files are classified as `markdown`, paths containing `confluence://` are classified as `confluence`.
+> **Tip: > Source detection is based on file path: `.md`/`.mdx` files are classified as `markdown`, paths containing `confluence://` are classified as `confluence`.**
 
 ---
 
@@ -400,6 +393,6 @@ Common error responses:
 
 ## See Also
 
-- [[mcp-server]] -- MCP server setup and transport configuration
-- [[types]] -- Full type definitions for Chunk, SearchResult, etc.
-- [[rest-api]] -- REST API alternative to MCP tools
+- [MCP Server](../packages/mcp-server.md) -- MCP server setup and transport configuration
+- [Types](types.md) -- Full type definitions for Chunk, SearchResult, etc.
+- [REST API](rest-api.md) -- REST API alternative to MCP tools

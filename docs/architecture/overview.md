@@ -27,7 +27,7 @@ flowchart LR
         MD["Markdown / Docs"]
     end
 
-    subgraph Ingestion["[[ingestion-pipeline|Ingestion Pipeline]]"]
+    subgraph Ingestion["Ingestion Pipeline"]
         Parser["Tree-sitter AST"]
         Chunker["AST Chunker"]
         Enricher["NL Enrichment"]
@@ -40,7 +40,7 @@ flowchart LR
         Graph["Dependency\nGraph"]
     end
 
-    subgraph Retrieval["[[retrieval-pipeline|Retrieval Engine]]"]
+    subgraph Retrieval["Retrieval Engine"]
         Hybrid["Hybrid Search\n(Vector + BM25)"]
         Expand["Graph Expansion"]
         Rerank["Re-ranking"]
@@ -66,13 +66,13 @@ CodeRAG is organized as a **pnpm workspace monorepo** with 7 packages:
 
 | Package | Path | Description |
 |---------|------|-------------|
-| [[core]] | `packages/core/` | Core library: ingestion, embedding, retrieval, graph |
-| [[cli]] | `packages/cli/` | CLI tool (`coderag init/index/search/serve/status/viewer`) |
-| [[mcp-server]] | `packages/mcp-server/` | MCP server (stdio + SSE transport) |
-| [[benchmarks]] | `packages/benchmarks/` | Benchmark suite with datasets |
-| [[vscode-extension]] | `packages/vscode-extension/` | VS Code extension with search panel |
-| [[api-server]] | `packages/api-server/` | REST API with auth, RBAC, team features |
-| [[viewer]] | `packages/viewer/` | Web-based dashboard and visualization |
+| [Core](../packages/core.md) | `packages/core/` | Core library: ingestion, embedding, retrieval, graph |
+| [CLI](../packages/cli.md) | `packages/cli/` | CLI tool (`coderag init/index/search/serve/status/viewer`) |
+| [MCP Server](../packages/mcp-server.md) | `packages/mcp-server/` | MCP server (stdio + SSE transport) |
+| [Benchmarks](../packages/benchmarks.md) | `packages/benchmarks/` | Benchmark suite with datasets |
+| [VS Code Extension](../packages/vscode-extension.md) | `packages/vscode-extension/` | VS Code extension with search panel |
+| [API Server](../packages/api-server.md) | `packages/api-server/` | REST API with auth, RBAC, team features |
+| [Viewer](../packages/viewer.md) | `packages/viewer/` | Web-based dashboard and visualization |
 
 ```
 coderag/
@@ -108,25 +108,25 @@ coderag/
 
 ## Key Design Principles
 
-> [!tip] Local-First
+> **Tip: Local-First**
 > Everything works offline with Ollama + LanceDB. No cloud services required. Code never leaves the machine without explicit opt-in.
 
-> [!tip] Provider Pattern
+> **Tip: Provider Pattern**
 > All external dependencies sit behind interfaces (`EmbeddingProvider`, `VectorStore`, `BacklogProvider`, `ReRanker`). Swap Ollama for OpenAI or LanceDB for Qdrant by changing configuration.
 
-> [!tip] Hybrid Search
-> Combines vector search (semantic similarity) with BM25 (keyword matching) using Reciprocal Rank Fusion. Neither approach alone is sufficient for code search. See [[hybrid-search]].
+> **Tip: Hybrid Search**
+> Combines vector search (semantic similarity) with BM25 (keyword matching) using Reciprocal Rank Fusion. Neither approach alone is sufficient for code search. See [Hybrid Search](hybrid-search.md).
 
-> [!tip] AST-Aware Chunking
-> Tree-sitter parses code into an AST, and chunks are created along declaration boundaries (functions, classes, interfaces) rather than arbitrary line splits. See [[ingestion-pipeline]].
+> **Tip: AST-Aware Chunking**
+> Tree-sitter parses code into an AST, and chunks are created along declaration boundaries (functions, classes, interfaces) rather than arbitrary line splits. See [Ingestion Pipeline](ingestion-pipeline.md).
 
-> [!tip] NL Enrichment Before Embedding
-> Code is translated to natural language descriptions before embedding, proven to yield 10x improvement in retrieval quality (Greptile research). See [[design-decisions]].
+> **Tip: NL Enrichment Before Embedding**
+> Code is translated to natural language descriptions before embedding, proven to yield 10x improvement in retrieval quality (Greptile research). See [Design Decisions](design-decisions.md).
 
-> [!tip] Graph-Augmented Retrieval
-> After initial search, results are expanded using a [[dependency-graph]] to include related tests, interfaces, callers, and siblings.
+> **Tip: Graph-Augmented Retrieval**
+> After initial search, results are expanded using a [Dependency Graph](dependency-graph.md) to include related tests, interfaces, callers, and siblings.
 
-> [!tip] Privacy-First
+> **Tip: Privacy-First**
 > MCP is the primary delivery mechanism. All processing happens locally. Cloud features (API server, team sharing) are opt-in.
 
 ## Performance Targets
@@ -137,8 +137,8 @@ coderag/
 
 ## Architecture Deep Dives
 
-- [[ingestion-pipeline]] -- Tree-sitter parsing, AST chunking, NL enrichment, incremental indexing
-- [[retrieval-pipeline]] -- Query analysis, hybrid search, graph expansion, re-ranking, token budget
-- [[dependency-graph]] -- Graph data model, construction, traversal, cross-repo resolution
-- [[hybrid-search]] -- Vector + BM25 fusion with Reciprocal Rank Fusion
-- [[design-decisions]] -- ADR-style records for all key architectural decisions
+- [Ingestion Pipeline](ingestion-pipeline.md) -- Tree-sitter parsing, AST chunking, NL enrichment, incremental indexing
+- [Retrieval Pipeline](retrieval-pipeline.md) -- Query analysis, hybrid search, graph expansion, re-ranking, token budget
+- [Dependency Graph](dependency-graph.md) -- Graph data model, construction, traversal, cross-repo resolution
+- [Hybrid Search](hybrid-search.md) -- Vector + BM25 fusion with Reciprocal Rank Fusion
+- [Design Decisions](design-decisions.md) -- ADR-style records for all key architectural decisions

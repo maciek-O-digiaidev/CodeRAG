@@ -127,9 +127,8 @@ Created a web-based visualization tool for exploring indexed codebases. REST API
 | Auth providers | 3 (API Key, OIDC, SAML) |
 | Storage providers | 3 (S3, Azure Blob, GCS) |
 
-> [!note]
-> CodeRAG was built entirely by AI coding agents using a multi-agent workflow with 6 specialized roles: Product Owner, Architect, Developer, Lead Developer, Reviewer, and Tester. The project dogfoods its own capabilities -- CodeRAG's RAG index is used during development to provide context to the agents building it.
+> **Note: > CodeRAG was built entirely by AI coding agents using a multi-agent workflow with 6 specialized roles: Product Owner, Architect, Developer, Lead Developer, Reviewer, and Tester. The project dogfoods its own capabilities -- CodeRAG's RAG index is used during development to provide context to the agents building it.**
 
 ## See Also
 
-- [[overview]] -- what CodeRAG is and how it works
+- [Overview](../architecture/overview.md) -- what CodeRAG is and how it works

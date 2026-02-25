@@ -45,9 +45,9 @@ Every code chunk passes through an NL enrichment stage (`NLEnricher`) that uses 
 | BM25 benefits from NL vocabulary | NL summary quality depends on LLM quality |
 | Query-code vocabulary gap is bridged | Increases storage per chunk |
 
-> [!note] Enrichment failures are intentionally non-fatal. If Ollama is unavailable, chunks proceed with an empty `nlSummary`. The index remains functional, just with lower retrieval quality.
+> **Note: Enrichment failures are intentionally non-fatal. If Ollama is unavailable, chunks proceed with an empty `nlSummary`. The index remains functional, just with lower retrieval quality.**
 
-See [[ingestion-pipeline#Stage 4: NL Enrichment]] for implementation details.
+See [Ingestion Pipeline](ingestion-pipeline.md#stage-4:-nl-enrichment) for implementation details.
 
 ---
 
@@ -79,9 +79,9 @@ Use Tree-sitter to parse source files into ASTs and chunk along declaration boun
 | Chunk types enable filtering | Very small declarations produce tiny chunks |
 | Deterministic chunk IDs (SHA-256) | File-level context (imports, comments) needs separate handling |
 
-> [!warning] The `ASTChunker` falls back to a "module" chunk wrapping the entire file when no declarations can be detected. This handles configuration files, markdown, and other non-code content.
+> **Warning: The `ASTChunker` falls back to a "module" chunk wrapping the entire file when no declarations can be detected. This handles configuration files, markdown, and other non-code content.**
 
-See [[ingestion-pipeline#Stage 3: AST-Based Chunking]] for implementation details.
+See [Ingestion Pipeline](ingestion-pipeline.md#stage-3:-ast-based-chunking) for implementation details.
 
 ---
 
@@ -113,7 +113,7 @@ Combine vector search (LanceDB cosine similarity) and BM25 keyword search (MiniS
 | RRF needs no score calibration | Configuration of weights may need tuning |
 | Proven approach in information retrieval | BM25 index must be serialized/restored |
 
-See [[hybrid-search]] for the full algorithm and formula.
+See [Hybrid Search](hybrid-search.md) for the full algorithm and formula.
 
 ---
 
@@ -127,7 +127,7 @@ Search results alone often lack context. Finding a function is useful, but under
 
 ### Decision
 
-After hybrid search, use the [[dependency-graph]] to perform a BFS expansion (max depth 2) from each primary result. Related nodes are classified by relationship type (`imports`, `imported_by`, `test_for`, `interface_of`, `sibling`) and included in the context.
+After hybrid search, use the [Dependency Graph](dependency-graph.md) to perform a BFS expansion (max depth 2) from each primary result. Related nodes are classified by relationship type (`imports`, `imported_by`, `test_for`, `interface_of`, `sibling`) and included in the context.
 
 ### Rationale
 
@@ -146,9 +146,9 @@ After hybrid search, use the [[dependency-graph]] to perform a BFS expansion (ma
 | Surfaces interfaces and contracts | Adds latency for graph traversal |
 | Graph excerpt aids understanding | Related chunks compete for token budget |
 
-> [!tip] The `maxRelated` parameter (default 10) caps the number of related chunks to prevent graph explosion in highly connected codebases.
+> **Tip: The `maxRelated` parameter (default 10) caps the number of related chunks to prevent graph explosion in highly connected codebases.**
 
-See [[retrieval-pipeline#Stage 3: Context Expansion]] for implementation details.
+See [Retrieval Pipeline](retrieval-pipeline.md#stage-3:-context-expansion) for implementation details.
 
 ---
 
@@ -189,9 +189,9 @@ Items are greedily added in priority order until each section's budget is exhaus
 | Respects agent token limits | Last item in each section may be partially useful but excluded |
 | Prevents context overflow | Fixed allocation may waste budget if one section is sparse |
 
-> [!info] Token estimation uses `text.length / 4`. This is a fast heuristic that avoids importing a tokenizer library. It is reasonably accurate for English text and code, but may under-count for non-ASCII content.
+> **Info: Token estimation uses `text.length / 4`. This is a fast heuristic that avoids importing a tokenizer library. It is reasonably accurate for English text and code, but may under-count for non-ASCII content.**
 
-See [[retrieval-pipeline#Stage 5: Token Budget Optimization]] for implementation details.
+See [Retrieval Pipeline](retrieval-pipeline.md#stage-5:-token-budget-optimization) for implementation details.
 
 ---
 
@@ -293,7 +293,7 @@ Cloud features (API server, team sharing, cloud embeddings) are strictly opt-in 
 | Works offline and air-gapped | Ollama must be installed and running |
 | Low latency for embedding | Team features require opting into cloud mode |
 
-> [!warning] Ollama must be installed and running for NL enrichment and local embeddings. Without it, enrichment is skipped (chunks get empty `nlSummary`) and a cloud embedding provider must be configured.
+> **Warning: Ollama must be installed and running for NL enrichment and local embeddings. Without it, enrichment is skipped (chunks get empty `nlSummary`) and a cloud embedding provider must be configured.**
 
 ---
 
@@ -353,7 +353,7 @@ const parsed = result.value;
 | Explicit error propagation | Must wrap third-party exceptions at boundaries |
 | Domain-specific error types | Slight overhead from Result object creation |
 
-> [!tip] The convention across CodeRAG is: internal boundaries between try/catch and the Result type happen at the outermost layer of each class method. Third-party exceptions are caught and wrapped into domain-specific error types immediately.
+> **Tip: The convention across CodeRAG is: internal boundaries between try/catch and the Result type happen at the outermost layer of each class method. Third-party exceptions are caught and wrapped into domain-specific error types immediately.**
 
 ---
 
@@ -361,11 +361,11 @@ const parsed = result.value;
 
 | # | Decision | Key Benefit | See Also |
 |:-:|----------|-------------|----------|
-| 1 | [[#nl-enrichment\|NL Enrichment]] | 10x retrieval quality | [[ingestion-pipeline]] |
-| 2 | [[#ast-chunking\|AST Chunking]] | Semantic chunk boundaries | [[ingestion-pipeline]] |
-| 3 | [[#hybrid-search\|Hybrid Search]] | Semantic + keyword coverage | [[hybrid-search]] |
-| 4 | [[#graph-expansion\|Graph Expansion]] | Rich context with tests, interfaces | [[dependency-graph]] |
-| 5 | [[#token-budget\|Token Budget]] | Fits agent context windows | [[retrieval-pipeline]] |
-| 6 | [[#provider-pattern\|Provider Pattern]] | Swappable external dependencies | [[overview]] |
-| 7 | [[#local-first\|Local-First]] | Privacy, offline operation | [[overview]] |
-| 8 | [[#result-pattern\|Result Pattern]] | Type-safe error handling | -- |
+| 1 | [NL Enrichment](#nl-enrichment\) | 10x retrieval quality | [Ingestion Pipeline](ingestion-pipeline.md) |
+| 2 | [AST Chunking](#ast-chunking\) | Semantic chunk boundaries | [Ingestion Pipeline](ingestion-pipeline.md) |
+| 3 | [Hybrid Search](#hybrid-search\) | Semantic + keyword coverage | [Hybrid Search](hybrid-search.md) |
+| 4 | [Graph Expansion](#graph-expansion\) | Rich context with tests, interfaces | [Dependency Graph](dependency-graph.md) |
+| 5 | [Token Budget](#token-budget\) | Fits agent context windows | [Retrieval Pipeline](retrieval-pipeline.md) |
+| 6 | [Provider Pattern](#provider-pattern\) | Swappable external dependencies | [Overview](overview.md) |
+| 7 | [Local-First](#local-first\) | Privacy, offline operation | [Overview](overview.md) |
+| 8 | [Result Pattern](#result-pattern\) | Type-safe error handling | -- |

@@ -12,10 +12,9 @@ aliases:
 
 # REST API Reference
 
-The CodeRAG [[api-server]] exposes a RESTful HTTP API for search, context assembly, indexing, team collaboration, and administration. The server is built with Express and listens on port `3100` by default.
+The CodeRAG [API Server](../packages/api-server.md) exposes a RESTful HTTP API for search, context assembly, indexing, team collaboration, and administration. The server is built with Express and listens on port `3100` by default.
 
-> [!note]
-> All `/api/v1/*` endpoints require authentication via API key (header `X-API-Key` or `Authorization: Bearer <key>`). Keys are configured via the `CODERAG_API_KEYS` environment variable.
+> **Note: > All `/api/v1/*` endpoints require authentication via API key (header `X-API-Key` or `Authorization: Bearer <key>`). Keys are configured via the `CODERAG_API_KEYS` environment variable.**
 
 ---
 
@@ -80,8 +79,7 @@ Performs hybrid semantic + keyword search across the codebase index. Requires au
 }
 ```
 
-> [!example]
-> ```bash
+> **Example: > ```bash**
 > curl -X POST http://localhost:3100/api/v1/search \
 >   -H "X-API-Key: your-api-key" \
 >   -H "Content-Type: application/json" \
@@ -118,8 +116,7 @@ Assembles rich context for a file including dependency graph expansion and token
 }
 ```
 
-> [!example]
-> ```bash
+> **Example: > ```bash**
 > curl -X POST http://localhost:3100/api/v1/context \
 >   -H "X-API-Key: your-api-key" \
 >   -H "Content-Type: application/json" \
@@ -175,8 +172,7 @@ Triggers re-indexing of the codebase. **Requires admin role.**
 }
 ```
 
-> [!warning]
-> This endpoint requires an admin API key. Non-admin keys receive a `403 Forbidden` response.
+> **Warning: > This endpoint requires an admin API key. Non-admin keys receive a `403 Forbidden` response.**
 
 ```bash
 curl -X POST http://localhost:3100/api/v1/index \
@@ -361,7 +357,7 @@ Deletes a specific bookmark. Requires authentication. Returns `204` on success, 
 
 ## Viewer
 
-These read-only endpoints power the [[viewer]] web UI for exploring the index.
+These read-only endpoints power the [Viewer](../packages/viewer.md) web UI for exploring the index.
 
 ### GET /api/v1/viewer/stats
 
@@ -569,8 +565,7 @@ The key can be provided via:
 - `X-API-Key` header
 - `Authorization: Bearer <key>` header
 
-> [!tip]
-> Rate limiting is applied per API key after authentication. Configure limits via environment variables `CODERAG_RATE_LIMIT_WINDOW_MS` and `CODERAG_RATE_LIMIT_MAX`.
+> **Tip: > Rate limiting is applied per API key after authentication. Configure limits via environment variables `CODERAG_RATE_LIMIT_WINDOW_MS` and `CODERAG_RATE_LIMIT_MAX`.**
 
 ---
 
@@ -582,7 +577,7 @@ The API server sets `Access-Control-Allow-Origin` to `*` by default. Override wi
 
 ## See Also
 
-- [[api-server]] -- Server setup, Docker deployment, and configuration
-- [[cloud-deployment]] -- Cloud deployment guide
-- [[mcp-tools]] -- MCP tool equivalents for AI agent consumption
-- [[types]] -- Full TypeScript type definitions
+- [API Server](../packages/api-server.md) -- Server setup, Docker deployment, and configuration
+- [Cloud Deployment](../guides/cloud-deployment.md) -- Cloud deployment guide
+- [MCP Tools](mcp-tools.md) -- MCP tool equivalents for AI agent consumption
+- [Types](types.md) -- Full TypeScript type definitions

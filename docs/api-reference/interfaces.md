@@ -14,8 +14,7 @@ aliases:
 
 CodeRAG follows a strict **provider pattern**: all external dependencies are behind interfaces for easy swapping, testing, and extension. This page documents every provider interface and its known implementations.
 
-> [!tip]
-> All provider methods return `Result<T, E>` from `neverthrow` instead of throwing exceptions. This ensures errors are always handled explicitly at the call site.
+> **Tip: > All provider methods return `Result<T, E>` from `neverthrow` instead of throwing exceptions. This ensures errors are always handled explicitly at the call site.**
 
 ---
 
@@ -104,8 +103,7 @@ interface EmbeddingProvider {
 | -------------------------- | --------------- | ---------------------------------------------- |
 | `OllamaEmbeddingProvider`  | `@code-rag/core` | Local embedding via Ollama (nomic-embed-text)  |
 
-> [!note]
-> The `EmbeddingConfig.provider` field in `.coderag.yaml` supports `"ollama"`, `"voyage"`, and `"openai"` as provider names. Currently `OllamaEmbeddingProvider` is the primary implementation for local-first operation.
+> **Note: > The `EmbeddingConfig.provider` field in `.coderag.yaml` supports `"ollama"`, `"voyage"`, and `"openai"` as provider names. Currently `OllamaEmbeddingProvider` is the primary implementation for local-first operation.**
 
 ---
 
@@ -254,8 +252,7 @@ interface BacklogProvider {
 | `JiraProvider`         | `@code-rag/core` | Jira            | Jira REST API with JQL queries           |
 | `ClickUpProvider`      | `@code-rag/core` | ClickUp         | ClickUp API v2                           |
 
-> [!example]
-> Configuration in `.coderag.yaml`:
+> **Example: > Configuration in `.coderag.yaml`:**
 > ```yaml
 > backlog:
 >   provider: azure-devops
@@ -269,7 +266,7 @@ interface BacklogProvider {
 
 ## AuthProvider
 
-Authenticates users and resolves their roles and repository access. Used by the [[api-server]] for enterprise authentication.
+Authenticates users and resolves their roles and repository access. Used by the [API Server](../packages/api-server.md) for enterprise authentication.
 
 **Source:** `packages/core/src/auth/types.ts`
 
@@ -301,8 +298,7 @@ interface AuthProvider {
 | `OIDCProvider`   | `@code-rag/core` | OIDC     | OpenID Connect with JWKS validation (zero external deps) |
 | `SAMLProvider`   | `@code-rag/core` | SAML 2.0 | SAML assertion parsing with XML signature validation     |
 
-> [!note]
-> Both auth providers are implemented with zero external dependencies -- JWKS fetching, JWT decoding, XML parsing, and signature verification are all done with Node.js built-in `crypto` module.
+> **Note: > Both auth providers are implemented with zero external dependencies -- JWKS fetching, JWT decoding, XML parsing, and signature verification are all done with Node.js built-in `crypto` module.**
 
 ### Related Config Types
 
@@ -368,8 +364,7 @@ interface CloudStorageProvider {
 | `AzureBlobProvider`      | `@code-rag/core` | Azure Blob   | Azure Blob Storage with SharedKey auth         |
 | `GCSStorageProvider`     | `@code-rag/core` | Google Cloud | GCS with service account JWT auth              |
 
-> [!note]
-> All three cloud storage providers are implemented with zero external SDK dependencies. They use Node.js built-in `crypto` and `https` modules for authentication and HTTP requests.
+> **Note: > All three cloud storage providers are implemented with zero external SDK dependencies. They use Node.js built-in `crypto` and `https` modules for authentication and HTTP requests.**
 
 ### Related Config Types
 
@@ -446,8 +441,7 @@ interface DocsProvider {
 | `ConfluenceProvider` | `@code-rag/core` | Confluence   | REST API v2 with Basic/OAuth auth, XHTML-to-text   |
 | `SharePointProvider` | `@code-rag/core` | SharePoint   | MS Graph API with OAuth2 client credentials, .docx/.pdf extraction |
 
-> [!warning]
-> The `SharePointProvider` uses a lightweight zero-dependency text extractor for `.docx` and `.pdf` files. It handles common cases but may miss content in complex documents with compressed streams or CMap-encoded PDFs.
+> **Warning: > The `SharePointProvider` uses a lightweight zero-dependency text extractor for `.docx` and `.pdf` files. It handles common cases but may miss content in complex documents with compressed streams or CMap-encoded PDFs.**
 
 ---
 
@@ -482,8 +476,7 @@ interface ReadonlyGraph {
 | ------------------ | --------------- | ----------------------------------------------- |
 | `DependencyGraph`  | `@code-rag/core` | Full mutable graph with BFS traversal, serialization |
 
-> [!tip]
-> The `ReadonlyGraph` interface enables testing with mock graphs and prevents the retrieval pipeline from mutating the graph during context expansion.
+> **Tip: > The `ReadonlyGraph` interface enables testing with mock graphs and prevents the retrieval pipeline from mutating the graph during context expansion.**
 
 ---
 
@@ -506,6 +499,6 @@ The following diagram shows which interfaces are consumed by which components:
 
 ## See Also
 
-- [[types]] -- Full type definitions for `Chunk`, `SearchResult`, `BacklogItem`, etc.
-- [[design-decisions]] -- Architecture decisions behind the provider pattern
-- [[core]] -- Core package documentation
+- [Types](types.md) -- Full type definitions for `Chunk`, `SearchResult`, `BacklogItem`, etc.
+- [Design Decisions](../architecture/design-decisions.md) -- Architecture decisions behind the provider pattern
+- [Core](../packages/core.md) -- Core package documentation

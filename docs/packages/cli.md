@@ -97,8 +97,7 @@ coderag index
 coderag index --full
 ```
 
-> [!note]
-> If NL enrichment fails (e.g., Ollama is unavailable), indexing continues without summaries rather than aborting.
+> **Note: > If NL enrichment fails (e.g., Ollama is unavailable), indexing continues without summaries rather than aborting.**
 
 ---
 
@@ -171,8 +170,7 @@ coderag serve
 coderag serve --port 3100
 ```
 
-> [!tip]
-> Use stdio transport for direct MCP integration with Claude Desktop. Use SSE transport when the server needs to be accessed over HTTP (e.g., from the VS Code extension).
+> **Tip: > Use stdio transport for direct MCP integration with Claude Desktop. Use SSE transport when the server needs to be accessed over HTTP (e.g., from the VS Code extension).**
 
 ---
 
@@ -244,13 +242,12 @@ coderag viewer
 coderag viewer --port 8080 --no-open
 ```
 
-> [!warning]
-> The viewer must be built first: `pnpm --filter @code-rag/viewer build`
+> **Warning: > The viewer must be built first: `pnpm --filter @code-rag/viewer build`**
 
 ---
 
 ## See Also
 
-- [[quick-start]] -- getting started guide
-- [[mcp-server]] -- MCP server details
-- [[viewer]] -- viewer SPA documentation
+- [Quick Start](../getting-started/quick-start.md) -- getting started guide
+- [MCP Server](mcp-server.md) -- MCP server details
+- [Viewer](viewer.md) -- viewer SPA documentation

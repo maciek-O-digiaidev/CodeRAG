@@ -22,8 +22,7 @@ This guide walks you through installing CodeRAG and its dependencies from scratc
 | **Ollama** | latest | Local embedding + LLM inference |
 | **Git** | any recent | Source control, file watcher |
 
-> [!note]
-> CodeRAG is designed **local-first**. Everything runs on your machine with Ollama and LanceDB --- no cloud accounts required for the default setup.
+> **Note: > CodeRAG is designed **local-first**. Everything runs on your machine with Ollama and LanceDB --- no cloud accounts required for the default setup.**
 
 ## Step 1: Install Node.js and pnpm
 
@@ -65,8 +64,7 @@ Start the Ollama server:
 ollama serve
 ```
 
-> [!tip]
-> On macOS, the Ollama desktop app starts the server automatically. You can verify it is running by visiting `http://localhost:11434` in your browser.
+> **Tip: > On macOS, the Ollama desktop app starts the server automatically. You can verify it is running by visiting `http://localhost:11434` in your browser.**
 
 ## Step 3: Pull Ollama Models
 
@@ -80,8 +78,7 @@ ollama pull nomic-embed-text
 ollama pull qwen2.5-coder:7b
 ```
 
-> [!warning]
-> The `qwen2.5-coder:7b` model is approximately 4.7 GB. Make sure you have enough disk space and a stable connection. If your machine has limited RAM (< 8 GB), consider the smaller `qwen2.5-coder:1.5b` variant and update your `.coderag.yaml` accordingly.
+> **Warning: > The `qwen2.5-coder:7b` model is approximately 4.7 GB. Make sure you have enough disk space and a stable connection. If your machine has limited RAM (< 8 GB), consider the smaller `qwen2.5-coder:1.5b` variant and update your `.coderag.yaml` accordingly.**
 
 Verify the models are available:
 
@@ -136,8 +133,7 @@ npx coderag --version
 # 0.1.0
 ```
 
-> [!tip]
-> To make the `coderag` command available globally, link the CLI package:
+> **Tip: > To make the `coderag` command available globally, link the CLI package:**
 > ```bash
 > cd packages/cli
 > pnpm link --global
@@ -154,8 +150,7 @@ curl http://localhost:11434/api/tags
 
 If Ollama is running, this returns a JSON list of installed models.
 
-> [!note]
-> If Ollama is running on a non-default host, set the `OLLAMA_HOST` environment variable:
+> **Note: > If Ollama is running on a non-default host, set the `OLLAMA_HOST` environment variable:**
 > ```bash
 > export OLLAMA_HOST=http://my-server:11434
 > ```
@@ -175,5 +170,5 @@ graph LR
 
 ## Next Steps
 
-- [[quick-start]] --- Initialize and index your first project
-- [[configuration]] --- Customize `.coderag.yaml` for your setup
+- [Quick Start](quick-start.md) --- Initialize and index your first project
+- [Configuration](../configuration.md) --- Customize `.coderag.yaml` for your setup

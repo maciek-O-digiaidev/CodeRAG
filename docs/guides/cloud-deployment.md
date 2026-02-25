@@ -60,8 +60,7 @@ The server initializes core services on startup: config loading, LanceDB connect
 | `PORT` | `3100` | Server listen port |
 | `CODERAG_CORS_ORIGIN` | `*` | CORS `Access-Control-Allow-Origin` value |
 
-> [!note]
-> When `CODERAG_API_KEYS` is empty or unset, authentication is disabled entirely. This is intended for local development only. Always set API keys in production.
+> **Note: > When `CODERAG_API_KEYS` is empty or unset, authentication is disabled entirely. This is intended for local development only. Always set API keys in production.**
 
 ## Authentication
 
@@ -153,8 +152,7 @@ Users have an `allowedRepos` list controlling which repositories they can access
 - Admin users with an **empty** `allowedRepos` list get unrestricted access to all repos
 - Single-repo setups (no `repoName` in metadata) skip repo-level filtering
 
-> [!warning]
-> Admin keys created via `CODERAG_API_KEYS` have full access. For fine-grained repo-level access control, use the OIDC/SAML providers with role mapping.
+> **Warning: > Admin keys created via `CODERAG_API_KEYS` have full access. For fine-grained repo-level access control, use the OIDC/SAML providers with role mapping.**
 
 ## Rate Limiting
 
@@ -237,8 +235,7 @@ Configure team storage via the `/api/v1/team` endpoints. The team sync workflow:
 3. **Pull** -- download the shared index to a new machine
 4. **Analytics** -- view team usage statistics
 
-> [!tip]
-> Team storage is optional. For single-developer use or CI/CD pipelines, the local embedded storage (LanceDB) is sufficient.
+> **Tip: > Team storage is optional. For single-developer use or CI/CD pipelines, the local embedded storage (LanceDB) is sufficient.**
 
 ## Admin Dashboard
 
@@ -249,11 +246,10 @@ The API server includes a server-rendered admin dashboard at `/dashboard`:
 - **Index management**: trigger re-indexing from the UI
 - **Configuration viewer**: current `.coderag.yaml` settings
 
-> [!note]
-> The dashboard requires an admin API key. Access it at `http://localhost:3100/dashboard`.
+> **Note: > The dashboard requires an admin API key. Access it at `http://localhost:3100/dashboard`.**
 
 ## See Also
 
-- [[api-server]] -- API server package details
-- [[rest-api]] -- full REST API endpoint reference
-- [[interfaces]] -- provider interfaces (auth, storage, embedding)
+- [API Server](../packages/api-server.md) -- API server package details
+- [REST API](../api-reference/rest-api.md) -- full REST API endpoint reference
+- [Interfaces](../api-reference/interfaces.md) -- provider interfaces (auth, storage, embedding)

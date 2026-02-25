@@ -141,10 +141,9 @@ The extension contributes an activity bar container:
 | Deactivate | Disconnect MCP client, stop server, dispose status bar |
 | SIGINT/SIGTERM | Server manager cleans up child process |
 
-> [!note]
-> Commands are registered and available even before the server connects. If the server is unavailable, commands will show appropriate error messages.
+> **Note: > Commands are registered and available even before the server connects. If the server is unavailable, commands will show appropriate error messages.**
 
 ## See Also
 
-- [[mcp-server]] -- the MCP server that the extension connects to
-- [[cli]] -- the `coderag serve` command used by `ServerManager`
+- [MCP Server](mcp-server.md) -- the MCP server that the extension connects to
+- [CLI](cli.md) -- the `coderag serve` command used by `ServerManager`

@@ -12,7 +12,7 @@ aliases:
 
 # Dependency Graph
 
-The dependency graph tracks relationships between files and symbols across the codebase. It is used during [[retrieval-pipeline|retrieval]] to expand search results with related code (tests, interfaces, callers, siblings) and during [[ingestion-pipeline|ingestion]] to model the structure of the project.
+The dependency graph tracks relationships between files and symbols across the codebase. It is used during [retrieval](retrieval-pipeline.md) to expand search results with related code (tests, interfaces, callers, siblings) and during [ingestion](ingestion-pipeline.md) to model the structure of the project.
 
 ## Graph Data Model
 
@@ -209,11 +209,11 @@ interface CrossRepoDependency {
 }
 ```
 
-> [!note] Node IDs in the merged graph are prefixed with the repository name to avoid collisions: `my-repo::src/index.ts`. Cross-repo edges connect representative root nodes of each repository.
+> **Note: Node IDs in the merged graph are prefixed with the repository name to avoid collisions: `my-repo::src/index.ts`. Cross-repo edges connect representative root nodes of each repository.**
 
 ## ReadonlyGraph Interface
 
-Consumers of the graph (like [[retrieval-pipeline|ContextExpander]]) depend on a `ReadonlyGraph` interface rather than the concrete `DependencyGraph` class. This dependency inversion allows the graph implementation to change without affecting retrieval logic.
+Consumers of the graph (like [ContextExpander](retrieval-pipeline.md)) depend on a `ReadonlyGraph` interface rather than the concrete `DependencyGraph` class. This dependency inversion allows the graph implementation to change without affecting retrieval logic.
 
 ```typescript
 interface ReadonlyGraph {
@@ -278,7 +278,7 @@ graph.getAllEdges();  // All GraphEdge objects
 
 ## Related Pages
 
-- [[overview]] -- System architecture overview
-- [[ingestion-pipeline]] -- How the graph is built during indexing
-- [[retrieval-pipeline]] -- How the graph is used for context expansion
-- [[design-decisions]] -- ADR for graph expansion strategy
+- [Overview](overview.md) -- System architecture overview
+- [Ingestion Pipeline](ingestion-pipeline.md) -- How the graph is built during indexing
+- [Retrieval Pipeline](retrieval-pipeline.md) -- How the graph is used for context expansion
+- [Design Decisions](design-decisions.md) -- ADR for graph expansion strategy

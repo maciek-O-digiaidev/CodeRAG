@@ -81,8 +81,7 @@ The project uses a shared `tsconfig.base.json` with strict settings:
 }
 ```
 
-> [!warning]
-> `noUncheckedIndexedAccess` is enabled. Array/object index access returns `T | undefined`, so you must handle the `undefined` case explicitly.
+> **Warning: > `noUncheckedIndexedAccess` is enabled. Array/object index access returns `T | undefined`, so you must handle the `undefined` case explicitly.**
 
 ## Coding Conventions
 
@@ -144,8 +143,7 @@ if (result.isErr()) {
 const config = result.value; // Typed as Config
 ```
 
-> [!note]
-> Every public function that can fail should return `Result<T, E>`. Exceptions are reserved for truly unexpected situations (programmer errors).
+> **Note: > Every public function that can fail should return `Result<T, E>`. Exceptions are reserved for truly unexpected situations (programmer errors).**
 
 ### Provider Pattern
 
@@ -351,6 +349,6 @@ pnpm build && pnpm test
 
 ## See Also
 
-- [[design-decisions]] -- architectural decisions and rationale
-- [[interfaces]] -- complete list of provider interfaces
-- [[core]] -- core library architecture
+- [Design Decisions](../architecture/design-decisions.md) -- architectural decisions and rationale
+- [Interfaces](../api-reference/interfaces.md) -- complete list of provider interfaces
+- [Core](../packages/core.md) -- core library architecture

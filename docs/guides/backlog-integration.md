@@ -58,8 +58,7 @@ backlog:
 
 **Environment variable**: `ADO_PAT`
 
-> [!tip]
-> Generate a PAT at `https://dev.azure.com/{org}/_usersSettings/tokens`. Grant it **Work Items: Read** scope at minimum. For linked code detection, also grant **Code: Read**.
+> **Tip: > Generate a PAT at `https://dev.azure.com/{org}/_usersSettings/tokens`. Grant it **Work Items: Read** scope at minimum. For linked code detection, also grant **Code: Read**.**
 
 ### Jira
 
@@ -82,8 +81,7 @@ backlog:
 
 **Environment variable**: `JIRA_API_TOKEN`
 
-> [!tip]
-> Create an API token at https://id.atlassian.com/manage-profile/security/api-tokens.
+> **Tip: > Create an API token at https://id.atlassian.com/manage-profile/security/api-tokens.**
 
 ### ClickUp
 
@@ -150,8 +148,7 @@ interface CoverageReport {
 }
 ```
 
-> [!note]
-> Coverage percentage helps identify stories that may be missing implementation or whose code lacks proper backlog references.
+> **Note: > Coverage percentage helps identify stories that may be missing implementation or whose code lacks proper backlog references.**
 
 ## BacklogItem Data Model
 
@@ -223,11 +220,10 @@ Parameters:
 }
 ```
 
-> [!warning]
-> Backlog providers require network access to their respective APIs. Ensure the appropriate environment variables are set and that the machine has connectivity to the provider's API endpoints.
+> **Warning: > Backlog providers require network access to their respective APIs. Ensure the appropriate environment variables are set and that the machine has connectivity to the provider's API endpoints.**
 
 ## See Also
 
-- [[configuration]] -- full `.coderag.yaml` reference
-- [[mcp-tools]] -- all available MCP tools
-- [[interfaces]] -- provider interfaces and the provider pattern
+- [Configuration](../configuration.md) -- full `.coderag.yaml` reference
+- [MCP Tools](../api-reference/mcp-tools.md) -- all available MCP tools
+- [Interfaces](../api-reference/interfaces.md) -- provider interfaces and the provider pattern

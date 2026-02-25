@@ -51,8 +51,7 @@ await server.connectSSE(3100);
 - Loads the `DependencyGraph` for context expansion
 - Optionally creates a `CrossEncoderReRanker` if configured
 
-> [!note]
-> The server starts even if initialization fails. Individual tool calls will return errors if services are unavailable, but the server process remains running.
+> **Note: > The server starts even if initialization fails. Individual tool calls will return errors if services are unavailable, but the server process remains running.**
 
 ## Transports
 
@@ -81,7 +80,7 @@ The SSE transport supports multiple concurrent clients, each identified by a uni
 
 ## Registered Tools
 
-The server registers 6 MCP tools. See [[mcp-tools]] for the full reference with parameters and response schemas.
+The server registers 6 MCP tools. See [MCP Tools](../api-reference/mcp-tools.md) for the full reference with parameters and response schemas.
 
 | Tool | Description |
 |------|-------------|
@@ -126,8 +125,7 @@ Add to `.claude/settings.json` in your project root:
 }
 ```
 
-> [!tip]
-> The VS Code extension auto-generates this configuration. See [[vscode-extension]].
+> **Tip: > The VS Code extension auto-generates this configuration. See [VS Code Extension](vscode-extension.md).**
 
 ### VS Code (SSE transport)
 
@@ -149,5 +147,5 @@ Call `server.close()` to cleanly shut down. This closes all active SSE transport
 
 ## See Also
 
-- [[cli]] -- the `coderag serve` command
-- [[mcp-tools]] -- full tool reference with parameters and examples
+- [CLI](cli.md) -- the `coderag serve` command
+- [MCP Tools](../api-reference/mcp-tools.md) -- full tool reference with parameters and examples

@@ -88,7 +88,7 @@ interface AnalyzedQuery {
 
 ## Stage 2: Hybrid Search
 
-The `HybridSearch` engine combines vector similarity and BM25 keyword matching using Reciprocal Rank Fusion. See [[hybrid-search]] for the full algorithm.
+The `HybridSearch` engine combines vector similarity and BM25 keyword matching using Reciprocal Rank Fusion. See [Hybrid Search](hybrid-search.md) for the full algorithm.
 
 ```mermaid
 flowchart LR
@@ -110,7 +110,7 @@ flowchart LR
 
 ## Stage 3: Context Expansion
 
-The `ContextExpander` augments search results with related code found by walking the [[dependency-graph]].
+The `ContextExpander` augments search results with related code found by walking the [Dependency Graph](dependency-graph.md).
 
 ```mermaid
 flowchart TD
@@ -146,7 +146,7 @@ interface ExpandedContext {
 }
 ```
 
-> [!note] The graph excerpt includes the set of visited nodes and their connecting edges, suitable for rendering a mini dependency diagram in the response.
+> **Note: The graph excerpt includes the set of visited nodes and their connecting edges, suitable for rendering a mini dependency diagram in the response.**
 
 ## Stage 4: Cross-Encoder Re-ranking (Optional)
 
@@ -167,7 +167,7 @@ interface ReRanker {
 }
 ```
 
-> [!warning] Re-ranking adds latency (one LLM call per result). It is best used when precision matters more than speed. For most queries, the hybrid search + RRF fusion produces good enough rankings.
+> **Warning: Re-ranking adds latency (one LLM call per result). It is best used when precision matters more than speed. For most queries, the hybrid search + RRF fusion produces good enough rankings.**
 
 ## Stage 5: Token Budget Optimization
 
@@ -209,7 +209,7 @@ interface AssembledContext {
 }
 ```
 
-> [!info] Token estimation uses `text.length / 4` as a fast approximation. This avoids importing a tokenizer library while staying reasonably accurate for English text and code.
+> **Info: Token estimation uses `text.length / 4` as a fast approximation. This avoids importing a tokenizer library while staying reasonably accurate for English text and code.**
 
 ### Output Format
 
@@ -269,8 +269,8 @@ sequenceDiagram
 
 ## Related Pages
 
-- [[overview]] -- System architecture overview
-- [[hybrid-search]] -- Detailed hybrid search and RRF algorithm
-- [[dependency-graph]] -- Graph model used by ContextExpander
-- [[ingestion-pipeline]] -- How chunks are created and stored
-- [[design-decisions]] -- ADR for hybrid search, graph expansion, and token budget
+- [Overview](overview.md) -- System architecture overview
+- [Hybrid Search](hybrid-search.md) -- Detailed hybrid search and RRF algorithm
+- [Dependency Graph](dependency-graph.md) -- Graph model used by ContextExpander
+- [Ingestion Pipeline](ingestion-pipeline.md) -- How chunks are created and stored
+- [Design Decisions](design-decisions.md) -- ADR for hybrid search, graph expansion, and token budget
