@@ -1185,56 +1185,413 @@ async function indexMultiRepo(
   // eslint-disable-next-line no-console
   console.log('');
 
+  logger.start('Starting multi-repo indexing...');
+
+  // ── Phase 1: Scan & Parse all repos (fast) ──────────────────────────
+  interface RepoScanResult {
+    repoName: string;
+    repoPath: string;
+    repoStoragePath: string;
+    filesToProcess: Array<{ filePath: string; content: string; contentHash: string }>;
+    chunks: Chunk[];
+    parsedFiles: ParsedFile[];
+    indexState: IndexState;
+    indexStatePath: string;
+    parseErrors: number;
+    skippedFiles: number;
+    parseErrorDetails: Array<{ file: string; reason: string }>;
+  }
+
+  const parser = new TreeSitterParser();
+  const initResult = await parser.initialize();
+  if (initResult.isErr()) {
+    throw new Error(`Parser init failed: ${initResult.error.message}`);
+  }
+  const mdParser = new MarkdownParser({ maxTokensPerChunk: config.ingestion.maxTokensPerChunk });
+  const chunker = new ASTChunker({ maxTokensPerChunk: config.ingestion.maxTokensPerChunk });
+
+  const repoResults: RepoScanResult[] = [];
   let totalFiles = 0;
   let totalChunks = 0;
   let totalErrors = 0;
-
-  logger.start('Starting multi-repo indexing...');
 
   for (const repo of repos) {
     const repoName = repo.name ?? basename(repo.path);
     const repoPath = resolve(repo.path);
     const repoStoragePath = join(storagePath, repoName);
-
     await mkdir(repoStoragePath, { recursive: true });
 
-    try {
-      const result = await indexSingleRepo(
-        repoPath,
-        repoStoragePath,
-        config,
-        options,
-        logger,
-        repoName,
-        embeddingProvider,
-      );
-
-      totalFiles += result.filesProcessed;
-      totalChunks += result.chunksCreated;
-
-      if (result.filesProcessed === 0 && result.chunksCreated === 0 && result.parseErrors === 0) {
-        await logger.succeed(`[${repoName}] Up to date`);
-      } else {
-        await logger.succeed(
-          `[${repoName}] ${result.filesProcessed} file(s), ${result.chunksCreated} chunks`,
-        );
+    // Load or create index state
+    let indexState = new IndexState();
+    const indexStatePath = join(repoStoragePath, 'index-state.json');
+    if (!options.full) {
+      try {
+        const stateData = await readFile(indexStatePath, 'utf-8');
+        indexState = IndexState.fromJSON(JSON.parse(stateData) as Parameters<typeof IndexState.fromJSON>[0]);
+      } catch {
+        // No saved state, start fresh
       }
-
-      if (result.parseErrors > 0) {
-        totalErrors += result.parseErrors;
-        for (const detail of result.parseErrorDetails.slice(0, 3)) {
-          // eslint-disable-next-line no-console
-          console.log(`    ${chalk.gray('→')} ${detail.file}: ${chalk.yellow(detail.reason)}`);
-        }
-      }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      totalErrors++;
-      await logger.fail(`[${repoName}] ${message}`);
     }
+
+    // Scan files
+    await logger.info(`[${repoName}] Scanning files...`);
+    const ignoreFilter = createIgnoreFilter(repoPath);
+    const scanner = new FileScanner(repoPath, ignoreFilter);
+    const scanResult = await scanner.scanFiles();
+    if (scanResult.isErr()) {
+      totalErrors++;
+      await logger.fail(`[${repoName}] Scan failed: ${scanResult.error.message}`);
+      continue;
+    }
+
+    const scannedFiles = scanResult.value;
+    let filesToProcess = scannedFiles;
+    if (!options.full) {
+      filesToProcess = scannedFiles.filter(
+        (f) => indexState.isDirty(f.filePath, f.contentHash),
+      );
+      if (filesToProcess.length === 0) {
+        repoResults.push({
+          repoName, repoPath, repoStoragePath, filesToProcess: [], chunks: [],
+          parsedFiles: [], indexState, indexStatePath, parseErrors: 0, skippedFiles: 0, parseErrorDetails: [],
+        });
+        await logger.info(`[${repoName}] Up to date`);
+        continue;
+      }
+    }
+
+    // Parse & chunk
+    const repoChunks: Chunk[] = [];
+    const repoParsedFiles: ParsedFile[] = [];
+    let parseErrors = 0;
+    let skippedFiles = 0;
+    const parseErrorDetails: Array<{ file: string; reason: string }> = [];
+
+    for (const file of filesToProcess) {
+      if (MarkdownParser.isMarkdownFile(file.filePath)) {
+        const mdResult = mdParser.parse(file.filePath, file.content);
+        if (mdResult.isErr()) {
+          parseErrors++;
+          parseErrorDetails.push({ file: file.filePath, reason: mdResult.error.message });
+          continue;
+        }
+        repoChunks.push(...mdResult.value.chunks);
+        continue;
+      }
+
+      const parseResult = await parser.parse(file.filePath, file.content);
+      if (parseResult.isErr()) {
+        if (parseResult.error.message.startsWith('Unsupported file type:')) {
+          skippedFiles++;
+          continue;
+        }
+        parseErrors++;
+        parseErrorDetails.push({ file: file.filePath, reason: parseResult.error.message });
+        continue;
+      }
+
+      const parsed = parseResult.value;
+      repoParsedFiles.push(parsed);
+
+      const chunkResult = await chunker.chunk(parsed);
+      if (chunkResult.isErr()) {
+        parseErrors++;
+        parseErrorDetails.push({ file: file.filePath, reason: chunkResult.error.message });
+        continue;
+      }
+      repoChunks.push(...chunkResult.value);
+    }
+
+    // Stamp repoName in chunk metadata
+    for (const chunk of repoChunks) {
+      chunk.metadata.repoName = repoName;
+    }
+
+    totalFiles += filesToProcess.length;
+    totalChunks += repoChunks.length;
+    totalErrors += parseErrors;
+
+    const parsedCount = filesToProcess.length - parseErrors - skippedFiles;
+    await logger.info(
+      `[${repoName}] ${filesToProcess.length} files, ${parsedCount} parsed, ${repoChunks.length} chunks` +
+        (skippedFiles > 0 ? ` (${skippedFiles} unsupported skipped)` : ''),
+    );
+
+    if (parseErrors > 0) {
+      for (const detail of parseErrorDetails.slice(0, 3)) {
+        // eslint-disable-next-line no-console
+        console.log(`    ${chalk.gray('→')} ${detail.file}: ${chalk.yellow(detail.reason)}`);
+      }
+    }
+
+    repoResults.push({
+      repoName, repoPath, repoStoragePath, filesToProcess, chunks: repoChunks,
+      parsedFiles: repoParsedFiles, indexState, indexStatePath, parseErrors, skippedFiles, parseErrorDetails,
+    });
   }
 
-  // Total summary
+  // Show aggregate totals after scan & parse
+  // eslint-disable-next-line no-console
+  console.log('');
+  // eslint-disable-next-line no-console
+  console.log(
+    chalk.bold('Scan complete: ') +
+      `${chalk.cyan(String(totalFiles))} files, ${chalk.cyan(String(totalChunks))} chunks across ${chalk.cyan(String(repos.length))} repos`,
+  );
+  // eslint-disable-next-line no-console
+  console.log('');
+
+  // All chunks across all repos (for unified enrichment)
+  const allChunks = repoResults.flatMap((r) => r.chunks);
+
+  if (allChunks.length === 0) {
+    // Still update index state for files with no chunks
+    for (const rr of repoResults) {
+      for (const file of rr.filesToProcess) {
+        rr.indexState.setFileState(file.filePath, {
+          filePath: file.filePath,
+          contentHash: file.contentHash,
+          lastIndexedAt: new Date(),
+          chunkIds: [],
+        });
+      }
+      await writeFile(rr.indexStatePath, JSON.stringify(rr.indexState.toJSON(), null, 2), 'utf-8');
+    }
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    // eslint-disable-next-line no-console
+    console.log(chalk.yellow('No chunks produced. Nothing to embed.'));
+    // eslint-disable-next-line no-console
+    console.log(`  Time elapsed: ${chalk.cyan(elapsed + 's')}`);
+    return;
+  }
+
+  // ── Phase 2: Enrich all chunks together (slow) ─────────────────────
+  await logger.setPhase('enrich', { totalChunks: allChunks.length, enrichedChunks: 0 });
+  const ollamaClient = new OllamaClient({ model: config.llm.model });
+  const enricher = new NLEnricher(ollamaClient);
+
+  // Load checkpoint (shared across repos)
+  const checkpoint = await loadEnrichmentCheckpoint(storagePath);
+  const savedSummaries: Record<string, string> = checkpoint?.summaries ?? {};
+  await logger.info(`Checkpoint: ${checkpoint ? `loaded (${Object.keys(savedSummaries).length} summaries)` : 'none found'}`);
+
+  const chunksToEnrich = allChunks.filter((c) => !(c.id in savedSummaries));
+
+  if (Object.keys(savedSummaries).length > 0) {
+    await logger.info(
+      `Resuming enrichment: ${Object.keys(savedSummaries).length} already done, ${chunksToEnrich.length} remaining`,
+    );
+  } else {
+    await logger.info(`Enriching ${allChunks.length} chunks with NL summaries...`);
+  }
+
+  // Pre-flight: verify Ollama
+  const ollamaAvailable = await ollamaClient.isAvailable();
+  if (!ollamaAvailable) {
+    await logger.fail(`Ollama is not reachable at ${ollamaClient.currentConfig.baseUrl}. Start Ollama first, then re-run.`);
+    throw new Error(`Ollama is not reachable at ${ollamaClient.currentConfig.baseUrl}`);
+  }
+
+  let enrichErrors = 0;
+  let consecutiveFailures = 0;
+  const MAX_CONSECUTIVE_FAILURES = 3;
+  const totalBatches = Math.ceil(chunksToEnrich.length / ENRICHMENT_BATCH_SIZE);
+
+  for (let i = 0; i < chunksToEnrich.length; i += ENRICHMENT_BATCH_SIZE) {
+    const batchNum = Math.floor(i / ENRICHMENT_BATCH_SIZE) + 1;
+    const batch = chunksToEnrich.slice(i, i + ENRICHMENT_BATCH_SIZE);
+    await logger.info(
+      `Enrichment batch ${batchNum}/${totalBatches} (${batch.length} chunks, ${Object.keys(savedSummaries).length}/${allChunks.length} total)...`,
+    );
+
+    const enrichResult = await enricher.enrichBatch(batch);
+    if (enrichResult.isOk()) {
+      const { enriched, failedCount } = enrichResult.value;
+      for (const chunk of enriched) {
+        if (chunk.nlSummary) {
+          savedSummaries[chunk.id] = chunk.nlSummary;
+        }
+      }
+
+      if (failedCount === 0) {
+        consecutiveFailures = 0;
+      } else if (enriched.length > 0) {
+        consecutiveFailures = 0;
+        enrichErrors++;
+        await logger.warn(`Batch ${batchNum}: ${enriched.length} OK, ${failedCount} failed`);
+      } else {
+        consecutiveFailures++;
+        enrichErrors++;
+        await logger.warn(`Batch ${batchNum}: all ${failedCount} chunks failed`);
+
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          await logger.fail(
+            `Enrichment aborted: ${MAX_CONSECUTIVE_FAILURES} consecutive batch failures. ` +
+              `Is Ollama running? Check: curl ${ollamaClient.currentConfig.baseUrl}/api/tags`,
+          );
+          await saveEnrichmentCheckpoint(storagePath, {
+            summaries: savedSummaries,
+            totalProcessed: Object.keys(savedSummaries).length,
+          });
+          throw new Error(`Enrichment aborted after ${MAX_CONSECUTIVE_FAILURES} consecutive failures`);
+        }
+      }
+    } else {
+      enrichErrors++;
+      consecutiveFailures++;
+      await logger.warn(`Batch ${batchNum} enrichment error: ${enrichResult.error.message}`);
+    }
+
+    await saveEnrichmentCheckpoint(storagePath, {
+      summaries: savedSummaries,
+      totalProcessed: Object.keys(savedSummaries).length,
+    });
+    await logger.updateCount('enrichedChunks', Object.keys(savedSummaries).length);
+  }
+
+  if (enrichErrors > 0) {
+    await logger.warn(`${enrichErrors} enrichment batch(es) failed, some chunks have no NL summary`);
+  }
+
+  await clearEnrichmentCheckpoint(storagePath);
+
+  // ── Phase 3: Embed & Store per repo ─────────────────────────────────
+  await logger.setPhase('embed');
+  const resolvedEmbeddingProvider = embeddingProvider ?? createSimpleEmbeddingProvider(config.embedding);
+
+  for (const rr of repoResults) {
+    if (rr.chunks.length === 0) continue;
+
+    // Apply saved summaries to this repo's chunks
+    const enrichedChunks = rr.chunks.map((c) => {
+      const summary = savedSummaries[c.id];
+      return summary ? { ...c, nlSummary: summary } : c;
+    });
+
+    await logger.info(`[${rr.repoName}] Embedding ${enrichedChunks.length} chunks...`);
+    const textsToEmbed = enrichedChunks.map(
+      (c) => c.nlSummary ? `${c.nlSummary}\n\n${c.content}` : c.content,
+    );
+    const embedResult = await resolvedEmbeddingProvider.embed(textsToEmbed);
+    if (embedResult.isErr()) {
+      totalErrors++;
+      await logger.fail(`[${rr.repoName}] Embedding failed: ${embedResult.error.message}`);
+      continue;
+    }
+    const embeddings = embedResult.value;
+
+    // Store in LanceDB
+    await logger.info(`[${rr.repoName}] Storing in LanceDB...`);
+    const store = new LanceDBStore(rr.repoStoragePath, config.embedding.dimensions);
+    await store.connect();
+
+    const ids = enrichedChunks.map((c) => c.id);
+    const metadata = enrichedChunks.map((c) => ({
+      content: c.content,
+      nl_summary: c.nlSummary,
+      chunk_type: c.metadata.chunkType,
+      file_path: c.filePath,
+      language: c.language,
+      start_line: c.startLine,
+      end_line: c.endLine,
+      name: c.metadata.name,
+      ...(c.metadata.repoName ? { repo_name: c.metadata.repoName } : {}),
+    }));
+
+    const upsertResult = await store.upsert(ids, embeddings, metadata);
+    if (upsertResult.isErr()) {
+      store.close();
+      totalErrors++;
+      await logger.fail(`[${rr.repoName}] Store failed: ${upsertResult.error.message}`);
+      continue;
+    }
+
+    // BM25 index
+    const bm25Path = join(rr.repoStoragePath, 'bm25-index.json');
+    let bm25: BM25Index;
+
+    if (options.full) {
+      bm25 = new BM25Index();
+    } else {
+      try {
+        const existingBm25 = await readFile(bm25Path, 'utf-8');
+        bm25 = BM25Index.deserialize(existingBm25);
+        const staleChunkIds: string[] = [];
+        for (const file of rr.filesToProcess) {
+          const fileState = rr.indexState.getFileState(file.filePath);
+          if (fileState) staleChunkIds.push(...fileState.chunkIds);
+        }
+        if (staleChunkIds.length > 0) {
+          try {
+            bm25.removeChunks(staleChunkIds);
+          } catch {
+            bm25 = await rebuildBm25FromStore(store, logger, `[${rr.repoName}] `);
+          }
+        }
+      } catch {
+        bm25 = new BM25Index();
+      }
+    }
+
+    bm25.addChunks(enrichedChunks);
+    await writeFile(bm25Path, bm25.serialize(), 'utf-8');
+
+    // Dependency graph
+    const graphBuilder = new GraphBuilder(rr.repoPath);
+    const graphResult = graphBuilder.buildFromFiles(rr.parsedFiles);
+    if (graphResult.isOk()) {
+      const graphPath = join(rr.repoStoragePath, 'graph.json');
+      const newGraph = graphResult.value;
+
+      if (options.full) {
+        await writeFile(graphPath, JSON.stringify(newGraph.toJSON()), 'utf-8');
+      } else {
+        try {
+          const existingData = await readFile(graphPath, 'utf-8');
+          const existingGraph = DependencyGraph.fromJSON(
+            JSON.parse(existingData) as { nodes: GraphNode[]; edges: { source: string; target: string; type: 'imports' | 'extends' | 'implements' | 'calls' | 'references' }[] },
+          );
+          const reindexedFiles = new Set(rr.filesToProcess.map((f) => f.filePath));
+          const existingNodes = existingGraph.getAllNodes();
+          const existingEdges = existingGraph.getAllEdges();
+          const keptNodes = existingNodes.filter((n) => !reindexedFiles.has(n.filePath));
+          const keptNodeIds = new Set(keptNodes.map((n) => n.id));
+          const keptEdges = existingEdges.filter(
+            (e) => keptNodeIds.has(e.source) && keptNodeIds.has(e.target),
+          );
+          const merged = new DependencyGraph();
+          for (const node of keptNodes) merged.addNode(node);
+          for (const edge of keptEdges) merged.addEdge(edge);
+          for (const node of newGraph.getAllNodes()) merged.addNode(node);
+          for (const edge of newGraph.getAllEdges()) merged.addEdge(edge);
+          await writeFile(graphPath, JSON.stringify(merged.toJSON()), 'utf-8');
+        } catch {
+          await writeFile(graphPath, JSON.stringify(newGraph.toJSON()), 'utf-8');
+        }
+      }
+    }
+
+    // Update index state
+    for (const file of rr.filesToProcess) {
+      const fileChunkIds = enrichedChunks
+        .filter((c) => c.filePath === file.filePath)
+        .map((c) => c.id);
+      rr.indexState.setFileState(file.filePath, {
+        filePath: file.filePath,
+        contentHash: file.contentHash,
+        lastIndexedAt: new Date(),
+        chunkIds: fileChunkIds,
+      });
+    }
+    await writeFile(rr.indexStatePath, JSON.stringify(rr.indexState.toJSON(), null, 2), 'utf-8');
+
+    store.close();
+
+    await logger.succeed(`[${rr.repoName}] ${enrichedChunks.length} chunks indexed`);
+  }
+
+  // ── Final summary ───────────────────────────────────────────────────
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
   // eslint-disable-next-line no-console
