@@ -615,6 +615,8 @@ async function indexSingleRepo(
   const bm25Path = join(storagePath, 'bm25-index.json');
   let bm25: BM25Index;
 
+  let bm25RebuiltFromStore = false;
+
   if (options.full) {
     // Full reindex: start fresh
     await logger.info(`${prefix}Building BM25 index from scratch...`);
@@ -642,6 +644,7 @@ async function indexSingleRepo(
           // fall back to rebuilding from scratch via LanceDB
           await logger.warn(`${prefix}BM25 stale chunk removal failed, rebuilding from LanceDB...`);
           bm25 = await rebuildBm25FromStore(store, logger, prefix);
+          bm25RebuiltFromStore = true;
         }
       }
     } catch {
@@ -650,7 +653,11 @@ async function indexSingleRepo(
     }
   }
 
-  bm25.addChunks(enrichedChunks);
+  // Skip addChunks when rebuilt from LanceDB — the store already contains
+  // the enrichedChunks (upserted above), so the rebuilt index is complete.
+  if (!bm25RebuiltFromStore) {
+    bm25.addChunks(enrichedChunks);
+  }
   await writeFile(bm25Path, bm25.serialize(), 'utf-8');
 
   // Build / update dependency graph

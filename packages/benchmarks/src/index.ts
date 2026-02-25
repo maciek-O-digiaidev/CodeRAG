@@ -204,6 +204,9 @@ export type {
   SnippetRetrievalFn,
 } from './adapters/repobench/index.js';
 
+// Utilities
+export { extractKeywords } from './utils/extract-keywords.js';
+
 // CI Benchmark Integration & Regression Detection
 export {
   TRACKED_METRIC_NAMES,

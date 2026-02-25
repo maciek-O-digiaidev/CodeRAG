@@ -91,6 +91,9 @@ importers:
       '@code-rag/api-server':
         specifier: workspace:*
         version: link:../api-server
+      '@code-rag/benchmarks':
+        specifier: workspace:*
+        version: link:../benchmarks
       '@code-rag/core':
         specifier: workspace:*
         version: link:../core
@@ -2644,7 +2647,7 @@ packages:
       std-env: 3.10.0
       test-exclude: 7.0.1
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@22.19.11)(tsx@4.21.0)
+      vitest: 3.2.4(@types/node@22.19.11)
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -2673,7 +2676,7 @@ packages:
       '@vitest/spy': 3.2.4
       estree-walker: 3.0.3
       magic-string: 0.30.21
-      vite: 7.3.1(@types/node@22.19.11)(tsx@4.21.0)
+      vite: 7.3.1(@types/node@22.19.11)
     dev: true
 
   /@vitest/pretty-format@3.2.4:

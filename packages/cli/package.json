@@ -49,6 +49,7 @@
   },
   "dependencies": {
     "@code-rag/api-server": "workspace:*",
+    "@code-rag/benchmarks": "workspace:*",
     "@code-rag/core": "workspace:*",
     "@code-rag/mcp-server": "workspace:*",
     "@inquirer/prompts": "^8.3.0",

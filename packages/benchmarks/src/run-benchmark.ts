@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { runBenchmark, generateMarkdownReport } from './benchmark.js';
 import { runGrepSearch } from './runners/grep-runner.js';
 import { runCodeRAGSearch } from './runners/coderag-runner.js';
+import { extractKeywords } from './utils/extract-keywords.js';
 import {
   loadConfig,
   LanceDBStore,
@@ -19,41 +20,6 @@ import {
 } from '@code-rag/core';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-/**
- * Extract keywords from a natural language query for grep.
- * Removes stop words and short words to get meaningful search terms.
- */
-function extractKeywords(query: string): string {
-  const stopWords = new Set([
-    'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
-    'should', 'may', 'might', 'can', 'shall', 'must',
-    'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as',
-    'into', 'through', 'during', 'before', 'after', 'above', 'below',
-    'and', 'but', 'or', 'nor', 'not', 'so', 'yet',
-    'it', 'its', 'this', 'that', 'these', 'those',
-    'i', 'me', 'my', 'we', 'our', 'you', 'your', 'he', 'she', 'they',
-    'what', 'which', 'who', 'whom', 'when', 'where', 'why', 'how',
-    'find', 'show', 'get', 'list', 'display', 'where', 'defined',
-    'work', 'works', 'working', 'used', 'using', 'use',
-    'does', 'happen', 'happens', 'between', 'each', 'other',
-  ]);
-
-  const words = query
-    .replace(/[?.,!]/g, '')
-    .split(/\s+/)
-    .filter((w) => w.length > 2 && !stopWords.has(w.toLowerCase()));
-
-  // If we have PascalCase/camelCase identifiers, prefer those
-  const identifiers = words.filter((w) => /[A-Z]/.test(w));
-  if (identifiers.length > 0) {
-    return identifiers.join('\\|');
-  }
-
-  // Otherwise join top keywords with grep OR
-  return words.slice(0, 3).join('\\|');
-}
 
 async function main(): Promise<void> {
   const datasetPath =
