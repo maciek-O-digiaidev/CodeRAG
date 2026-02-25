@@ -1,6 +1,6 @@
 {
   "name": "@code-rag/mcp-server",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "MCP server for CodeRAG \u2014 exposes codebase search, context, and status tools via Model Context Protocol",
   "type": "module",
   "license": "MIT",
