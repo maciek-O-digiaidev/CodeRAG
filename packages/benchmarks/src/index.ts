@@ -88,3 +88,35 @@ export type {
   ReportMetadata,
   RetrievalFn,
 } from './metrics/types.js';
+
+// Token Efficiency Benchmarking
+export {
+  runTokenBudgetBenchmark,
+  aggregateBudgetMetrics,
+  estimateTokenCount,
+  computeNoiseRatio,
+  computeTokenBreakdown,
+  analyzeEfficiency,
+  analyzeStrategyEfficiency,
+  rankStrategiesByEfficiency,
+  computeQualityAuc,
+  writeBudgetMetricsCsv,
+  writeEfficiencyAnalysisCsv,
+  writeQualityCurveCsv,
+  writeFullReportCsv,
+} from './token-efficiency/index.js';
+export type {
+  StrategyName,
+  TokenBudgetBenchmarkConfig,
+  StrategyFn,
+  StrategyResult,
+  BudgetQueryResult,
+  BudgetLevelMetrics,
+  EfficiencyAnalysis,
+  QualityCurvePoint,
+  TokenEfficiencyReport,
+  TokenEfficiencyMetadata,
+  StrategyMap,
+  ChunkTokenInfo,
+  TokenBreakdown,
+} from './token-efficiency/index.js';
