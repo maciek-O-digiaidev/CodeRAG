@@ -70,7 +70,7 @@ export function createSimpleEmbeddingProvider(embeddingConfig: EmbeddingConfig):
 // IndexLogger — dual output: ora spinner (interactive) + file log
 // ---------------------------------------------------------------------------
 
-class IndexLogger {
+export class IndexLogger {
   private spinner: ReturnType<typeof ora>;
   private logPath: string;
   private progressPath: string;
@@ -1165,6 +1165,103 @@ export function registerIndexCommand(program: Command): void {
 }
 
 /**
+ * Rebuild the root-level merged index from existing per-repo stores.
+ * Used when incremental indexing finds no changes but the unified index is missing
+ * (e.g., after upgrading CodeRAG or first run after multi-repo index was created).
+ */
+export async function rebuildMergedIndex(
+  storagePath: string,
+  repoResults: Array<{ repoName: string; repoPath: string; repoStoragePath: string; parsedFiles: ParsedFile[] }>,
+  config: CodeRAGConfig,
+  logger: IndexLogger,
+): Promise<void> {
+  await logger.info('Rebuilding unified index from per-repo data...');
+
+  const mergedGraph = new DependencyGraph();
+  let totalMergedChunks = 0;
+
+  // Open root LanceDB store
+  const rootStore = new LanceDBStore(storagePath, config.embedding.dimensions);
+  await rootStore.connect();
+
+  for (const rr of repoResults) {
+    const repoGraphPath = join(rr.repoStoragePath, 'graph.json');
+
+    // Read all rows from per-repo LanceDB and copy to root store
+    const repoStore = new LanceDBStore(rr.repoStoragePath, config.embedding.dimensions);
+    await repoStore.connect();
+
+    try {
+      const internal = repoStore as unknown as {
+        table: { query: () => { toArray: () => Promise<Array<{
+          id: string; vector: number[]; content: string; nl_summary: string;
+          file_path: string; chunk_type: string; language: string; metadata: string;
+        }>> } } | null;
+      };
+      const table = internal.table;
+      if (table) {
+        const allRows = await table.query().toArray();
+        if (allRows.length > 0) {
+          const ids = allRows.map((r) => r.id);
+          // LanceDB returns Arrow-typed vectors (FixedSizeList with .isValid),
+          // not plain number[]. Convert to plain arrays for re-ingestion.
+          const embeddings = allRows.map((r) => Array.from(r.vector as Iterable<number>));
+          // Parse the metadata JSON string back to an object so upsert
+          // preserves all original fields (start_line, end_line, name, repo_name, etc.)
+          // without double-serialization.
+          const metadata = allRows.map((r) => {
+            try {
+              return JSON.parse(r.metadata) as Record<string, unknown>;
+            } catch {
+              return {
+                content: r.content,
+                nl_summary: r.nl_summary,
+                chunk_type: r.chunk_type,
+                file_path: r.file_path,
+                language: r.language,
+              };
+            }
+          });
+          const upsertResult = await rootStore.upsert(ids, embeddings, metadata);
+          if (upsertResult.isOk()) {
+            totalMergedChunks += allRows.length;
+          } else {
+            await logger.warn(`[${rr.repoName}] LanceDB upsert failed: ${upsertResult.error.message}`);
+          }
+        }
+      }
+    } catch (mergeErr: unknown) {
+      const mergeMsg = mergeErr instanceof Error ? mergeErr.message : String(mergeErr);
+      await logger.warn(`[${rr.repoName}] Failed to read LanceDB for merge: ${mergeMsg}`);
+    }
+    repoStore.close();
+
+    // Merge graph
+    try {
+      const graphData = await readFile(repoGraphPath, 'utf-8');
+      const repoGraph = DependencyGraph.fromJSON(
+        JSON.parse(graphData) as { nodes: GraphNode[]; edges: { source: string; target: string; type: 'imports' | 'extends' | 'implements' | 'calls' | 'references' }[] },
+      );
+      for (const node of repoGraph.getAllNodes()) mergedGraph.addNode(node);
+      for (const edge of repoGraph.getAllEdges()) mergedGraph.addEdge(edge);
+    } catch {
+      // No graph for this repo — skip
+    }
+  }
+
+  // Build merged BM25 from the root LanceDB (which now has all chunks)
+  const mergedBm25 = await rebuildBm25FromStore(rootStore, logger, '');
+  await writeFile(join(storagePath, 'bm25-index.json'), mergedBm25.serialize(), 'utf-8');
+
+  rootStore.close();
+
+  // Write merged graph
+  await writeFile(join(storagePath, 'graph.json'), JSON.stringify(mergedGraph.toJSON()), 'utf-8');
+
+  await logger.succeed(`Unified index rebuilt: ${totalMergedChunks} chunks from ${repoResults.length} repos`);
+}
+
+/**
  * Multi-repo indexing: iterate configured repos, index each with separate
  * progress reporting and per-repo storage directories.
  */
@@ -1358,9 +1455,25 @@ async function indexMultiRepo(
       await writeFile(rr.indexStatePath, JSON.stringify(rr.indexState.toJSON(), null, 2), 'utf-8');
     }
 
+    // Check if root merged index is missing or empty — rebuild from per-repo stores
+    const rootBm25Path = join(storagePath, 'bm25-index.json');
+    let needsRebuild = !existsSync(rootBm25Path);
+    if (!needsRebuild) {
+      try {
+        const bm25Data = await readFile(rootBm25Path, 'utf-8');
+        const parsed = JSON.parse(bm25Data) as { documentCount?: number };
+        needsRebuild = !parsed.documentCount || parsed.documentCount === 0;
+      } catch {
+        needsRebuild = true;
+      }
+    }
+    if (needsRebuild) {
+      await rebuildMergedIndex(storagePath, repoResults, config, logger);
+    }
+
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     // eslint-disable-next-line no-console
-    console.log(chalk.yellow('No chunks produced. Nothing to embed.'));
+    console.log(chalk.yellow('No new chunks. Index is up to date.'));
     // eslint-disable-next-line no-console
     console.log(`  Time elapsed: ${chalk.cyan(elapsed + 's')}`);
     return;
@@ -1460,6 +1573,13 @@ async function indexMultiRepo(
   await logger.setPhase('embed');
   const resolvedEmbeddingProvider = embeddingProvider ?? createSimpleEmbeddingProvider(config.embedding);
 
+  // Accumulators for merged root-level index
+  const mergedIds: string[] = [];
+  const mergedEmbeddings: number[][] = [];
+  const mergedMetadata: Record<string, unknown>[] = [];
+  const mergedBm25Chunks: Chunk[] = [];
+  const mergedGraph = new DependencyGraph();
+
   for (const rr of repoResults) {
     if (rr.chunks.length === 0) continue;
 
@@ -1481,7 +1601,7 @@ async function indexMultiRepo(
     }
     const embeddings = embedResult.value;
 
-    // Store in LanceDB
+    // Store in per-repo LanceDB
     await logger.info(`[${rr.repoName}] Storing in LanceDB...`);
     const store = new LanceDBStore(rr.repoStoragePath, config.embedding.dimensions);
     await store.connect();
@@ -1507,7 +1627,13 @@ async function indexMultiRepo(
       continue;
     }
 
-    // BM25 index
+    // Accumulate for merged root index
+    mergedIds.push(...ids);
+    mergedEmbeddings.push(...embeddings);
+    mergedMetadata.push(...metadata);
+    mergedBm25Chunks.push(...enrichedChunks);
+
+    // Per-repo BM25 index
     const bm25Path = join(rr.repoStoragePath, 'bm25-index.json');
     let bm25: BM25Index;
 
@@ -1537,12 +1663,16 @@ async function indexMultiRepo(
     bm25.addChunks(enrichedChunks);
     await writeFile(bm25Path, bm25.serialize(), 'utf-8');
 
-    // Dependency graph
+    // Per-repo dependency graph
     const graphBuilder = new GraphBuilder(rr.repoPath);
     const graphResult = graphBuilder.buildFromFiles(rr.parsedFiles);
     if (graphResult.isOk()) {
       const graphPath = join(rr.repoStoragePath, 'graph.json');
       const newGraph = graphResult.value;
+
+      // Accumulate for merged graph
+      for (const node of newGraph.getAllNodes()) mergedGraph.addNode(node);
+      for (const edge of newGraph.getAllEdges()) mergedGraph.addEdge(edge);
 
       if (options.full) {
         await writeFile(graphPath, JSON.stringify(newGraph.toJSON()), 'utf-8');
@@ -1589,6 +1719,31 @@ async function indexMultiRepo(
     store.close();
 
     await logger.succeed(`[${rr.repoName}] ${enrichedChunks.length} chunks indexed`);
+  }
+
+  // ── Phase 4: Merge all repos into root-level unified index ─────────
+  // This ensures search/MCP/viewer/benchmark can query all repos at once
+  if (mergedIds.length > 0) {
+    await logger.info('Merging all repos into unified index...');
+
+    // Merged LanceDB at root storagePath
+    const rootStore = new LanceDBStore(storagePath, config.embedding.dimensions);
+    await rootStore.connect();
+    const mergeResult = await rootStore.upsert(mergedIds, mergedEmbeddings, mergedMetadata);
+    if (mergeResult.isErr()) {
+      await logger.fail(`Merged store failed: ${mergeResult.error.message}`);
+    }
+    rootStore.close();
+
+    // Merged BM25 index at root
+    const rootBm25 = new BM25Index();
+    rootBm25.addChunks(mergedBm25Chunks);
+    await writeFile(join(storagePath, 'bm25-index.json'), rootBm25.serialize(), 'utf-8');
+
+    // Merged graph at root
+    await writeFile(join(storagePath, 'graph.json'), JSON.stringify(mergedGraph.toJSON()), 'utf-8');
+
+    await logger.succeed(`Unified index: ${mergedIds.length} chunks across ${repos.length} repos`);
   }
 
   // ── Final summary ───────────────────────────────────────────────────

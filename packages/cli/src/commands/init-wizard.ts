@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { select, input, confirm } from '@inquirer/prompts';
 import { stringify } from 'yaml';
-import { writeFile, mkdir, access, readdir } from 'node:fs/promises';
+import { writeFile, readFile, mkdir, access, readdir } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import { detectLanguages } from './init.js';
 
@@ -513,6 +513,9 @@ export async function runWizard(rootDir: string): Promise<void> {
   // eslint-disable-next-line no-console
   console.log(chalk.green(`  Created ${storageDir}`));
 
+  // Step 7b: Ensure .coderag/ is in .gitignore
+  await ensureGitignore(rootDir);
+
   // Step 8: Summary
   // eslint-disable-next-line no-console
   console.log(chalk.bold.green('\n  CodeRAG initialized successfully!\n'));
@@ -604,11 +607,36 @@ export async function runNonInteractive(
   // eslint-disable-next-line no-console
   console.log(chalk.green('Created'), storageDir);
 
+  // Ensure .coderag/ is in .gitignore
+  await ensureGitignore(rootDir);
+
   // Done
   // eslint-disable-next-line no-console
   console.log(chalk.green('\nCodeRAG initialized successfully!'));
   // eslint-disable-next-line no-console
   console.log(chalk.dim('Run "coderag index" to index your codebase.'));
+}
+
+/**
+ * Ensure .coderag/ is listed in .gitignore so database files are not committed.
+ * Creates .gitignore if it does not exist; appends entry if missing.
+ */
+export async function ensureGitignore(rootDir: string): Promise<void> {
+  const gitignorePath = join(rootDir, '.gitignore');
+  const entry = '.coderag/';
+  try {
+    const content = await readFile(gitignorePath, 'utf-8');
+    const lines = content.split('\n').map((l) => l.trim());
+    if (lines.includes(entry) || lines.includes('.coderag')) return;
+    const newContent = content.endsWith('\n') ? `${content}${entry}\n` : `${content}\n${entry}\n`;
+    await writeFile(gitignorePath, newContent, 'utf-8');
+    // eslint-disable-next-line no-console
+    console.log(chalk.green(`  Added ${entry} to .gitignore`));
+  } catch {
+    await writeFile(gitignorePath, `${entry}\n`, 'utf-8');
+    // eslint-disable-next-line no-console
+    console.log(chalk.green(`  Created .gitignore with ${entry}`));
+  }
 }
 
 /**

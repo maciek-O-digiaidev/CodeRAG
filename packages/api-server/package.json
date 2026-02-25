@@ -1,6 +1,6 @@
 {
   "name": "@code-rag/api-server",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "REST API server for CodeRAG — Express-based server with authentication, rate limiting, and OpenAPI docs",
   "type": "module",
   "license": "MIT",
