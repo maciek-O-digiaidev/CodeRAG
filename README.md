@@ -141,6 +141,26 @@ Add to your Claude Desktop MCP config (`~/Library/Application Support/Claude/cla
 | `coderag status` | Show index health and statistics (`--json` for machine output) |
 | `coderag viewer` | Launch the web-based viewer UI (`--port`, `--no-open`) |
 
+## Web Viewer
+
+CodeRAG includes a built-in web viewer for visually exploring your indexed codebase.
+
+```bash
+coderag viewer
+```
+
+Opens `http://localhost:3333` with five views:
+
+| View | Description |
+|------|-------------|
+| **Dashboard** | Index stats -- chunks, files, languages, last indexed |
+| **Chunk Browser** | Browse and filter all indexed chunks with source preview |
+| **Search Playground** | Interactive hybrid search with relevance scores |
+| **Dependency Graph** | Visual import/export/call graph across modules |
+| **Embedding Explorer** | 2D/3D UMAP scatter plot of chunk embeddings |
+
+See [`packages/viewer/`](packages/viewer/) for details.
+
 ## MCP Tools
 
 | Tool | Description |
@@ -188,6 +208,7 @@ Run `pnpm benchmark` to reproduce. See [`packages/benchmarks/`](packages/benchma
 | [Installation](docs/installation.md) | Prerequisites, three installation methods |
 | [Configuration](docs/configuration.md) | Full `.coderag.yaml` reference |
 | [Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
+| [Viewer](packages/viewer/) | Web viewer -- dashboard, search, graph, embeddings |
 
 See the [`docs/`](docs/) directory for additional documentation.
 
