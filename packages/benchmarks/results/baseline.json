@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-02-25T13:35:55.678Z",
+  "commitSha": "initial",
+  "seed": 42,
+  "queryCount": 53,
+  "metrics": {
+    "precisionAt5": 0.30943396226415093,
+    "precisionAt10": 0.1584905660377359,
+    "recallAt5": 0.9811320754716981,
+    "recallAt10": 1,
+    "mrr": 0.8852201257861636,
+    "ndcgAt10": 0.8962502256370419,
+    "map": 0.8446990116801439,
+    "contextPrecision": 0.8446990116801439,
+    "contextRecall": null
+  }
+}
