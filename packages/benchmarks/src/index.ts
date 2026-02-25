@@ -60,3 +60,31 @@ export type {
   GeneratedRepo,
   QueryEngineOptions,
 } from './generator/index.js';
+
+// Portable IR Metrics Runner
+export {
+  precisionAtK as irPrecisionAtK,
+  recallAtK as irRecallAtK,
+  mrr as irMrr,
+  ndcgAtK as irNdcgAtK,
+  averagePrecision,
+  contextPrecision,
+  contextRecall,
+} from './metrics/ir-metrics.js';
+export {
+  runMetrics,
+  computeSingleQueryMetrics,
+  computeAggregateMetrics as computeGenericAggregateMetrics,
+  adaptLegacyDataset,
+} from './metrics/metrics-runner.js';
+export { writeJsonReport, writeMarkdownReport } from './metrics/report-writer.js';
+export type {
+  GenericBenchmarkQuery,
+  GenericBenchmarkDataset,
+  QueryMetricsResult,
+  SingleQueryMetrics,
+  AggregateMetrics as GenericAggregateMetrics,
+  MetricsReport,
+  ReportMetadata,
+  RetrievalFn,
+} from './metrics/types.js';
