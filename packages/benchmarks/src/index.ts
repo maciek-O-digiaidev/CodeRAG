@@ -47,3 +47,16 @@ export {
   runPerfBenchmark,
 } from './perf/perf-benchmark.js';
 export type { LatencyResult, IndexingSpeedResult } from './perf/perf-benchmark.js';
+
+// Generator — synthetic repo + query template engine
+export { SeededRng, generateRepo, generateQueries } from './generator/index.js';
+export type {
+  RepoGeneratorOptions,
+  SupportedLanguage,
+  Complexity,
+  GeneratedFile,
+  ManifestEntity,
+  RepoManifest,
+  GeneratedRepo,
+  QueryEngineOptions,
+} from './generator/index.js';
