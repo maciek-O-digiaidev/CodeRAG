@@ -10,6 +10,54 @@
 
 services:
   # --------------------------------------------------------------------------
+  # Ollama — local LLM / embedding model server
+  # --------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: coderag-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    # GPU support (uncomment for NVIDIA GPU)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - coderag-net
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # --------------------------------------------------------------------------
+  # Ollama Init — pull required models before CodeRAG starts
+  # Uses the same ollama image (has CLI) and shares the model volume.
+  # --------------------------------------------------------------------------
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: coderag-ollama-init
+    volumes:
+      - ./scripts/ollama-init.sh:/init.sh:ro
+    entrypoint: ["/bin/sh", "/init.sh"]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      CODERAG_EMBEDDING_MODEL: ${CODERAG_EMBEDDING_MODEL:-nomic-embed-text}
+      CODERAG_ENRICHMENT_MODEL: ${CODERAG_ENRICHMENT_MODEL:-qwen2.5-coder:1.5b}
+    depends_on:
+      ollama:
+        condition: service_healthy
+    networks:
+      - coderag-net
+    restart: "no"
+
+  # --------------------------------------------------------------------------
   # CodeRAG — MCP server + API server + CLI
   # --------------------------------------------------------------------------
   coderag:
@@ -37,6 +85,8 @@ services:
     depends_on:
       ollama:
         condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
     networks:
       - coderag-net
     healthcheck:
@@ -48,33 +98,6 @@ services:
     restart: unless-stopped
     # Default command: start the API server (override for other commands)
     command: ["serve", "--port", "3000"]
-
-  # --------------------------------------------------------------------------
-  # Ollama — local LLM / embedding model server
-  # --------------------------------------------------------------------------
-  ollama:
-    image: ollama/ollama:0.5
-    container_name: coderag-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    # GPU support (uncomment for NVIDIA GPU)
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
-    restart: unless-stopped
-    networks:
-      - coderag-net
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # --------------------------------------------------------------------------
   # Viewer — CodeRAG visualization SPA (optional profile)
