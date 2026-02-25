@@ -1255,7 +1255,7 @@ async function indexMultiRepo(
           repoName, repoPath, repoStoragePath, filesToProcess: [], chunks: [],
           parsedFiles: [], indexState, indexStatePath, parseErrors: 0, skippedFiles: 0, parseErrorDetails: [],
         });
-        await logger.info(`[${repoName}] Up to date`);
+        await logger.succeed(`[${repoName}] Up to date`);
         continue;
       }
     }
@@ -1312,7 +1312,7 @@ async function indexMultiRepo(
     totalErrors += parseErrors;
 
     const parsedCount = filesToProcess.length - parseErrors - skippedFiles;
-    await logger.info(
+    await logger.succeed(
       `[${repoName}] ${filesToProcess.length} files, ${parsedCount} parsed, ${repoChunks.length} chunks` +
         (skippedFiles > 0 ? ` (${skippedFiles} unsupported skipped)` : ''),
     );
