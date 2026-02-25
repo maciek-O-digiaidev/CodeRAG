@@ -120,3 +120,41 @@ export type {
   ChunkTokenInfo,
   TokenBreakdown,
 } from './token-efficiency/index.js';
+
+// CodeSearchNet Adapter
+export {
+  CSN_LANGUAGES,
+  CSN_GITHUB_BASE_URL,
+  CSN_DEFAULT_CACHE_DIR,
+  CSN_DEFAULT_OUTPUT_DIR,
+  buildDownloadUrl,
+  buildCachePath,
+  parseCSNLine,
+  parseCSNJsonl,
+  downloadAndExtract,
+  loadCachedJsonl,
+  getCachedLanguages,
+  createDefaultDownloadConfig,
+  loadCSNDataset,
+  generateChunkId,
+  buildCodeCorpus,
+  filterByDocstringQuality,
+  adaptCSNToGenericDataset,
+  adaptCSNLanguageSubset,
+  createDefaultEvaluationConfig,
+  createTokenOverlapRetrievalFn,
+  evaluateLanguage,
+  evaluateCSN,
+  formatCSNReportJson,
+  formatCSNReportMarkdown,
+} from './adapters/codesearchnet/index.js';
+export type {
+  CSNLanguage,
+  CSNEntry,
+  CSNDataset,
+  CSNDownloadConfig,
+  CSNEvaluationConfig,
+  CodeCorpus,
+  CSNLanguageResult,
+  CSNEvaluationReport,
+} from './adapters/codesearchnet/index.js';
