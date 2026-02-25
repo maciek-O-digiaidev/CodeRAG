@@ -89,7 +89,7 @@ describe('ApiClient', () => {
     it('should fetch chunks without params and unwrap data envelope', async () => {
       const backendResponse = {
         data: [
-          { id: 'c1', filePath: 'src/a.ts', chunkType: 'function', name: 'hello', language: 'typescript', startLine: 1, endLine: 5 },
+          { id: 'c1', filePath: 'src/a.ts', chunkType: 'function', name: 'hello', language: 'typescript', startLine: 1, endLine: 5, contentPreview: 'function hello()' },
         ],
         meta: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
       };

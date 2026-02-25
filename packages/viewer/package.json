@@ -37,6 +37,10 @@
     "clean": "rm -rf dist",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@code-rag/core": "workspace:*",
+    "zod": "^4.3.6"
+  },
   "devDependencies": {
     "jsdom": "^28.1.0",
     "typescript": "~5.8.3",

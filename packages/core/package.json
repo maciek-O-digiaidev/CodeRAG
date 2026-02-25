@@ -40,6 +40,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./api-contracts": {
+      "import": "./dist/api-contracts/index.js",
+      "types": "./dist/api-contracts/index.d.ts"
     }
   },
   "scripts": {

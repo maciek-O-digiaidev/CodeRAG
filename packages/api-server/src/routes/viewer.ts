@@ -5,9 +5,38 @@ import type {
   CodeRAGConfig,
   HybridSearch,
   DependencyGraph,
-  GraphNode,
-  GraphEdge,
 } from '@code-rag/core';
+
+// Import shared Zod contracts — the single source of truth for API types
+import type {
+  ViewerStatsResponse,
+  ViewerChunksResponse,
+  ViewerChunkDetailResponse,
+  ViewerSearchResponse,
+  ViewerGraphResponse,
+  ViewerEmbeddingsResponse,
+  ViewerChunkSummary as ChunkSummary,
+  ViewerPaginationMeta as PaginationMeta,
+  ViewerChunkDetail as ChunkDetail,
+  ViewerSearchResultType as ViewerSearchResult,
+  ViewerEmbeddingPoint as EmbeddingPoint,
+} from '@code-rag/core';
+
+// Re-export contract types so existing consumers (tests, etc.) still compile
+export type {
+  ViewerStatsResponse,
+  ViewerChunksResponse,
+  ViewerChunkDetailResponse,
+  ViewerSearchResponse,
+  ViewerGraphResponse,
+  ViewerEmbeddingsResponse,
+};
+
+// Re-export aliased types for backwards compatibility with api-server index.ts
+export type { ChunkSummary, ChunkDetail, PaginationMeta, ViewerSearchResult, EmbeddingPoint };
+
+/** @deprecated Use ViewerGraphResponse from @code-rag/core instead */
+export type GraphResponse = ViewerGraphResponse;
 
 // --- Zod schemas for query parameter validation ---
 
@@ -46,85 +75,6 @@ const searchQuerySchema = z.object({
 const embeddingsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(2000).default(500),
 });
-
-// --- Response types ---
-
-export interface ViewerStatsResponse {
-  data: {
-    chunkCount: number;
-    fileCount: number;
-    languages: Record<string, number>;
-    storageBytes: number | null;
-    lastIndexed: string | null;
-  };
-}
-
-export interface ChunkSummary {
-  id: string;
-  filePath: string;
-  chunkType: string;
-  name: string;
-  language: string;
-  startLine: number;
-  endLine: number;
-  contentPreview: string;
-}
-
-export interface PaginationMeta {
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
-}
-
-export interface ChunkDetail {
-  id: string;
-  filePath: string;
-  chunkType: string;
-  name: string;
-  language: string;
-  startLine: number;
-  endLine: number;
-  content: string;
-  nlSummary: string;
-  metadata: Record<string, unknown>;
-  vector?: number[];
-}
-
-export interface GraphResponse {
-  data: {
-    nodes: GraphNode[];
-    edges: GraphEdge[];
-  };
-}
-
-export interface ViewerSearchResult {
-  chunkId: string;
-  filePath: string;
-  chunkType: string;
-  name: string;
-  content: string;
-  nlSummary: string;
-  score: number;
-  method: string;
-}
-
-export interface ViewerSearchResponse {
-  data: {
-    results: ViewerSearchResult[];
-    timing: {
-      totalMs: number;
-    };
-  };
-}
-
-export interface EmbeddingPoint {
-  id: string;
-  filePath: string;
-  chunkType: string;
-  language: string;
-  vector: number[];
-}
 
 // --- Dependencies interface ---
 
@@ -422,7 +372,7 @@ export function createViewerRouter(deps: ViewerDeps): Router {
       const nodeIds = new Set(nodes.map((n) => n.id));
       edges = edges.filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target));
 
-      const response: GraphResponse = {
+      const response: ViewerGraphResponse = {
         data: { nodes, edges },
       };
 

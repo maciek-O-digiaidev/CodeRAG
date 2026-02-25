@@ -1,6 +1,24 @@
+import {
+  ViewerStatsResponseSchema,
+  ViewerChunksResponseSchema,
+  ViewerChunkDetailResponseSchema,
+  ViewerSearchResponseSchema,
+  ViewerGraphResponseSchema,
+  ViewerEmbeddingsResponseSchema,
+} from '@code-rag/core/api-contracts';
+
+import type {
+  ViewerStatsResponse,
+  ViewerChunksResponse,
+  ViewerChunkDetailResponse,
+  ViewerSearchResponse,
+  ViewerGraphResponse,
+  ViewerEmbeddingsResponse,
+} from '@code-rag/core/api-contracts';
+
 const BASE_URL = '/api/v1/viewer';
 
-// --- Response types ---
+// --- Viewer presentation types (view-layer abstractions) ---
 
 export interface StatsResponse {
   totalChunks: number;
@@ -143,155 +161,150 @@ async function fetchJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+// --- Mapping helpers: wire format -> presentation types ---
+
+function mapStatsResponse(wire: ViewerStatsResponse): StatsResponse {
+  return {
+    totalChunks: wire.data.chunkCount,
+    totalFiles: wire.data.fileCount,
+    totalEmbeddings: wire.data.chunkCount,
+    languages: wire.data.languages,
+    lastIndexedAt: wire.data.lastIndexed,
+  };
+}
+
+function mapChunksResponse(wire: ViewerChunksResponse): PaginatedResponse<ChunkSummary> {
+  return {
+    items: wire.data.map((c) => ({
+      id: c.id,
+      filePath: c.filePath,
+      name: c.name,
+      kind: c.chunkType,
+      language: c.language,
+      startLine: c.startLine,
+      endLine: c.endLine,
+    })),
+    total: wire.meta.total,
+    offset: (wire.meta.page - 1) * wire.meta.pageSize,
+    limit: wire.meta.pageSize,
+  };
+}
+
+function mapChunkDetailResponse(wire: ViewerChunkDetailResponse): ChunkDetail {
+  const d = wire.data;
+  return {
+    id: d.id,
+    filePath: d.filePath,
+    name: d.name,
+    kind: d.chunkType,
+    language: d.language,
+    startLine: d.startLine,
+    endLine: d.endLine,
+    content: d.content,
+    summary: d.nlSummary,
+    dependencies: Array.isArray(d.metadata?.['dependencies'])
+      ? (d.metadata['dependencies'] as string[])
+      : [],
+    vector: d.vector ?? null,
+  };
+}
+
+function mapGraphResponse(wire: ViewerGraphResponse): GraphResponse {
+  return {
+    nodes: wire.data.nodes.map((n) => ({
+      id: n.id,
+      name: n.symbols[0] ?? n.id,
+      kind: n.type,
+      filePath: n.filePath,
+    })),
+    edges: wire.data.edges.map((e) => ({
+      source: e.source,
+      target: e.target,
+      kind: e.type,
+    })),
+  };
+}
+
+function mapSearchResponse(wire: ViewerSearchResponse, query: string): SearchResponse {
+  return {
+    results: wire.data.results.map((sr) => ({
+      chunkId: sr.chunkId,
+      score: sr.score,
+      filePath: sr.filePath,
+      name: sr.name,
+      kind: sr.chunkType,
+      snippet: sr.nlSummary || sr.content.slice(0, 200),
+    })),
+    query,
+    totalResults: wire.data.results.length,
+    timingMs: wire.data.timing.totalMs,
+  };
+}
+
+function mapEmbeddingsResponse(wire: ViewerEmbeddingsResponse): EmbeddingPoint[] {
+  return wire.data.map((p) => ({
+    id: p.id,
+    filePath: p.filePath,
+    chunkType: p.chunkType,
+    language: p.language,
+    vector: p.vector,
+  }));
+}
+
 
 /**
  * Create an API client for the CodeRAG viewer REST endpoints.
+ *
+ * Every fetch call validates the response against shared Zod schemas from
+ * @code-rag/core/api-contracts, ensuring the server contract is enforced
+ * at runtime. Any schema violation throws a ZodError.
  */
 export function createApiClient(): ApiClient {
   return {
-    getStats(): Promise<StatsResponse> {
-      return fetchJson<{
-        data: {
-          chunkCount: number;
-          fileCount: number;
-          languages: Record<string, number>;
-          storageBytes: number | null;
-          lastIndexed: string | null;
-        };
-      }>(`${BASE_URL}/stats`).then((r) => ({
-        totalChunks: r.data.chunkCount,
-        totalFiles: r.data.fileCount,
-        totalEmbeddings: r.data.chunkCount,
-        languages: r.data.languages ?? {},
-        lastIndexedAt: r.data.lastIndexed,
-      }));
+    async getStats(): Promise<StatsResponse> {
+      const raw = await fetchJson<unknown>(`${BASE_URL}/stats`);
+      const wire = ViewerStatsResponseSchema.parse(raw);
+      return mapStatsResponse(wire);
     },
 
-    getChunks(params?: ChunkQueryParams): Promise<PaginatedResponse<ChunkSummary>> {
+    async getChunks(params?: ChunkQueryParams): Promise<PaginatedResponse<ChunkSummary>> {
       const qs = params ? buildQueryString(params) : '';
-      return fetchJson<{
-        data: Array<{
-          id: string;
-          filePath: string;
-          chunkType: string;
-          name: string;
-          language: string;
-          startLine: number;
-          endLine: number;
-        }>;
-        meta: { page: number; pageSize: number; total: number; totalPages: number };
-      }>(`${BASE_URL}/chunks${qs}`).then((r) => ({
-        items: r.data.map((c) => ({
-          id: c.id,
-          filePath: c.filePath,
-          name: c.name,
-          kind: c.chunkType,
-          language: c.language,
-          startLine: c.startLine,
-          endLine: c.endLine,
-        })),
-        total: r.meta.total,
-        offset: (r.meta.page - 1) * r.meta.pageSize,
-        limit: r.meta.pageSize,
-      }));
+      const raw = await fetchJson<unknown>(`${BASE_URL}/chunks${qs}`);
+      const wire = ViewerChunksResponseSchema.parse(raw);
+      return mapChunksResponse(wire);
     },
 
-    getChunk(id: string, includeVector?: boolean): Promise<ChunkDetail> {
+    async getChunk(id: string, includeVector?: boolean): Promise<ChunkDetail> {
       const qs = includeVector !== undefined ? buildQueryString({ includeVector }) : '';
-      return fetchJson<{
-        data: {
-          id: string;
-          filePath: string;
-          chunkType: string;
-          name: string;
-          language: string;
-          startLine: number;
-          endLine: number;
-          content: string;
-          nlSummary: string;
-          metadata: Record<string, unknown>;
-          vector?: number[];
-        };
-      }>(`${BASE_URL}/chunks/${encodeURIComponent(id)}${qs}`).then((r) => ({
-        id: r.data.id,
-        filePath: r.data.filePath,
-        name: r.data.name,
-        kind: r.data.chunkType,
-        language: r.data.language,
-        startLine: r.data.startLine,
-        endLine: r.data.endLine,
-        content: r.data.content,
-        summary: r.data.nlSummary,
-        dependencies: Array.isArray(r.data.metadata?.['dependencies'])
-          ? (r.data.metadata['dependencies'] as string[])
-          : [],
-        vector: r.data.vector ?? null,
-      }));
+      const raw = await fetchJson<unknown>(`${BASE_URL}/chunks/${encodeURIComponent(id)}${qs}`);
+      const wire = ViewerChunkDetailResponseSchema.parse(raw);
+      return mapChunkDetailResponse(wire);
     },
 
-    getGraph(params?: GraphQueryParams): Promise<GraphResponse> {
+    async getGraph(params?: GraphQueryParams): Promise<GraphResponse> {
       const qs = params ? buildQueryString(params) : '';
-      return fetchJson<{
-        data: {
-          nodes: Array<{ id: string; filePath: string; symbols: string[]; type: string }>;
-          edges: Array<{ source: string; target: string; type: string }>;
-        };
-      }>(`${BASE_URL}/graph${qs}`).then((r) => ({
-        nodes: r.data.nodes.map((n) => ({
-          id: n.id,
-          name: n.symbols[0] ?? n.id,
-          kind: n.type,
-          filePath: n.filePath,
-        })),
-        edges: r.data.edges.map((e) => ({
-          source: e.source,
-          target: e.target,
-          kind: e.type,
-        })),
-      }));
+      const raw = await fetchJson<unknown>(`${BASE_URL}/graph${qs}`);
+      const wire = ViewerGraphResponseSchema.parse(raw);
+      return mapGraphResponse(wire);
     },
 
-    search(params: SearchParams): Promise<SearchResponse> {
+    async search(params: SearchParams): Promise<SearchResponse> {
       const qs = buildQueryString({
         q: params.query,
         ...(params.topK !== undefined && { topK: params.topK }),
         ...(params.vectorWeight !== undefined && { vectorWeight: params.vectorWeight }),
         ...(params.bm25Weight !== undefined && { bm25Weight: params.bm25Weight }),
       });
-      return fetchJson<{
-        data: {
-          results: Array<{
-            chunkId: string;
-            filePath: string;
-            chunkType: string;
-            name: string;
-            content: string;
-            nlSummary: string;
-            score: number;
-            method: string;
-          }>;
-          timing: { totalMs: number };
-        };
-      }>(`${BASE_URL}/search${qs}`).then((r) => ({
-        results: r.data.results.map((sr) => ({
-          chunkId: sr.chunkId,
-          score: sr.score,
-          filePath: sr.filePath,
-          name: sr.name,
-          kind: sr.chunkType,
-          snippet: sr.nlSummary || sr.content.slice(0, 200),
-        })),
-        query: params.query,
-        totalResults: r.data.results.length,
-        timingMs: r.data.timing.totalMs,
-      }));
+      const raw = await fetchJson<unknown>(`${BASE_URL}/search${qs}`);
+      const wire = ViewerSearchResponseSchema.parse(raw);
+      return mapSearchResponse(wire, params.query);
     },
 
-    getEmbeddings(limit?: number): Promise<EmbeddingPoint[]> {
+    async getEmbeddings(limit?: number): Promise<EmbeddingPoint[]> {
       const qs = limit !== undefined ? buildQueryString({ limit }) : '';
-      return fetchJson<{ data: EmbeddingPoint[] }>(`${BASE_URL}/embeddings${qs}`).then(
-        (response) => response.data,
-      );
+      const raw = await fetchJson<unknown>(`${BASE_URL}/embeddings${qs}`);
+      const wire = ViewerEmbeddingsResponseSchema.parse(raw);
+      return mapEmbeddingsResponse(wire);
     },
   };
 }

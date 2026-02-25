@@ -229,3 +229,37 @@ export {
   safeArray,
   safeStringUnion,
 } from './utils/safe-cast.js';
+
+// --- API Contracts (shared Zod schemas for viewer REST API) ---
+
+export {
+  PaginationMetaSchema,
+  ChunkSummarySchema,
+  ChunkDetailSchema,
+  GraphNodeSchema,
+  GraphEdgeSchema,
+  ViewerSearchResultSchema,
+  EmbeddingPointSchema,
+  ViewerStatsResponseSchema,
+  ViewerChunksResponseSchema,
+  ViewerChunkDetailResponseSchema,
+  ViewerSearchResponseSchema,
+  ViewerGraphResponseSchema,
+  ViewerEmbeddingsResponseSchema,
+} from './api-contracts/index.js';
+
+export type {
+  ViewerPaginationMeta,
+  ViewerChunkSummary,
+  ViewerChunkDetail,
+  ViewerGraphNode,
+  ViewerGraphEdge,
+  ViewerSearchResultType,
+  ViewerEmbeddingPoint,
+  ViewerStatsResponse,
+  ViewerChunksResponse,
+  ViewerChunkDetailResponse,
+  ViewerSearchResponse,
+  ViewerGraphResponse,
+  ViewerEmbeddingsResponse,
+} from './api-contracts/index.js';

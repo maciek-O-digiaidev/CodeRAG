@@ -201,6 +201,13 @@ importers:
         version: 3.2.4(@types/node@22.19.11)
 
   packages/viewer:
+    dependencies:
+      '@code-rag/core':
+        specifier: workspace:*
+        version: link:../core
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       jsdom:
         specifier: ^28.1.0

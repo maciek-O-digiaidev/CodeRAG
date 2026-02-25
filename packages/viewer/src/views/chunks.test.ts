@@ -26,9 +26,9 @@ function mockErrorResponse(status: number, statusText: string): Response {
 // Backend response format for /chunks — API client unwraps { data, meta } envelope
 const MOCK_CHUNKS_PAGE = {
   data: [
-    { id: 'c1', filePath: 'src/foo.ts', name: 'fooFunction', chunkType: 'function', language: 'typescript', startLine: 1, endLine: 20 },
-    { id: 'c2', filePath: 'src/bar.ts', name: 'BarClass', chunkType: 'class', language: 'typescript', startLine: 5, endLine: 45 },
-    { id: 'c3', filePath: 'lib/baz.py', name: 'baz_helper', chunkType: 'function', language: 'python', startLine: 10, endLine: 30 },
+    { id: 'c1', filePath: 'src/foo.ts', name: 'fooFunction', chunkType: 'function', language: 'typescript', startLine: 1, endLine: 20, contentPreview: 'function fooFunction() { return 42; }' },
+    { id: 'c2', filePath: 'src/bar.ts', name: 'BarClass', chunkType: 'class', language: 'typescript', startLine: 5, endLine: 45, contentPreview: 'class BarClass { ... }' },
+    { id: 'c3', filePath: 'lib/baz.py', name: 'baz_helper', chunkType: 'function', language: 'python', startLine: 10, endLine: 30, contentPreview: 'def baz_helper(): ...' },
   ],
   meta: { page: 1, pageSize: 25, total: 50, totalPages: 2 },
 };
