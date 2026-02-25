@@ -1,6 +1,6 @@
 {
   "name": "@code-rag/core",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Core library for CodeRAG \u2014 intelligent codebase context engine with AST parsing, embeddings, and hybrid search",
   "type": "module",
   "license": "MIT",

@@ -1,6 +1,6 @@
 {
   "name": "@code-rag/cli",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "CLI tool for CodeRAG \u2014 init, index, search, serve, and status commands for codebase context engine",
   "type": "module",
   "license": "MIT",
