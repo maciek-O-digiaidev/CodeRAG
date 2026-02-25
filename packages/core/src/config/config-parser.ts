@@ -296,6 +296,21 @@ function applyDefaults(partial: Record<string, unknown>): Record<string, unknown
 
 // --- Main ---
 
+/** Deep-merge source into target (source wins). Arrays are replaced, not concatenated. */
+function deepMerge(target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> {
+  const result = { ...target };
+  for (const key of Object.keys(source)) {
+    const sv = source[key];
+    const tv = target[key];
+    if (sv !== null && typeof sv === 'object' && !Array.isArray(sv) && tv !== null && typeof tv === 'object' && !Array.isArray(tv)) {
+      result[key] = deepMerge(tv as Record<string, unknown>, sv as Record<string, unknown>);
+    } else {
+      result[key] = sv;
+    }
+  }
+  return result;
+}
+
 export async function loadConfig(rootDir: string): Promise<Result<CodeRAGConfig, ConfigError>> {
   const configPath = join(rootDir, '.coderag.yaml');
 
@@ -316,6 +331,18 @@ export async function loadConfig(rootDir: string): Promise<Result<CodeRAGConfig,
 
   if (parsed === null || parsed === undefined || typeof parsed !== 'object') {
     return err(new ConfigError('Config file is empty or not a valid YAML object'));
+  }
+
+  // Merge .coderag.local.yaml overrides if present (gitignored, for private settings)
+  const localPath = join(rootDir, '.coderag.local.yaml');
+  try {
+    const localContent = await readFile(localPath, 'utf-8');
+    const localParsed = parse(localContent);
+    if (localParsed !== null && localParsed !== undefined && typeof localParsed === 'object') {
+      parsed = deepMerge(parsed as Record<string, unknown>, localParsed as Record<string, unknown>);
+    }
+  } catch {
+    // No local overrides — that's fine
   }
 
   // Interpolate environment variables (e.g., ${ADO_PAT} → process.env.ADO_PAT)

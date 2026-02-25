@@ -18,6 +18,7 @@ Thumbs.db
 # Environment
 .env
 .env.local
+.coderag.local.yaml
 
 # CodeRAG data
 .coderag/
