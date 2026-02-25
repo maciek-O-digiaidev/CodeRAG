@@ -1,22 +1,15 @@
 import express, { type Express } from 'express';
 import { createServer, type Server as HttpServer } from 'node:http';
 import {
-  loadConfig,
-  OllamaEmbeddingProvider,
-  LanceDBStore,
-  BM25Index,
-  HybridSearch,
+  createRuntime,
   DependencyGraph,
-  ContextExpander,
-  CrossEncoderReRanker,
-  type ReRanker,
+  type CodeRAGRuntime,
   type CodeRAGConfig,
-  type SearchResult,
-  type GraphNode,
-  type GraphEdge,
+  type LanceDBStore,
+  type HybridSearch,
+  type ContextExpander,
+  type ReRanker,
 } from '@code-rag/core';
-import { readFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
 import { parseApiKeys, createAuthMiddleware, type ApiKeyEntry, type AuthenticatedRequest } from './middleware/auth.js';
 import { createRateLimitMiddleware, parseRateLimitConfig } from './middleware/rate-limit.js';
 import { createSearchRouter } from './routes/search.js';
@@ -52,6 +45,7 @@ export class ApiServer {
   private httpServer: HttpServer | null = null;
 
   // Core services (populated after initialize())
+  private runtime: CodeRAGRuntime | null = null;
   private config: CodeRAGConfig | null = null;
   private store: LanceDBStore | null = null;
   private hybridSearch: HybridSearch | null = null;
@@ -187,74 +181,25 @@ export class ApiServer {
    */
   async initialize(): Promise<void> {
     try {
-      const configResult = await loadConfig(this.rootDir);
-      if (configResult.isErr()) {
+      const runtimeResult = await createRuntime({ rootDir: this.rootDir });
+      if (runtimeResult.isErr()) {
         // eslint-disable-next-line no-console
-        console.error(`[api-server] Config load failed: ${configResult.error.message}`);
+        console.error(`[api-server] ${runtimeResult.error.message}`);
         return;
       }
 
-      this.config = configResult.value;
+      this.runtime = runtimeResult.value;
+      this.config = this.runtime.config;
+      this.store = this.runtime.store;
+      this.hybridSearch = this.runtime.hybridSearch;
+      this.contextExpander = this.runtime.contextExpander;
+      this.reranker = this.runtime.reranker;
 
-      // Create embedding provider
-      const embeddingProvider = new OllamaEmbeddingProvider({
-        model: this.config.embedding.model,
-        dimensions: this.config.embedding.dimensions,
-      });
-
-      // Create LanceDB store
-      const storagePath = resolve(this.rootDir, this.config.storage.path);
-      if (!storagePath.startsWith(resolve(this.rootDir))) {
-        // eslint-disable-next-line no-console
-        console.error('[api-server] Storage path escapes project root');
-        return;
+      // Expose graph as DependencyGraph for viewer API (getAllNodes, getAllEdges)
+      const graphInstance = this.runtime.graph;
+      if (graphInstance instanceof DependencyGraph) {
+        this.graph = graphInstance;
       }
-      this.store = new LanceDBStore(storagePath, this.config.embedding.dimensions);
-      await this.store.connect();
-
-      // Load BM25 index
-      let bm25Index = new BM25Index();
-      const bm25Path = join(storagePath, 'bm25-index.json');
-      try {
-        const bm25Data = await readFile(bm25Path, 'utf-8');
-        bm25Index = BM25Index.deserialize(bm25Data);
-      } catch {
-        // No saved BM25 index, start empty
-      }
-
-      // Create HybridSearch
-      this.hybridSearch = new HybridSearch(
-        this.store,
-        bm25Index,
-        embeddingProvider,
-        this.config.search,
-      );
-
-      // Create re-ranker if enabled
-      if (this.config.reranker?.enabled) {
-        this.reranker = new CrossEncoderReRanker({
-          model: this.config.reranker.model,
-          topN: this.config.reranker.topN,
-        });
-      }
-
-      // Load dependency graph
-      let graph = new DependencyGraph();
-      const graphPath = join(storagePath, 'graph.json');
-      try {
-        const graphData = await readFile(graphPath, 'utf-8');
-        const parsed = JSON.parse(graphData) as { nodes: GraphNode[]; edges: GraphEdge[] };
-        graph = DependencyGraph.fromJSON(parsed);
-      } catch {
-        // No saved graph, start empty
-      }
-
-      // Store graph for viewer API
-      this.graph = graph;
-
-      // Create context expander
-      const chunkLookup = (_chunkId: string): SearchResult | undefined => undefined;
-      this.contextExpander = new ContextExpander(graph, chunkLookup);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       // eslint-disable-next-line no-console
@@ -288,6 +233,12 @@ export class ApiServer {
         });
       });
       this.httpServer = null;
+    }
+
+    // Close the runtime (LanceDB, etc.)
+    if (this.runtime) {
+      this.runtime.close();
+      this.runtime = null;
     }
   }
 

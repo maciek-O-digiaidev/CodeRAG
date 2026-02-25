@@ -7,6 +7,7 @@ export type {
   RelatedChunk,
   GraphExcerpt,
   ExpandedContext,
+  ChunkLookupFn,
 } from './context-expander.js';
 export { ContextExpander } from './context-expander.js';
 

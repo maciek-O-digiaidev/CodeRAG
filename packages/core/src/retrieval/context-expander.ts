@@ -35,13 +35,16 @@ export interface ExpandedContext {
 
 const DEFAULT_MAX_RELATED = 10;
 
+/** Callback to resolve a chunk by its ID. May be sync or async (await handles both). */
+export type ChunkLookupFn = (chunkId: string) => SearchResult | undefined | Promise<SearchResult | undefined>;
+
 export class ContextExpander {
   private readonly graph: ReadonlyGraph;
-  private readonly chunkLookup: (chunkId: string) => SearchResult | undefined;
+  private readonly chunkLookup: ChunkLookupFn;
 
   constructor(
     dependencyGraph: ReadonlyGraph,
-    chunkLookup: (chunkId: string) => SearchResult | undefined,
+    chunkLookup: ChunkLookupFn,
   ) {
     this.graph = dependencyGraph;
     this.chunkLookup = chunkLookup;
@@ -52,10 +55,10 @@ export class ContextExpander {
    * For each result, walks the dependency graph to find related chunks
    * and classifies their relationships.
    */
-  expand(
+  async expand(
     results: SearchResult[],
     maxRelated: number = DEFAULT_MAX_RELATED,
-  ): ExpandedContext {
+  ): Promise<ExpandedContext> {
     const relatedMap = new Map<string, RelatedChunk>();
     const graphNodes = new Set<string>();
     const graphEdges: Array<{ from: string; to: string; type: string }> = [];
@@ -78,7 +81,7 @@ export class ContextExpander {
         // Don't add duplicates — keep the one with shortest distance
         if (relatedMap.has(relatedId)) continue;
 
-        const relatedResult = this.chunkLookup(relatedId);
+        const relatedResult = await this.chunkLookup(relatedId);
         if (!relatedResult) continue;
 
         const relationship = this.classifyRelationship(nodeId, relatedId);

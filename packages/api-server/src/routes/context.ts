@@ -93,7 +93,7 @@ export function createContextRouter(deps: ContextRouteDeps): Router {
       }
 
       // Expand context via dependency graph
-      const expanded = deps.contextExpander.expand(results);
+      const expanded = await deps.contextExpander.expand(results);
 
       // Assemble within token budget
       const optimizer = new TokenBudgetOptimizer({ maxTokens: max_tokens });

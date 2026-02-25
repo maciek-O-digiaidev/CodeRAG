@@ -165,7 +165,7 @@ export async function handleExplain(
 
     // Add related symbols from context expander when in detailed mode
     if (detail_level === 'detailed' && contextExpander) {
-      const expanded = contextExpander.expand(results);
+      const expanded = await contextExpander.expand(results);
       const relatedSymbols = expanded.relatedChunks.map((related) => {
         return related.chunk.metadata.name ?? related.chunk.chunk?.filePath ?? 'unknown';
       });

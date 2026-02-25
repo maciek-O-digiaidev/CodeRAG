@@ -8,23 +8,17 @@ import {
 import {
   loadConfig,
   checkIndexExists,
-  OllamaEmbeddingProvider,
-  LanceDBStore,
-  BM25Index,
-  HybridSearch,
-  DependencyGraph,
-  ContextExpander,
-  CrossEncoderReRanker,
-  type ReRanker,
+  createRuntime,
+  type CodeRAGRuntime,
   type CodeRAGConfig,
-  type SearchResult,
-  type GraphNode,
-  type GraphEdge,
+  type LanceDBStore,
+  type HybridSearch,
+  type ContextExpander,
+  type ReRanker,
   type BacklogProvider,
   type IndexCheckResult,
 } from '@code-rag/core';
-import { readFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { createServer, type Server as HttpServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { URL } from 'node:url';
 import { handleSearch } from './tools/search.js';
@@ -54,6 +48,7 @@ export interface CodeRAGServerOptions {
 export class CodeRAGServer {
   private readonly server: Server;
   private readonly rootDir: string;
+  private runtime: CodeRAGRuntime | null = null;
   private config: CodeRAGConfig | null = null;
   private store: LanceDBStore | null = null;
   private hybridSearch: HybridSearch | null = null;
@@ -106,80 +101,28 @@ export class CodeRAGServer {
    */
   async initialize(): Promise<void> {
     try {
+      // Check index existence before full init
       const configResult = await loadConfig(this.rootDir);
-      if (configResult.isErr()) {
+      if (configResult.isOk()) {
+        const storagePath = resolve(this.rootDir, configResult.value.storage.path);
+        if (storagePath.startsWith(resolve(this.rootDir))) {
+          this.indexCheck = await checkIndexExists(storagePath);
+        }
+      }
+
+      const runtimeResult = await createRuntime({ rootDir: this.rootDir });
+      if (runtimeResult.isErr()) {
         // eslint-disable-next-line no-console
-        console.error(`[coderag] Config load failed: ${configResult.error.message}`);
+        console.error(`[coderag] ${runtimeResult.error.message}`);
         return;
       }
 
-      this.config = configResult.value;
-
-      // Create embedding provider
-      const embeddingProvider = new OllamaEmbeddingProvider({
-        model: this.config.embedding.model,
-        dimensions: this.config.embedding.dimensions,
-      });
-
-      // Create LanceDB store (validate path stays within rootDir)
-      const storagePath = resolve(this.rootDir, this.config.storage.path);
-      if (!storagePath.startsWith(resolve(this.rootDir))) {
-        // eslint-disable-next-line no-console
-        console.error('[coderag] Storage path escapes project root');
-        return;
-      }
-
-      // Check index existence before connecting
-      this.indexCheck = await checkIndexExists(storagePath);
-
-      this.store = new LanceDBStore(storagePath, this.config.embedding.dimensions);
-      await this.store.connect();
-
-      // Create BM25 index -- try to load from stored data
-      let bm25Index = new BM25Index();
-      const bm25Path = join(storagePath, 'bm25-index.json');
-      try {
-        const bm25Data = await readFile(bm25Path, 'utf-8');
-        bm25Index = BM25Index.deserialize(bm25Data);
-      } catch {
-        // No saved BM25 index, start empty
-      }
-
-      // Create HybridSearch
-      this.hybridSearch = new HybridSearch(
-        this.store,
-        bm25Index,
-        embeddingProvider,
-        this.config.search,
-      );
-
-      // Create re-ranker if enabled
-      if (this.config.reranker?.enabled) {
-        this.reranker = new CrossEncoderReRanker({
-          model: this.config.reranker.model,
-          topN: this.config.reranker.topN,
-        });
-      }
-
-      // Load dependency graph if available
-      let graph = new DependencyGraph();
-      const graphPath = join(storagePath, 'graph.json');
-      try {
-        const graphData = await readFile(graphPath, 'utf-8');
-        const parsed = JSON.parse(graphData) as { nodes: GraphNode[]; edges: GraphEdge[] };
-        graph = DependencyGraph.fromJSON(parsed);
-      } catch {
-        // No saved graph, start empty
-      }
-
-      // Create retrieval services
-      const chunkLookup = (_chunkId: string): SearchResult | undefined => {
-        // In a full implementation this would look up chunks by ID.
-        // For now, the context expander will only work with chunks found via search.
-        return undefined;
-      };
-
-      this.contextExpander = new ContextExpander(graph, chunkLookup);
+      this.runtime = runtimeResult.value;
+      this.config = this.runtime.config;
+      this.store = this.runtime.store;
+      this.hybridSearch = this.runtime.hybridSearch;
+      this.contextExpander = this.runtime.contextExpander;
+      this.reranker = this.runtime.reranker;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       // eslint-disable-next-line no-console
@@ -495,6 +438,12 @@ export class CodeRAGServer {
         });
       });
       this.httpServer = null;
+    }
+
+    // Close the runtime (LanceDB, etc.)
+    if (this.runtime) {
+      this.runtime.close();
+      this.runtime = null;
     }
   }
 

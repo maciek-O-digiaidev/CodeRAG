@@ -233,6 +233,44 @@ export class LanceDBStore implements VectorStore {
     }
   }
 
+  async getById(id: string): Promise<Result<{ id: string; metadata: Record<string, unknown> } | undefined, StoreError>> {
+    try {
+      if (!validateId(id)) {
+        return err(new StoreError(`Invalid chunk ID: ${id}`));
+      }
+
+      await this.ensureConnected();
+
+      if (!this.table) {
+        return ok(undefined);
+      }
+
+      const filter = `id = '${id}'`;
+      const rows = (await this.table.query().where(filter).limit(1).toArray()) as LanceDBRow[];
+
+      if (rows.length === 0) {
+        return ok(undefined);
+      }
+
+      const row = rows[0]!;
+      return ok({
+        id: row.id,
+        metadata: {
+          content: row.content,
+          nl_summary: row.nl_summary,
+          chunk_type: row.chunk_type,
+          file_path: row.file_path,
+          language: row.language,
+          ...(row.metadata ? safeParseJSON(row.metadata) : {}),
+        },
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown error';
+      return err(new StoreError(`LanceDB getById failed: ${message}`));
+    }
+  }
+
   close(): void {
     if (this.table) {
       this.table.close();

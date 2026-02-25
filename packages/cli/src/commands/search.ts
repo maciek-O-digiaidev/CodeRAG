@@ -1,13 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { readFile } from 'node:fs/promises';
-import { join, resolve, sep } from 'node:path';
 import {
-  loadConfig,
-  OllamaEmbeddingProvider,
-  LanceDBStore,
-  BM25Index,
-  HybridSearch,
+  createRuntime,
   type SearchResult,
 } from '@code-rag/core';
 
@@ -55,49 +49,19 @@ export function registerSearchCommand(program: Command): void {
           process.exit(1);
         }
 
-        // Load config
-        const configResult = await loadConfig(rootDir);
-        if (configResult.isErr()) {
+        // Initialize runtime (search-only mode: skip graph, reranker, context expander)
+        const runtimeResult = await createRuntime({ rootDir, searchOnly: true });
+        if (runtimeResult.isErr()) {
           // eslint-disable-next-line no-console
-          console.error(chalk.red('Config not found.'), 'Run "coderag init" first.');
+          console.error(chalk.red('Initialization failed.'), runtimeResult.error.message);
           process.exit(1);
         }
-        const config = configResult.value;
-        const storagePath = resolve(rootDir, config.storage.path);
-
-        // Prevent path traversal outside project root
-        if (!storagePath.startsWith(resolve(rootDir) + sep) && storagePath !== resolve(rootDir)) {
-          // eslint-disable-next-line no-console
-          console.error(chalk.red('Storage path escapes project root'));
-          process.exit(1);
-        }
-
-        // Create services
-        const embeddingProvider = new OllamaEmbeddingProvider({
-          model: config.embedding.model,
-          dimensions: config.embedding.dimensions,
-        });
-
-        const store = new LanceDBStore(storagePath, config.embedding.dimensions);
-        await store.connect();
-
-        // Load BM25 index
-        let bm25 = new BM25Index();
-        const bm25Path = join(storagePath, 'bm25-index.json');
-        try {
-          const bm25Data = await readFile(bm25Path, 'utf-8');
-          bm25 = BM25Index.deserialize(bm25Data);
-        } catch {
-          // No BM25 index yet
-        }
-
-        // Create hybrid search
-        const hybridSearch = new HybridSearch(store, bm25, embeddingProvider, config.search);
+        const runtime = runtimeResult.value;
 
         // Run search
-        const searchResult = await hybridSearch.search(query, { topK });
+        const searchResult = await runtime.hybridSearch.search(query, { topK });
         if (searchResult.isErr()) {
-          store.close();
+          runtime.close();
           // eslint-disable-next-line no-console
           console.error(chalk.red('Search failed:'), searchResult.error.message);
           process.exit(1);
@@ -125,7 +89,7 @@ export function registerSearchCommand(program: Command): void {
           );
         }
 
-        store.close();
+        runtime.close();
 
         // Display results
         if (results.length === 0) {

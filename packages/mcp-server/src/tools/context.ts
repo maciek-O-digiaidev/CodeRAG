@@ -107,7 +107,7 @@ export async function handleContext(
     }
 
     // Step 2: Expand context via dependency graph
-    const expanded = contextExpander.expand(results);
+    const expanded = await contextExpander.expand(results);
 
     // Step 3: Assemble within token budget (use caller's max_tokens)
     const optimizer = new TokenBudgetOptimizer({ maxTokens: max_tokens });

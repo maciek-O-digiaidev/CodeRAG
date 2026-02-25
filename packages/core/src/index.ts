@@ -127,6 +127,7 @@ export type {
   RelatedChunk,
   GraphExcerpt,
   ExpandedContext,
+  ChunkLookupFn,
   TokenBudgetConfig,
   AssembledContext,
   CrossEncoderConfig,
@@ -229,6 +230,9 @@ export {
   safeArray,
   safeStringUnion,
 } from './utils/safe-cast.js';
+
+export type { CodeRAGRuntime, RuntimeOptions } from './runtime.js';
+export { createRuntime, RuntimeError } from './runtime.js';
 
 // --- API Contracts (shared Zod schemas for viewer REST API) ---
 

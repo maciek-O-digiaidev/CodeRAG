@@ -58,7 +58,7 @@ function buildTestGraph(): DependencyGraph {
 
 describe('ContextExpander', () => {
   describe('basic expansion', () => {
-    it('should return primary results unchanged', () => {
+    it('should return primary results unchanged', async () => {
       const graph = buildTestGraph();
       const lookupMap = new Map<string, SearchResult>();
       lookupMap.set('B', makeSearchResult('B'));
@@ -67,13 +67,13 @@ describe('ContextExpander', () => {
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
       const primary = [makeSearchResult('A')];
-      const result = expander.expand(primary);
+      const result = await expander.expand(primary);
 
       expect(result.primaryResults).toEqual(primary);
       expect(result.primaryResults).toHaveLength(1);
     });
 
-    it('should find related chunks via BFS traversal', () => {
+    it('should find related chunks via BFS traversal', async () => {
       const graph = buildTestGraph();
       const lookupMap = new Map<string, SearchResult>();
       lookupMap.set('B', makeSearchResult('B'));
@@ -82,7 +82,7 @@ describe('ContextExpander', () => {
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
       const primary = [makeSearchResult('A')];
-      const result = expander.expand(primary);
+      const result = await expander.expand(primary);
 
       // A -> B (depth 1), B -> C (depth 2), D -> A (depth 1)
       const relatedIds = result.relatedChunks.map((rc) => rc.chunk.chunkId);
@@ -91,7 +91,7 @@ describe('ContextExpander', () => {
       expect(relatedIds).toContain('D');
     });
 
-    it('should not include primary results in related chunks', () => {
+    it('should not include primary results in related chunks', async () => {
       const graph = buildTestGraph();
       const lookupMap = new Map<string, SearchResult>();
       lookupMap.set('A', makeSearchResult('A'));
@@ -102,14 +102,14 @@ describe('ContextExpander', () => {
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
       // A and B are both primary results
       const primary = [makeSearchResult('A'), makeSearchResult('B')];
-      const result = expander.expand(primary);
+      const result = await expander.expand(primary);
 
       const relatedIds = result.relatedChunks.map((rc) => rc.chunk.chunkId);
       expect(relatedIds).not.toContain('A');
       expect(relatedIds).not.toContain('B');
     });
 
-    it('should deduplicate related chunks', () => {
+    it('should deduplicate related chunks', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A'));
       graph.addNode(makeNode('B'));
@@ -123,7 +123,7 @@ describe('ContextExpander', () => {
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
       // Both A and B connect to C; C should appear only once
       const primary = [makeSearchResult('A'), makeSearchResult('B')];
-      const result = expander.expand(primary);
+      const result = await expander.expand(primary);
 
       const cChunks = result.relatedChunks.filter(
         (rc) => rc.chunk.chunkId === 'C',
@@ -131,7 +131,7 @@ describe('ContextExpander', () => {
       expect(cChunks).toHaveLength(1);
     });
 
-    it('should skip related nodes that have no chunk lookup', () => {
+    it('should skip related nodes that have no chunk lookup', async () => {
       const graph = buildTestGraph();
       // Only provide lookup for B, not C or D
       const lookupMap = new Map<string, SearchResult>();
@@ -139,17 +139,36 @@ describe('ContextExpander', () => {
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
       const primary = [makeSearchResult('A')];
-      const result = expander.expand(primary);
+      const result = await expander.expand(primary);
 
       const relatedIds = result.relatedChunks.map((rc) => rc.chunk.chunkId);
       expect(relatedIds).toContain('B');
       expect(relatedIds).not.toContain('C');
       expect(relatedIds).not.toContain('D');
     });
+
+    it('should work with async chunkLookup', async () => {
+      const graph = buildTestGraph();
+      const lookupMap = new Map<string, SearchResult>();
+      lookupMap.set('B', makeSearchResult('B'));
+      lookupMap.set('D', makeSearchResult('D'));
+
+      const asyncLookup = async (id: string): Promise<SearchResult | undefined> => {
+        return lookupMap.get(id);
+      };
+
+      const expander = new ContextExpander(graph, asyncLookup);
+      const primary = [makeSearchResult('A')];
+      const result = await expander.expand(primary);
+
+      const relatedIds = result.relatedChunks.map((rc) => rc.chunk.chunkId);
+      expect(relatedIds).toContain('B');
+      expect(relatedIds).toContain('D');
+    });
   });
 
   describe('maxRelated limiting', () => {
-    it('should respect maxRelated parameter', () => {
+    it('should respect maxRelated parameter', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A'));
       const lookupMap = new Map<string, SearchResult>();
@@ -163,12 +182,12 @@ describe('ContextExpander', () => {
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
       const primary = [makeSearchResult('A')];
-      const result = expander.expand(primary, 5);
+      const result = await expander.expand(primary, 5);
 
       expect(result.relatedChunks.length).toBeLessThanOrEqual(5);
     });
 
-    it('should default maxRelated to 10', () => {
+    it('should default maxRelated to 10', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A'));
       const lookupMap = new Map<string, SearchResult>();
@@ -182,14 +201,14 @@ describe('ContextExpander', () => {
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
       const primary = [makeSearchResult('A')];
-      const result = expander.expand(primary);
+      const result = await expander.expand(primary);
 
       expect(result.relatedChunks.length).toBeLessThanOrEqual(10);
     });
   });
 
   describe('relationship classification', () => {
-    it('should classify outgoing edge as "imports"', () => {
+    it('should classify outgoing edge as "imports"', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A'));
       graph.addNode(makeNode('B'));
@@ -199,7 +218,7 @@ describe('ContextExpander', () => {
       lookupMap.set('B', makeSearchResult('B'));
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
-      const result = expander.expand([makeSearchResult('A')]);
+      const result = await expander.expand([makeSearchResult('A')]);
 
       const bRelated = result.relatedChunks.find(
         (rc) => rc.chunk.chunkId === 'B',
@@ -207,7 +226,7 @@ describe('ContextExpander', () => {
       expect(bRelated?.relationship).toBe('imports');
     });
 
-    it('should classify incoming edge as "imported_by"', () => {
+    it('should classify incoming edge as "imported_by"', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A'));
       graph.addNode(makeNode('B'));
@@ -217,7 +236,7 @@ describe('ContextExpander', () => {
       lookupMap.set('B', makeSearchResult('B'));
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
-      const result = expander.expand([makeSearchResult('A')]);
+      const result = await expander.expand([makeSearchResult('A')]);
 
       const bRelated = result.relatedChunks.find(
         (rc) => rc.chunk.chunkId === 'B',
@@ -225,7 +244,7 @@ describe('ContextExpander', () => {
       expect(bRelated?.relationship).toBe('imported_by');
     });
 
-    it('should classify test files as "test_for"', () => {
+    it('should classify test files as "test_for"', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A', { filePath: 'src/parser.ts' }));
       graph.addNode(makeNode('B', { filePath: 'src/parser.test.ts' }));
@@ -235,7 +254,7 @@ describe('ContextExpander', () => {
       lookupMap.set('B', makeSearchResult('B'));
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
-      const result = expander.expand([makeSearchResult('A')]);
+      const result = await expander.expand([makeSearchResult('A')]);
 
       const bRelated = result.relatedChunks.find(
         (rc) => rc.chunk.chunkId === 'B',
@@ -243,7 +262,7 @@ describe('ContextExpander', () => {
       expect(bRelated?.relationship).toBe('test_for');
     });
 
-    it('should classify spec files as "test_for"', () => {
+    it('should classify spec files as "test_for"', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A', { filePath: 'src/parser.ts' }));
       graph.addNode(makeNode('B', { filePath: 'src/parser.spec.ts' }));
@@ -253,7 +272,7 @@ describe('ContextExpander', () => {
       lookupMap.set('B', makeSearchResult('B'));
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
-      const result = expander.expand([makeSearchResult('A')]);
+      const result = await expander.expand([makeSearchResult('A')]);
 
       const bRelated = result.relatedChunks.find(
         (rc) => rc.chunk.chunkId === 'B',
@@ -261,7 +280,7 @@ describe('ContextExpander', () => {
       expect(bRelated?.relationship).toBe('test_for');
     });
 
-    it('should classify implements edge as "interface_of"', () => {
+    it('should classify implements edge as "interface_of"', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A'));
       graph.addNode(makeNode('B'));
@@ -271,7 +290,7 @@ describe('ContextExpander', () => {
       lookupMap.set('B', makeSearchResult('B'));
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
-      const result = expander.expand([makeSearchResult('A')]);
+      const result = await expander.expand([makeSearchResult('A')]);
 
       const bRelated = result.relatedChunks.find(
         (rc) => rc.chunk.chunkId === 'B',
@@ -279,7 +298,7 @@ describe('ContextExpander', () => {
       expect(bRelated?.relationship).toBe('interface_of');
     });
 
-    it('should classify same-directory nodes as "sibling"', () => {
+    it('should classify same-directory nodes as "sibling"', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A', { filePath: 'src/graph/foo.ts' }));
       graph.addNode(makeNode('B', { filePath: 'src/graph/bar.ts' }));
@@ -292,7 +311,7 @@ describe('ContextExpander', () => {
       lookupMap.set('B', makeSearchResult('B'));
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
-      const result = expander.expand([makeSearchResult('A')]);
+      const result = await expander.expand([makeSearchResult('A')]);
 
       const bRelated = result.relatedChunks.find(
         (rc) => rc.chunk.chunkId === 'B',
@@ -303,7 +322,7 @@ describe('ContextExpander', () => {
   });
 
   describe('distance computation', () => {
-    it('should assign distance 1 to direct neighbors', () => {
+    it('should assign distance 1 to direct neighbors', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A'));
       graph.addNode(makeNode('B'));
@@ -313,7 +332,7 @@ describe('ContextExpander', () => {
       lookupMap.set('B', makeSearchResult('B'));
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
-      const result = expander.expand([makeSearchResult('A')]);
+      const result = await expander.expand([makeSearchResult('A')]);
 
       const bRelated = result.relatedChunks.find(
         (rc) => rc.chunk.chunkId === 'B',
@@ -321,7 +340,7 @@ describe('ContextExpander', () => {
       expect(bRelated?.distance).toBe(1);
     });
 
-    it('should assign distance 2 to second-hop neighbors', () => {
+    it('should assign distance 2 to second-hop neighbors', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A'));
       graph.addNode(makeNode('B'));
@@ -333,7 +352,7 @@ describe('ContextExpander', () => {
       lookupMap.set('C', makeSearchResult('C'));
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
-      const result = expander.expand([makeSearchResult('A')]);
+      const result = await expander.expand([makeSearchResult('A')]);
 
       const cRelated = result.relatedChunks.find(
         (rc) => rc.chunk.chunkId === 'C',
@@ -341,7 +360,7 @@ describe('ContextExpander', () => {
       expect(cRelated?.distance).toBe(2);
     });
 
-    it('should sort related chunks by distance ascending', () => {
+    it('should sort related chunks by distance ascending', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A'));
       graph.addNode(makeNode('B'));
@@ -354,7 +373,7 @@ describe('ContextExpander', () => {
       lookupMap.set('C', makeSearchResult('C'));
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
-      const result = expander.expand([makeSearchResult('A')]);
+      const result = await expander.expand([makeSearchResult('A')]);
 
       expect(result.relatedChunks.length).toBeGreaterThanOrEqual(2);
       for (let i = 1; i < result.relatedChunks.length; i++) {
@@ -366,7 +385,7 @@ describe('ContextExpander', () => {
   });
 
   describe('graph excerpt', () => {
-    it('should include nodes from primary and related results', () => {
+    it('should include nodes from primary and related results', async () => {
       const graph = buildTestGraph();
       const lookupMap = new Map<string, SearchResult>();
       lookupMap.set('B', makeSearchResult('B'));
@@ -374,13 +393,13 @@ describe('ContextExpander', () => {
       lookupMap.set('D', makeSearchResult('D'));
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
-      const result = expander.expand([makeSearchResult('A')]);
+      const result = await expander.expand([makeSearchResult('A')]);
 
       expect(result.graphExcerpt.nodes).toContain('A');
       expect(result.graphExcerpt.nodes).toContain('B');
     });
 
-    it('should include edges between relevant nodes', () => {
+    it('should include edges between relevant nodes', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A'));
       graph.addNode(makeNode('B'));
@@ -390,7 +409,7 @@ describe('ContextExpander', () => {
       lookupMap.set('B', makeSearchResult('B'));
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
-      const result = expander.expand([makeSearchResult('A')]);
+      const result = await expander.expand([makeSearchResult('A')]);
 
       expect(result.graphExcerpt.edges).toContainEqual({
         from: 'A',
@@ -399,7 +418,7 @@ describe('ContextExpander', () => {
       });
     });
 
-    it('should deduplicate graph edges', () => {
+    it('should deduplicate graph edges', async () => {
       const graph = new DependencyGraph();
       graph.addNode(makeNode('A'));
       graph.addNode(makeNode('B'));
@@ -410,7 +429,7 @@ describe('ContextExpander', () => {
 
       const expander = new ContextExpander(graph, (id) => lookupMap.get(id));
       // Pass A twice as primary to trigger duplicate edge collection
-      const result = expander.expand([
+      const result = await expander.expand([
         makeSearchResult('A'),
         makeSearchResult('A', { chunkId: 'A' }),
       ]);
@@ -423,10 +442,10 @@ describe('ContextExpander', () => {
   });
 
   describe('empty inputs', () => {
-    it('should handle empty results array', () => {
+    it('should handle empty results array', async () => {
       const graph = new DependencyGraph();
       const expander = new ContextExpander(graph, () => undefined);
-      const result = expander.expand([]);
+      const result = await expander.expand([]);
 
       expect(result.primaryResults).toHaveLength(0);
       expect(result.relatedChunks).toHaveLength(0);
@@ -434,10 +453,10 @@ describe('ContextExpander', () => {
       expect(result.graphExcerpt.edges).toHaveLength(0);
     });
 
-    it('should handle results with no graph nodes', () => {
+    it('should handle results with no graph nodes', async () => {
       const graph = new DependencyGraph();
       const expander = new ContextExpander(graph, () => undefined);
-      const result = expander.expand([makeSearchResult('X')]);
+      const result = await expander.expand([makeSearchResult('X')]);
 
       expect(result.primaryResults).toHaveLength(1);
       expect(result.relatedChunks).toHaveLength(0);
