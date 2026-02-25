@@ -14,7 +14,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: coderag/coderag
+  IMAGE_NAME: ${{ github.repository }}
 
 permissions:
   contents: read
