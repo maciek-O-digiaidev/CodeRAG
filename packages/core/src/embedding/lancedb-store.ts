@@ -271,6 +271,56 @@ export class LanceDBStore implements VectorStore {
     }
   }
 
+  /**
+   * Scan all rows from the table.
+   * Returns an array of { id, metadata } objects (no vectors).
+   * Useful for index analysis and benchmark generation.
+   */
+  async getAll(limit?: number): Promise<Result<{ id: string; metadata: Record<string, unknown> }[], StoreError>> {
+    try {
+      await this.ensureConnected();
+
+      if (!this.table) {
+        return ok([]);
+      }
+
+      let query = this.table.query();
+      if (limit !== undefined && limit > 0) {
+        query = query.limit(limit);
+      }
+      const rawRows: unknown[] = await query.toArray();
+
+      const results = rawRows.map((row) => {
+        const r = safeRecord(row, {});
+        const id = safeString(r['id'], '');
+        const content = safeString(r['content'], '');
+        const nlSummary = safeString(r['nl_summary'], '');
+        const chunkType = safeString(r['chunk_type'], '');
+        const filePath = safeString(r['file_path'], '');
+        const language = safeString(r['language'], '');
+        const metaStr = safeString(r['metadata'], '{}');
+
+        return {
+          id,
+          metadata: {
+            content,
+            nl_summary: nlSummary,
+            chunk_type: chunkType,
+            file_path: filePath,
+            language,
+            ...safeParseJSON(metaStr),
+          },
+        };
+      });
+
+      return ok(results);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown error';
+      return err(new StoreError(`LanceDB getAll failed: ${message}`));
+    }
+  }
+
   close(): void {
     if (this.table) {
       this.table.close();

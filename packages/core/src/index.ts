@@ -234,6 +234,42 @@ export {
 export type { CodeRAGRuntime, RuntimeOptions } from './runtime.js';
 export { createRuntime, RuntimeError } from './runtime.js';
 
+// --- Auto-generated Benchmarks ---
+
+export type {
+  ScannedEntity,
+  IndexScanResult,
+  BenchmarkQueryType,
+  GeneratedQuery,
+  QueryGeneratorOptions,
+  QueryEvalResult,
+  QueryMetrics,
+  AggregateEvalMetrics,
+  QueryTypeBreakdown,
+  BenchmarkReport,
+  BenchmarkMetadata,
+  SearchFn,
+  BenchmarkProgressFn,
+} from './benchmarks/index.js';
+export {
+  IndexScanError,
+  parseIndexRows,
+  buildCallerMap,
+  buildTestMap,
+  generateQueries,
+  generateFindByNameQueries,
+  generateFindByDescriptionQueries,
+  generateFindCallersQueries,
+  generateFindTestsQueries,
+  generateFindImportsQueries,
+  BenchmarkEvalError,
+  computeQueryMetrics,
+  computeAggregateMetrics as computeBenchmarkAggregateMetrics,
+  computeQueryTypeBreakdown,
+  runBenchmark,
+  formatBenchmarkSummary,
+} from './benchmarks/index.js';
+
 // --- API Contracts (shared Zod schemas for viewer REST API) ---
 
 export {

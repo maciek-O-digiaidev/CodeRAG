@@ -9,6 +9,7 @@ import { registerStatusCommand } from './commands/status.js';
 import { registerViewerCommand } from './commands/viewer.js';
 import { registerWatchCommand } from './commands/watch-cmd.js';
 import { registerHooksCommand } from './commands/hooks-cmd.js';
+import { registerBenchmarkCommand } from './commands/benchmark-cmd.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json') as { version: string };
@@ -27,5 +28,6 @@ registerStatusCommand(program);
 registerViewerCommand(program);
 registerWatchCommand(program);
 registerHooksCommand(program);
+registerBenchmarkCommand(program);
 
 program.parse();
