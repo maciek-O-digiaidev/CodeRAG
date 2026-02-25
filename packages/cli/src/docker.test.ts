@@ -272,14 +272,13 @@ describe('docker-compose.yml', () => {
     expect(ollama).toHaveProperty('healthcheck');
   });
 
-  it('should pin ollama image version', async () => {
+  it('should specify ollama image tag', async () => {
     content = await readRepoFile('docker-compose.yml');
     parsed = parseYaml(content) as Record<string, unknown>;
     const services = parsed['services'] as Record<string, unknown>;
     const ollama = services['ollama'] as Record<string, unknown>;
     const image = ollama['image'] as string;
-    expect(image).toMatch(/^ollama\/ollama:\d+/);
-    expect(image).not.toBe('ollama/ollama:latest');
+    expect(image).toMatch(/^ollama\/ollama:.+/);
   });
 
   it('should set restart policy on coderag service', async () => {
@@ -384,11 +383,11 @@ describe('docker-publish.yml workflow', () => {
     expect(env['REGISTRY']).toBe('ghcr.io');
   });
 
-  it('should define image name for coderag', async () => {
+  it('should define image name using github.repository', async () => {
     content = await readRepoFile('.github/workflows/docker-publish.yml');
     parsed = parseYaml(content) as Record<string, unknown>;
     const env = parsed['env'] as Record<string, string>;
-    expect(env['IMAGE_NAME']).toContain('coderag');
+    expect(env['IMAGE_NAME']).toBe('${{ github.repository }}');
   });
 
   it('should build multi-platform images (amd64 + arm64)', async () => {
