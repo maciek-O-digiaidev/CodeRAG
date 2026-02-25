@@ -4,6 +4,7 @@ import { Result, ok, err } from 'neverthrow';
 import { parse } from 'yaml';
 import { z } from 'zod';
 import type { CodeRAGConfig } from '../types/config.js';
+import { safeString, safeRecord } from '../utils/safe-cast.js';
 
 export class ConfigError extends Error {
   constructor(message: string) {
@@ -187,8 +188,10 @@ export function interpolateEnvVars(obj: unknown): unknown | ConfigError {
     return result;
   }
   if (obj !== null && typeof obj === 'object') {
+    // Runtime guard above ensures obj is a non-null object (not an array — handled earlier)
+    const record = safeRecord(obj, {});
     const result: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+    for (const [key, value] of Object.entries(record)) {
       const interpolated = interpolateEnvVars(value);
       if (interpolated instanceof ConfigError) return interpolated;
       result[key] = interpolated;
@@ -217,9 +220,11 @@ function normalizeEmbeddingConfig(
   const merged: Record<string, unknown> = { ...defaults, ...embeddingPartial };
 
   // Support snake_case key from YAML: openai_compatible -> openaiCompatible
-  const openaiCompat =
-    (merged['openaiCompatible'] as Record<string, unknown> | undefined) ??
-    (merged['openai_compatible'] as Record<string, unknown> | undefined);
+  const openaiCompatRaw = merged['openaiCompatible'] ?? merged['openai_compatible'];
+  const openaiCompat: Record<string, unknown> | undefined =
+    openaiCompatRaw !== undefined && openaiCompatRaw !== null
+      ? safeRecord(openaiCompatRaw, {})
+      : undefined;
 
   // Remove the snake_case variant so only the camelCase one remains
   delete merged['openai_compatible'];
@@ -251,37 +256,45 @@ function normalizeEmbeddingConfig(
   return merged;
 }
 
+/** Extract a sub-record from a config object, returning undefined if not a valid record. */
+function optionalRecord(value: unknown): Record<string, unknown> | undefined {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    return safeRecord(value);
+  }
+  return undefined;
+}
+
 function applyDefaults(partial: Record<string, unknown>): Record<string, unknown> {
   return {
-    version: (partial['version'] as string | undefined) ?? DEFAULT_CONFIG.version,
+    version: safeString(partial['version'], DEFAULT_CONFIG.version),
     project: {
       ...DEFAULT_CONFIG.project,
-      ...(partial['project'] as Record<string, unknown> | undefined),
+      ...optionalRecord(partial['project']),
     },
     ingestion: {
       ...DEFAULT_CONFIG.ingestion,
-      ...(partial['ingestion'] as Record<string, unknown> | undefined),
+      ...optionalRecord(partial['ingestion']),
     },
     embedding: normalizeEmbeddingConfig(
-      partial['embedding'] as Record<string, unknown> | undefined,
+      optionalRecord(partial['embedding']),
     ),
     llm: {
       ...DEFAULT_CONFIG.llm,
-      ...(partial['llm'] as Record<string, unknown> | undefined),
+      ...optionalRecord(partial['llm']),
     },
     search: {
       ...DEFAULT_CONFIG.search,
-      ...(partial['search'] as Record<string, unknown> | undefined),
+      ...optionalRecord(partial['search']),
     },
     storage: {
       ...DEFAULT_CONFIG.storage,
-      ...(partial['storage'] as Record<string, unknown> | undefined),
+      ...optionalRecord(partial['storage']),
     },
     ...(partial['reranker'] !== undefined
       ? {
           reranker: {
             ...DEFAULT_CONFIG.reranker,
-            ...(partial['reranker'] as Record<string, unknown> | undefined),
+            ...optionalRecord(partial['reranker']),
           },
         }
       : {}),
@@ -303,7 +316,7 @@ function deepMerge(target: Record<string, unknown>, source: Record<string, unkno
     const sv = source[key];
     const tv = target[key];
     if (sv !== null && typeof sv === 'object' && !Array.isArray(sv) && tv !== null && typeof tv === 'object' && !Array.isArray(tv)) {
-      result[key] = deepMerge(tv as Record<string, unknown>, sv as Record<string, unknown>);
+      result[key] = deepMerge(safeRecord(tv), safeRecord(sv));
     } else {
       result[key] = sv;
     }
@@ -339,7 +352,7 @@ export async function loadConfig(rootDir: string): Promise<Result<CodeRAGConfig,
     const localContent = await readFile(localPath, 'utf-8');
     const localParsed = parse(localContent);
     if (localParsed !== null && localParsed !== undefined && typeof localParsed === 'object') {
-      parsed = deepMerge(parsed as Record<string, unknown>, localParsed as Record<string, unknown>);
+      parsed = deepMerge(safeRecord(parsed, {}), safeRecord(localParsed, {}));
     }
   } catch {
     // No local overrides — that's fine
@@ -351,12 +364,13 @@ export async function loadConfig(rootDir: string): Promise<Result<CodeRAGConfig,
     return err(interpolated);
   }
 
-  const withDefaults = applyDefaults(interpolated as Record<string, unknown>);
+  const withDefaults = applyDefaults(safeRecord(interpolated, {}));
 
   const validationResult = codeRAGConfigSchema.safeParse(withDefaults);
   if (!validationResult.success) {
     return err(new ConfigError(`Config validation failed: ${formatZodErrors(validationResult.error)}`));
   }
 
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Zod schema structurally matches CodeRAGConfig; safeParse validates all fields
   return ok(validationResult.data as CodeRAGConfig);
 }

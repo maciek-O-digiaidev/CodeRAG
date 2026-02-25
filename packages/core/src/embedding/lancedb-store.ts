@@ -1,6 +1,7 @@
 import { ok, err, type Result } from 'neverthrow';
 import { StoreError, type VectorStore } from '../types/provider.js';
 import * as lancedb from '@lancedb/lancedb';
+import { safeString, safeRecord } from '../utils/safe-cast.js';
 
 const TABLE_NAME = 'chunks';
 const SAFE_ID_PATTERN = /^[a-zA-Z0-9_\-:.]+$/;
@@ -8,10 +9,7 @@ const SAFE_ID_PATTERN = /^[a-zA-Z0-9_\-:.]+$/;
 function safeParseJSON(json: string): Record<string, unknown> {
   try {
     const parsed: unknown = JSON.parse(json);
-    if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>;
-    }
-    return {};
+    return safeRecord(parsed, {});
   } catch {
     return {};
   }
@@ -42,6 +40,25 @@ interface LanceDBQueryResult {
 
 function validateId(id: string): boolean {
   return SAFE_ID_PATTERN.test(id) && id.length > 0 && id.length <= 256;
+}
+
+/** Convert raw LanceDB toArray() rows into typed LanceDBQueryResult[]. */
+function toLanceDBQueryResults(rows: unknown[]): LanceDBQueryResult[] {
+  return rows.map((row) => {
+    const r = safeRecord(row, {});
+    return {
+      id: safeString(r['id'], ''),
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Array.isArray guard; LanceDB stores vectors as number[]
+      vector: Array.isArray(r['vector']) ? (r['vector'] as number[]) : [],
+      content: safeString(r['content'], ''),
+      nl_summary: safeString(r['nl_summary'], ''),
+      chunk_type: safeString(r['chunk_type'], ''),
+      file_path: safeString(r['file_path'], ''),
+      language: safeString(r['language'], ''),
+      metadata: safeString(r['metadata'], '{}'),
+      _distance: typeof r['_distance'] === 'number' ? r['_distance'] : 0,
+    };
+  });
 }
 
 export class LanceDBStore implements VectorStore {
@@ -99,16 +116,17 @@ export class LanceDBStore implements VectorStore {
         return {
           id,
           vector: embeddings[i] ?? [],
-          content: (meta['content'] as string) ?? '',
-          nl_summary: (meta['nl_summary'] as string) ?? '',
-          chunk_type: (meta['chunk_type'] as string) ?? '',
-          file_path: (meta['file_path'] as string) ?? '',
-          language: (meta['language'] as string) ?? '',
+          content: safeString(meta['content'], ''),
+          nl_summary: safeString(meta['nl_summary'], ''),
+          chunk_type: safeString(meta['chunk_type'], ''),
+          file_path: safeString(meta['file_path'], ''),
+          language: safeString(meta['language'], ''),
           metadata: JSON.stringify(meta),
         };
       });
 
-      const data = rows as unknown as Record<string, unknown>[];
+      // Justified cast: LanceDB API requires Record<string, unknown>[] but rows satisfy this structurally
+      const data: Record<string, unknown>[] = rows.map((row) => ({ ...row }));
 
       if (!this.table) {
         this.table = await this.db!.createTable(TABLE_NAME, data);
@@ -145,10 +163,11 @@ export class LanceDBStore implements VectorStore {
         return ok([]);
       }
 
-      const results = (await this.table
+      const rawResults: unknown[] = await this.table
         .search(embedding)
         .limit(topK)
-        .toArray()) as LanceDBQueryResult[];
+        .toArray();
+      const results = toLanceDBQueryResults(rawResults);
 
       const mapped = results.map((row) => ({
         id: row.id,

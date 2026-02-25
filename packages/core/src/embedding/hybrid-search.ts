@@ -2,10 +2,15 @@ import { ok, err, type Result } from 'neverthrow';
 import { EmbedError, type EmbeddingProvider, type VectorStore } from '../types/provider.js';
 import type { SearchConfig } from '../types/config.js';
 import type { SearchOptions, SearchResult } from '../types/search.js';
-import type { ChunkMetadata } from '../types/chunk.js';
+import type { ChunkMetadata, ChunkType } from '../types/chunk.js';
 import type { BM25Index } from './bm25-index.js';
+import { safeString, safeStringUnion } from '../utils/safe-cast.js';
 
 const RRF_K = 60;
+const CHUNK_TYPES: readonly ChunkType[] = [
+  'function', 'method', 'class', 'module', 'interface',
+  'type_alias', 'config_block', 'import_block', 'doc',
+] as const;
 
 export class HybridSearch {
   private readonly vectorStore: VectorStore;
@@ -115,13 +120,15 @@ export class HybridSearch {
       } else {
         // Vector-only hit: hydrate from vector store metadata
         const meta = vectorMetadataMap.get(chunkId) ?? {};
-        const storedName = (meta['name'] as string | undefined) ?? '';
-        const storedChunkType = (meta['chunk_type'] as string | undefined) ?? 'function';
-        const storedFilePath = (meta['file_path'] as string | undefined) ?? '';
-        const storedLanguage = (meta['language'] as string | undefined) ?? 'unknown';
+        const storedName = safeString(meta['name'], '');
+        const storedChunkType = safeStringUnion(meta['chunk_type'], CHUNK_TYPES, 'function');
+        const storedFilePath = safeString(meta['file_path'], '');
+        const storedLanguage = safeString(meta['language'], 'unknown');
+        const storedContent = safeString(meta['content'], '');
+        const storedNlSummary = safeString(meta['nl_summary'], '');
 
         const chunkMetadata: ChunkMetadata = {
-          chunkType: storedChunkType as ChunkMetadata['chunkType'],
+          chunkType: storedChunkType,
           name: storedName,
           declarations: [],
           imports: [],
@@ -130,15 +137,15 @@ export class HybridSearch {
 
         merged.push({
           chunkId,
-          content: (meta['content'] as string | undefined) ?? '',
-          nlSummary: (meta['nl_summary'] as string | undefined) ?? '',
+          content: storedContent,
+          nlSummary: storedNlSummary,
           score: fusedScore,
           method: 'hybrid',
           metadata: chunkMetadata,
           chunk: {
             id: chunkId,
-            content: (meta['content'] as string | undefined) ?? '',
-            nlSummary: (meta['nl_summary'] as string | undefined) ?? '',
+            content: storedContent,
+            nlSummary: storedNlSummary,
             filePath: storedFilePath,
             startLine: 0,
             endLine: 0,

@@ -221,3 +221,11 @@ export {
   AzureBlobStorageProvider,
   GCSStorageProvider,
 } from './storage/index.js';
+
+export {
+  safeString,
+  safeNumber,
+  safeRecord,
+  safeArray,
+  safeStringUnion,
+} from './utils/safe-cast.js';
