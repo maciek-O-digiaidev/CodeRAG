@@ -40,7 +40,7 @@ jobs:
       - name: Run Tier 1 synthetic benchmark
         id: benchmark
         run: |
-          node --import tsx packages/benchmarks/src/ci/run-ci-entrypoint.ts \
+          node packages/benchmarks/dist/ci/run-ci-entrypoint.js \
             --commit "${{ github.sha }}" \
             --branch "${{ github.head_ref || github.ref_name }}" \
             --baseline "packages/benchmarks/results/baseline.json" \

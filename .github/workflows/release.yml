@@ -1,3 +1,10 @@
+# =============================================================================
+# Release — Create GitHub Release with changelog on version tags
+#
+# npm publishing is handled separately by publish.yml (OIDC provenance).
+# Docker publishing is handled by docker-publish.yml.
+# =============================================================================
+
 name: Release
 
 on:
@@ -7,7 +14,6 @@ on:
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
   release:
@@ -18,25 +24,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build all packages
-        run: pnpm build
-
-      - name: Run tests
-        run: pnpm test
 
       - name: Generate changelog from tag
         id: changelog
@@ -63,8 +50,3 @@ jobs:
           draft: false
           prerelease: ${{ contains(github.ref, '-') }}
           generate_release_notes: true
-
-      - name: Publish to npm
-        run: pnpm publish -r --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
