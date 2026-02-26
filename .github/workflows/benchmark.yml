@@ -104,6 +104,7 @@ jobs:
 
       - name: Update baseline on main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
         run: |
           if [ -f /tmp/benchmark-new-baseline.json ]; then
             cp /tmp/benchmark-new-baseline.json packages/benchmarks/results/baseline.json
@@ -111,7 +112,7 @@ jobs:
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add packages/benchmarks/results/baseline.json packages/benchmarks/results/history/
             git diff --cached --quiet || git commit -m "chore: update benchmark baseline [skip ci]"
-            git push
+            git push || echo "::warning::Could not push baseline update (branch protection). Baseline will be updated on next unprotected push."
           fi
 
       - name: Fail on regression
